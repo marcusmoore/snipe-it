@@ -6,7 +6,6 @@ use App\Models\Asset;
 use App\Models\CheckoutAcceptance;
 use App\Models\User;
 use App\Notifications\CheckoutAssetNotification;
-use Notification;
 use Tests\Support\InteractsWithSettings;
 use Tests\TestCase;
 
@@ -25,8 +24,6 @@ class AssetCheckoutNotificationTest extends TestCase
 
     public function testAssetDeliveryConfirmationIncludesCategoryEULA()
     {
-        $this->markTestIncomplete();
-
         // Given default EULA is set
         $this->settings->set(['default_eula_text' => 'Default EULA text']);
 
@@ -37,13 +34,11 @@ class AssetCheckoutNotificationTest extends TestCase
             'use_default_eula' => false,
         ]);
 
-        $checkoutAcceptance = CheckoutAcceptance::factory()->for($asset, 'checkoutable')->create();
-
         $notification = new CheckoutAssetNotification(
             $asset,
-            $checkoutAcceptance->assignedTo,
+            User::factory()->create(),
             User::factory()->superuser()->create(),
-            $checkoutAcceptance,
+            null,
             ''
         );
 
@@ -59,8 +54,6 @@ class AssetCheckoutNotificationTest extends TestCase
     {
         $this->markTestIncomplete();
 
-        Notification::fake();
-
         // Given default EULA is set
         $this->settings->set(['default_eula_text' => 'Default EULA text']);
 
@@ -71,13 +64,11 @@ class AssetCheckoutNotificationTest extends TestCase
             'use_default_eula' => true,
         ]);
 
-        $checkoutAcceptance = CheckoutAcceptance::factory()->for($asset, 'checkoutable')->create();
-
         $notification = new CheckoutAssetNotification(
             $asset,
-            $checkoutAcceptance->assignedTo,
+            User::factory()->create(),
             User::factory()->superuser()->create(),
-            $checkoutAcceptance,
+            null,
             ''
         );
 
