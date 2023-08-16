@@ -77,6 +77,7 @@
         <ul class="nav nav-tabs">
           <li class="active"><a href="#info" data-toggle="tab">{{ trans('general.information') }} </a></li>
           <li><a href="#permissions" data-toggle="tab">{{ trans('general.permissions') }} </a></li>
+          <li><a href="#companies" data-toggle="tab">Companies</a></li>
         </ul>
 
         <div class="tab-content">
@@ -592,6 +593,9 @@
                 @include('partials.forms.edit.permissions-base')
             </table>
           </div><!-- /.tab-pane -->
+            <div class="tab-pane" id="companies">
+                <livewire:company-permissions />
+            </div>
         </div><!-- /.tab-content -->
         <div class="box-footer text-right">
           <button type="submit" accesskey="s" class="btn btn-primary"><i class="fas fa-check icon-white" aria-hidden="true"></i> {{ trans('general.save') }}</button>
