@@ -7,28 +7,34 @@ on:
 #    branches: [ "main" ]
 
 jobs:
-  build:
+  php-lint:
+    name: "Lint"
+
     runs-on: ubuntu-latest
 
     strategy:
       fail-fast: false
-      matrix:
-        php: [7.4]
-        stability: [prefer-lowest, prefer-stable]
 
-    name: PHP ${{ matrix.php }} - ${{ matrix.stability }}
+      matrix:
+        php-version:
+          - "7.4"
+          - "8.0"
+          - "8.1"
 
     steps:
-      - name: Checkout code
+      - name: Checkout Code
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
 
-      - name: Setup PHP
+      - name: Setup PHP runtime
         uses: shivammathur/setup-php@v2
         with:
-          php-version: ${{ matrix.php }}
+          php-version: "${{ matrix.php-version }}"
+          coverage: "none"
 
-      - # Lint
-        name: Check PHP syntax errors
-        uses: overtrue/phplint@3.4.0
+      - name: Lint PHP files
+        run: |
+          curl -Ls https://github.com/overtrue/phplint/releases/latest/download/phplint.phar -o /usr/local/bin/phplint
+          chmod +x /usr/local/bin/phplint
+          /usr/local/bin/phplint -vvv --no-cache
