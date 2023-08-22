@@ -104,7 +104,7 @@ return [
     'depreciation_report'	=> 'Depreciation Report',
     'details'               => 'Details',
     'download'				=> 'Download',
-    'download_all'		    => 'Download All',
+    'download_all'		    => 'Download All'
     'editprofile'  			=> 'Edit Your Profile',
     'eol'					=> 'EOL',
     'email_domain'			=> 'Email Domain',
