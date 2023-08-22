@@ -26,6 +26,8 @@ jobs:
           - "8.0"
           - "8.1"
 
+    name: PHP ${{ matrix.php-version }}
+
     steps:
       - uses: shivammathur/setup-php@v2
         with:
