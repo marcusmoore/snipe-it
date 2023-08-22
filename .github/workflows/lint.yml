@@ -35,6 +35,8 @@ jobs:
 
       - name: Lint PHP files
         run: |
-          curl -Ls https://github.com/overtrue/phplint/releases/download/3.4.0/phplint.phar -o /usr/local/bin/phplint
-          chmod +x /usr/local/bin/phplint
-          /usr/local/bin/phplint -vvv --no-cache
+#          curl -Ls https://github.com/overtrue/phplint/releases/download/3.4.0/phplint.phar -o /usr/local/bin/phplint
+#          chmod +x /usr/local/bin/phplint
+#          /usr/local/bin/phplint -vvv --no-cache
+          composer require --dev overtrue/phplint
+          ./vendor/bin/phplint -vvv --no-cache
