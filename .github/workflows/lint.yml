@@ -1,0 +1,34 @@
+name: Lint
+
+on:
+  push:
+#    branches: [ "master" ]
+  pull_request:
+#    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: "${{ matrix.php }}"
+
+    strategy:
+      fail-fast: false
+      matrix:
+        php: [7.4, 8.0, 8.1]
+        stability: [prefer-lowest, prefer-stable]
+
+    name: PHP ${{ matrix.php }} - ${{ matrix.stability }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+
+      - # Lint
+        name: Check PHP syntax errors
+        uses: overtrue/phplint@6.0.0
