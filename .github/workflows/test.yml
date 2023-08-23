@@ -45,7 +45,7 @@ jobs:
           echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
       - uses: actions/cache@v3
         with:
-          path: ${{ matrix.php-version}}-${{ steps.composer-cache.outputs.dir }}
+          path: ${{ steps.composer-cache.outputs.dir }}
           key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
           restore-keys: |
             ${{ runner.os }}-composer-
