@@ -5,6 +5,7 @@ namespace Tests\Feature\Api\Reports;
 use App\Models\Asset;
 use App\Models\Company;
 use App\Models\Location;
+use App\Models\Supplier;
 use App\Models\User;
 use Tests\Support\InteractsWithSettings;
 use Tests\TestCase;
@@ -64,6 +65,26 @@ class AssetActionLogTest extends TestCase
         $asset->update(['location_id' => Location::factory()->create()->id]);
 
         $location->delete();
+
+        $this->actingAsForApi(User::factory()->superuser()->create())
+            ->get(route('api.activity.index', [
+                'item_id' => $asset->id,
+                'item_type' => 'asset',
+            ]))
+            ->assertOk();
+    }
+
+    public function testAssetHistoryThatContainsDeletedSupplierRenders()
+    {
+        $supplier = Supplier::factory()->create();
+        $asset = Asset::factory()->create(['supplier_id' => $supplier->id]);
+
+        // grab fresh instance to trigger updating observer
+        $asset->refresh();
+
+        $asset->update(['supplier_id' => Supplier::factory()->create()->id]);
+
+        $supplier->delete();
 
         $this->actingAsForApi(User::factory()->superuser()->create())
             ->get(route('api.activity.index', [

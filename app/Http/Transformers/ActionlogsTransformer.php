@@ -177,8 +177,8 @@ class ActionlogsTransformer
             unset($clean_meta['company_id']);
         }
         if(array_key_exists('supplier_id', $clean_meta)) {
-            $clean_meta['supplier_id']['old'] = $clean_meta['supplier_id']['old'] ? "[id: ".$clean_meta['supplier_id']['old']."] ".Supplier::find($clean_meta['supplier_id']['old'])->name : trans('general.unassigned');
-            $clean_meta['supplier_id']['new'] = $clean_meta['supplier_id']['new'] ? "[id: ".$clean_meta['supplier_id']['new']."] ".Supplier::find($clean_meta['supplier_id']['new'])->name : trans('general.unassigned');
+            $clean_meta['supplier_id']['old'] = $clean_meta['supplier_id']['old'] ? "[id: ".$clean_meta['supplier_id']['old']."] ".Supplier::withTrashed()->find($clean_meta['supplier_id']['old'])->name : trans('general.unassigned');
+            $clean_meta['supplier_id']['new'] = $clean_meta['supplier_id']['new'] ? "[id: ".$clean_meta['supplier_id']['new']."] ".Supplier::withTrashed()->find($clean_meta['supplier_id']['new'])->name : trans('general.unassigned');
             $clean_meta['Supplier'] = $clean_meta['supplier_id'];
             unset($clean_meta['supplier_id']);
         }
