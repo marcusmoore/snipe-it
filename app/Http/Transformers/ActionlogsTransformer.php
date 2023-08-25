@@ -147,14 +147,14 @@ class ActionlogsTransformer
     {
 
         if(array_key_exists('rtd_location_id',$clean_meta)) {
-            $clean_meta['rtd_location_id']['old'] = $clean_meta['rtd_location_id']['old'] ? "[id: ".$clean_meta['rtd_location_id']['old']."] ". Location::find($clean_meta['rtd_location_id']['old'])->name : trans('general.unassigned');
-            $clean_meta['rtd_location_id']['new'] = $clean_meta['rtd_location_id']['new'] ? "[id: ".$clean_meta['rtd_location_id']['new']."] ". Location::find($clean_meta['rtd_location_id']['new'])->name : trans('general.unassigned');
+            $clean_meta['rtd_location_id']['old'] = $clean_meta['rtd_location_id']['old'] ? "[id: ".$clean_meta['rtd_location_id']['old']."] ". Location::withTrashed()->find($clean_meta['rtd_location_id']['old'])->name : trans('general.unassigned');
+            $clean_meta['rtd_location_id']['new'] = $clean_meta['rtd_location_id']['new'] ? "[id: ".$clean_meta['rtd_location_id']['new']."] ". Location::withTrashed()->find($clean_meta['rtd_location_id']['new'])->name : trans('general.unassigned');
             $clean_meta['Default Location'] = $clean_meta['rtd_location_id'];
             unset($clean_meta['rtd_location_id']);
         }
         if(array_key_exists('location_id', $clean_meta)) {
-            $clean_meta['location_id']['old'] = $clean_meta['location_id']['old'] ? "[id: ".$clean_meta['location_id']['old']."] ".Location::find($clean_meta['location_id']['old'])->name : trans('general.unassigned');
-            $clean_meta['location_id']['new'] = $clean_meta['location_id']['new'] ? "[id: ".$clean_meta['location_id']['new']."] ".Location::find($clean_meta['location_id']['new'])->name : trans('general.unassigned');
+            $clean_meta['location_id']['old'] = $clean_meta['location_id']['old'] ? "[id: ".$clean_meta['location_id']['old']."] ".Location::withTrashed()->find($clean_meta['location_id']['old'])->name : trans('general.unassigned');
+            $clean_meta['location_id']['new'] = $clean_meta['location_id']['new'] ? "[id: ".$clean_meta['location_id']['new']."] ".Location::withTrashed()->find($clean_meta['location_id']['new'])->name : trans('general.unassigned');
             $clean_meta['Current Location'] = $clean_meta['location_id'];
             unset($clean_meta['location_id']);
         }

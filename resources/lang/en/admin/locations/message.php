@@ -1,7 +1,7 @@
 <?php
 
 return array(
-
+    'deleted' => 'Deleted location',
     'does_not_exist' => 'Location does not exist.',
     'assoc_users'	 => 'This location is currently associated with at least one user and cannot be deleted. Please update your users to no longer reference this location and try again. ',
     'assoc_assets'	 => 'This location is currently associated with at least one asset and cannot be deleted. Please update your assets to no longer reference this location and try again. ',
