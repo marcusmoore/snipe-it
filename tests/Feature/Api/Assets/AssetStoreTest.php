@@ -39,7 +39,6 @@ class AssetStoreTest extends TestCase
                 'archived' => true,
                 'asset_eol_date' => '2024-06-02',
                 'asset_tag' => 'random_string',
-                // @todo: This isn't in the docs but it's in the controller
                 'assigned_to' => $userAssigned->id,
                 'company_id' => $company->id,
                 'depreciate' => true,
@@ -69,8 +68,8 @@ class AssetStoreTest extends TestCase
         // @todo: This isn't in the docs but it's in the controller
         $this->assertEquals('2024-06-02', $asset->asset_eol_date);
         $this->assertEquals('random_string', $asset->asset_tag);
-        // @todo:
-        // $this->assertTrue($asset->assignedTo->is($userAssigned));
+        // @todo: This isn't in the docs but it's in the controller (should it be removed?)
+        $this->assertEquals($userAssigned->id, $asset->assigned_to);
         // @todo: This is not in the docs but it's in the controller
         $this->assertTrue($asset->company->is($company));
         // @todo: this is explicitly set 0 in the controller but they docs say they are customizable
@@ -105,13 +104,10 @@ class AssetStoreTest extends TestCase
             ->create();
 
         $results = $this->actingAsForApi($user)
-            ->postJson(route('api.assets.store'), [
-                'asset_tag' => 'random_string',
-                'model_id' => AssetModel::factory()->create()->id,
-                'status_id' => Statuslabel::factory()->create()->id,
-                'company_id' => $anotherCompany->id,
-            ])
-            ->assertOk()
+            ->postJson(
+                route('api.assets.store'),
+                $this->getRequiredFields() + ['company_id' => $anotherCompany->id,]
+            )
             ->assertStatusMessageIs('success')
             ->json();
 
@@ -128,19 +124,61 @@ class AssetStoreTest extends TestCase
 
     public function testCanCheckoutToUserWhenCreatingAsset()
     {
-        $this->markTestIncomplete();
+        $assignedUser = User::factory()->create();
 
+        $results = $this->actingAsForApi(User::factory()->createAssets()->create())
+            ->postJson(
+                route('api.assets.store'),
+                $this->getRequiredFields() + ['assigned_user' => $assignedUser->id]
+            )
+            ->assertStatusMessageIs('success')
+            ->json();
+
+        $asset = Asset::findOrFail($results['payload']['id']);
+
+        $this->assertTrue($asset->assignedTo->is($assignedUser));
     }
 
     public function testCanCheckoutToAssetWhenCreatingAsset()
     {
-        $this->markTestIncomplete();
+        $assignedAsset = Asset::factory()->create();
 
+        $results = $this->actingAsForApi(User::factory()->createAssets()->create())
+            ->postJson(
+                route('api.assets.store'),
+                $this->getRequiredFields() + ['assigned_asset' => $assignedAsset->id]
+            )
+            ->assertStatusMessageIs('success')
+            ->json();
+
+        $asset = Asset::findOrFail($results['payload']['id']);
+
+        $this->assertTrue($asset->assignedTo->is($assignedAsset));
     }
 
     public function testCanCheckoutToLocationWhenCreatingAsset()
     {
-        $this->markTestIncomplete();
+        $assignedLocation = Location::factory()->create();
 
+        $results = $this->actingAsForApi(User::factory()->createAssets()->create())
+            ->postJson(
+                route('api.assets.store'),
+                $this->getRequiredFields() + ['assigned_location' => $assignedLocation->id]
+            )
+            ->assertStatusMessageIs('success')
+            ->json();
+
+        $asset = Asset::findOrFail($results['payload']['id']);
+
+        $this->assertTrue($asset->assignedTo->is($assignedLocation));
+    }
+
+    private function getRequiredFields()
+    {
+        return [
+            'asset_tag' => 'random_string',
+            'model_id' => AssetModel::factory()->create()->id,
+            'status_id' => Statuslabel::factory()->create()->id,
+        ];
     }
 }
