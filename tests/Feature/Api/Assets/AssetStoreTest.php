@@ -9,7 +9,6 @@ use App\Models\Location;
 use App\Models\Statuslabel;
 use App\Models\Supplier;
 use App\Models\User;
-use Illuminate\Support\Str;
 use Tests\Support\InteractsWithSettings;
 use Tests\TestCase;
 
@@ -94,9 +93,31 @@ class AssetStoreTest extends TestCase
         $this->assertEquals(10, $asset->warranty_months);
     }
 
-    public function testSettingCompanyWithCompanyScopingEnabled()
+    public function testNonSuperUserCannotCreateAssetForAnotherCompanyWhenFullCompanySupportEnabled()
     {
-        $this->markTestIncomplete();
+        $this->settings->enableMultipleFullCompanySupport();
+
+        [$assignedCompany, $anotherCompany] = Company::factory()->count(2)->create();
+
+        $user = User::factory()
+            ->for($assignedCompany)
+            ->createAssets()
+            ->create();
+
+        $results = $this->actingAsForApi($user)
+            ->postJson(route('api.assets.store'), [
+                'asset_tag' => 'random_string',
+                'model_id' => AssetModel::factory()->create()->id,
+                'status_id' => Statuslabel::factory()->create()->id,
+                'company_id' => $anotherCompany->id,
+            ])
+            ->assertOk()
+            ->assertStatusMessageIs('success')
+            ->json();
+
+        $asset = Asset::findOrFail($results['payload']['id']);
+
+        $this->assertTrue($asset->company->is($assignedCompany));
     }
 
     public function testCustomFields()
