@@ -125,11 +125,13 @@ class AssetStoreTest extends TestCase
 
     public function testCreatingAssetAndSettingCustomField()
     {
+        $customField = CustomField::factory(['name' => 'My Field'])->create();
+
         $customFieldset = CustomFieldset::factory()
             ->hasAttached(
-                CustomField::factory(['name' => 'My Field']),
-                ['order' => 1, 'required' => false,],
-                'fields',
+                $customField,
+                ['order' => 1, 'required' => false],
+                'fields'
             )
             ->create();
 
@@ -142,7 +144,7 @@ class AssetStoreTest extends TestCase
                     'asset_tag' => 'random_string',
                     'model_id' => $assetModel->id,
                     'status_id' => Statuslabel::factory()->create()->id,
-                    $customFieldset->fields->where('name', 'My Field')->first()->db_column => 'custom value',
+                    $customField->db_column => 'custom value',
                 ]
             )
             ->assertStatusMessageIs('success')
@@ -151,7 +153,7 @@ class AssetStoreTest extends TestCase
         $asset = Asset::find($results['payload']['id']);
         $this->assertEquals(
             'custom value',
-            $asset->{$customFieldset->fields->where('name', 'My Field')->first()->db_column},
+            $asset->{$customField->db_column},
             'Custom field not set when creating asset'
         );
     }
