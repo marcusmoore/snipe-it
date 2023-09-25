@@ -5,6 +5,8 @@ namespace Tests\Feature\Api\Assets;
 use App\Models\Asset;
 use App\Models\AssetModel;
 use App\Models\Company;
+use App\Models\CustomField;
+use App\Models\CustomFieldset;
 use App\Models\Location;
 use App\Models\Statuslabel;
 use App\Models\Supplier;
@@ -116,10 +118,47 @@ class AssetStoreTest extends TestCase
         $this->assertTrue($asset->company->is($assignedCompany));
     }
 
-    public function testCustomFields()
+    public function testCustomFieldDefaultUsedWhenNotProvidedWhenCreatingAsset()
     {
-        $this->markTestIncomplete('❓');
+        $this->markTestIncomplete();
+    }
 
+    public function testCreatingAssetAndSettingCustomField()
+    {
+        $customFieldset = CustomFieldset::factory()
+            ->hasAttached(
+                CustomField::factory(['name' => 'My Field']),
+                ['order' => 1, 'required' => false,],
+                'fields',
+            )
+            ->create();
+
+        $assetModel = AssetModel::factory()->for($customFieldset, 'fieldset')->create();
+
+        $results = $this->actingAsForApi(User::factory()->createAssets()->create())
+            ->postJson(
+                route('api.assets.store'),
+                [
+                    'asset_tag' => 'random_string',
+                    'model_id' => $assetModel->id,
+                    'status_id' => Statuslabel::factory()->create()->id,
+                    $customFieldset->fields->where('name', 'My Field')->first()->db_column => 'custom value',
+                ]
+            )
+            ->assertStatusMessageIs('success')
+            ->json();
+
+        $asset = Asset::find($results['payload']['id']);
+        $this->assertEquals(
+            'custom value',
+            $asset->{$customFieldset->fields->where('name', 'My Field')->first()->db_column},
+            'Custom field not set when creating asset'
+        );
+    }
+
+    public function testCreatingAssetAndSettingCustomEncryptedField()
+    {
+        $this->markTestIncomplete();
     }
 
     public function testCanCheckoutToUserWhenCreatingAsset()
