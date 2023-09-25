@@ -108,7 +108,7 @@ class AssetStoreTest extends TestCase
         $results = $this->actingAsForApi($user)
             ->postJson(
                 route('api.assets.store'),
-                $this->getRequiredFields() + ['company_id' => $anotherCompany->id,]
+                $this->getRequiredFields(['company_id' => $anotherCompany->id])
             )
             ->assertStatusMessageIs('success')
             ->json();
@@ -140,13 +140,10 @@ class AssetStoreTest extends TestCase
         $results = $this->actingAsForApi(User::factory()->createAssets()->create())
             ->postJson(
                 route('api.assets.store'),
-                [
-                    'asset_tag' => 'random_string',
+                $this->getRequiredFields([
                     'model_id' => $assetModel->id,
-                    'status_id' => Statuslabel::factory()->create()->id,
                     $customField->db_column => 'custom value',
-                ]
-            )
+                ]))
             ->assertStatusMessageIs('success')
             ->json();
 
@@ -170,7 +167,7 @@ class AssetStoreTest extends TestCase
         $results = $this->actingAsForApi(User::factory()->createAssets()->create())
             ->postJson(
                 route('api.assets.store'),
-                $this->getRequiredFields() + ['assigned_user' => $assignedUser->id]
+                $this->getRequiredFields(['assigned_user' => $assignedUser->id])
             )
             ->assertStatusMessageIs('success')
             ->json();
@@ -187,7 +184,7 @@ class AssetStoreTest extends TestCase
         $results = $this->actingAsForApi(User::factory()->createAssets()->create())
             ->postJson(
                 route('api.assets.store'),
-                $this->getRequiredFields() + ['assigned_asset' => $assignedAsset->id]
+                $this->getRequiredFields(['assigned_asset' => $assignedAsset->id])
             )
             ->assertStatusMessageIs('success')
             ->json();
@@ -204,7 +201,7 @@ class AssetStoreTest extends TestCase
         $results = $this->actingAsForApi(User::factory()->createAssets()->create())
             ->postJson(
                 route('api.assets.store'),
-                $this->getRequiredFields() + ['assigned_location' => $assignedLocation->id]
+                $this->getRequiredFields(['assigned_location' => $assignedLocation->id])
             )
             ->assertStatusMessageIs('success')
             ->json();
@@ -214,12 +211,12 @@ class AssetStoreTest extends TestCase
         $this->assertTrue($asset->assignedTo->is($assignedLocation));
     }
 
-    private function getRequiredFields()
+    private function getRequiredFields(array $overrides = []): array
     {
-        return [
+        return array_merge([
             'asset_tag' => 'random_string',
             'model_id' => AssetModel::factory()->create()->id,
             'status_id' => Statuslabel::factory()->create()->id,
-        ];
+        ], $overrides);
     }
 }
