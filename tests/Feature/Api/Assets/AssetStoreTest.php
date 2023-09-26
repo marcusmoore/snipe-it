@@ -60,9 +60,10 @@ class AssetStoreTest extends TestCase
                 'status_id' => $status->id,
                 'supplier_id' => $supplier->id,
                 'warranty_months' => 10,
-            ])->assertOk()->json();
-
-        $this->assertEquals('success', $results['status']);
+            ])
+            ->assertOk()
+            ->assertStatusMessageIs('success')
+            ->json();
 
         $asset = Asset::find($results['payload']['id']);
 
