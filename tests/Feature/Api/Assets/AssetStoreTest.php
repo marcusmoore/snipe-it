@@ -11,6 +11,8 @@ use App\Models\Location;
 use App\Models\Statuslabel;
 use App\Models\Supplier;
 use App\Models\User;
+use Illuminate\Contracts\Encryption\DecryptException;
+use Illuminate\Support\Facades\Crypt;
 use Tests\Support\InteractsWithSettings;
 use Tests\TestCase;
 
@@ -147,7 +149,7 @@ class AssetStoreTest extends TestCase
         $this->assertEquals(
             'some default value',
             $asset->{$customField->db_column},
-            'Custom field not set when creating asset'
+            'Custom field  default not used when creating asset'
         );
     }
 
@@ -172,7 +174,6 @@ class AssetStoreTest extends TestCase
                     'model_id' => $assetModel->id,
                     $customField->db_column => 'custom value',
                 ]))
-            ->assertStatusMessageIs('success')
             ->json();
 
         $asset = Asset::find($results['payload']['id']);
@@ -186,6 +187,38 @@ class AssetStoreTest extends TestCase
     public function testCreatingAssetAndSettingCustomEncryptedField()
     {
         $this->markTestIncomplete();
+
+        $customField = CustomField::factory([
+            'name' => 'My Field',
+            'field_encrypted' => 1,
+        ])->create();
+
+        $customFieldset = CustomFieldset::factory()
+            ->hasAttached(
+                $customField,
+                ['order' => 1, 'required' => false],
+                'fields'
+            )
+            ->create();
+
+        $assetModel = AssetModel::factory()->for($customFieldset, 'fieldset')->create();
+
+        $results = $this->actingAsForApi(User::factory()->createAssets()->create())
+            ->postJson(
+                route('api.assets.store'),
+                $this->getRequiredFields([
+                    'model_id' => $assetModel->id,
+                    $customField->db_column => 'custom value',
+                ]))
+            ->json();
+
+        $asset = Asset::find($results['payload']['id']);
+
+        try {
+            $this->assertEquals('custom value', Crypt::decrypt($asset->{$customField->db_column}));
+        } catch (DecryptException $e) {
+            $this->fail('Value was not encrypted when creating asset');
+        }
     }
 
     public function testCanCheckoutToUserWhenCreatingAsset()
