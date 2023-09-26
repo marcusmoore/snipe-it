@@ -120,7 +120,35 @@ class AssetStoreTest extends TestCase
 
     public function testCustomFieldDefaultUsedWhenNotProvidedWhenCreatingAsset()
     {
-        $this->markTestIncomplete();
+        $customField = CustomField::factory(['name' => 'My Field'])->create();
+
+        $customFieldset = CustomFieldset::factory()
+            ->hasAttached(
+                $customField,
+                ['order' => 1, 'required' => false],
+                'fields'
+            )
+            ->create();
+
+        $assetModel = AssetModel::factory()
+            ->for($customFieldset, 'fieldset')
+            ->afterCreating(function ($assetModel) use ($customField) {
+                $assetModel->defaultValues()->attach($customField->id, ['default_value' => 'some default value']);
+            })
+            ->create();
+
+        $results = $this->actingAsForApi(User::factory()->createAssets()->create())
+            ->postJson(
+                route('api.assets.store'),
+                $this->getRequiredFields(['model_id' => $assetModel->id]))
+            ->json();
+
+        $asset = Asset::find($results['payload']['id']);
+        $this->assertEquals(
+            'some default value',
+            $asset->{$customField->db_column},
+            'Custom field not set when creating asset'
+        );
     }
 
     public function testCreatingAssetAndSettingCustomField()
