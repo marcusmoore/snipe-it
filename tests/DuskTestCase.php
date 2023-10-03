@@ -2,15 +2,31 @@
 
 namespace Tests;
 
+use App\Models\User;
+use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Support\Collection;
 use Facebook\WebDriver\Chrome\ChromeOptions;
 use Facebook\WebDriver\Remote\DesiredCapabilities;
 use Facebook\WebDriver\Remote\RemoteWebDriver;
 use Laravel\Dusk\TestCase as BaseTestCase;
+use Tests\Support\InteractsWithSettings;
 
 abstract class DuskTestCase extends BaseTestCase
 {
     use CreatesApplication;
+    use DatabaseMigrations;
+    use InteractsWithSettings;
+
+    public User $admin;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->initializeSettings();
+
+        $this->admin = User::factory()->firstAdmin()->create();
+    }
 
     /**
      * Prepare for Dusk test execution.
