@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Hash;
 use Laravel\Dusk\Browser;
 use Tests\DuskTestCase;
 
-class ExampleTest extends DuskTestCase
+class LoginTest extends DuskTestCase
 {
     public function testCanSeeLoginPage()
     {
