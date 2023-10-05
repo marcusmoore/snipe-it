@@ -64,6 +64,7 @@
   "require-dev": {
     "brianium/paratest": "^v6.4.4",
     "fakerphp/faker": "^1.16",
+    "laravel/dusk": "^7.11",
     "mockery/mockery": "^1.4",
     "nunomaduro/larastan": "^2.0",
     "nunomaduro/phpinsights": "^2.7",
