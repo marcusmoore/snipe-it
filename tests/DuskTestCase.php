@@ -3,7 +3,7 @@
 namespace Tests;
 
 use App\Models\User;
-use Illuminate\Foundation\Testing\DatabaseMigrations;
+use Illuminate\Foundation\Testing\DatabaseTruncation;
 use Illuminate\Support\Collection;
 use Facebook\WebDriver\Chrome\ChromeOptions;
 use Facebook\WebDriver\Remote\DesiredCapabilities;
@@ -14,7 +14,7 @@ use Tests\Support\InteractsWithSettings;
 abstract class DuskTestCase extends BaseTestCase
 {
     use CreatesApplication;
-    use DatabaseMigrations;
+    use DatabaseTruncation;
     use InteractsWithSettings;
 
     public User $admin;
