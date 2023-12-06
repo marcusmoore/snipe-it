@@ -29,7 +29,7 @@
         window.Laravel = {csrfToken: '{{ csrf_token() }}'};
     </script>
 
-    @vite(['resources/assets/less/init.less'])
+    @vite(['resources/assets/less/init.less', 'resources/assets/js/init.js'])
 
     {{-- stylesheets --}}
     {{--<link rel="stylesheet" href="{{ url(mix('css/dist/all.css')) }}">--}}
