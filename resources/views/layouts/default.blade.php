@@ -29,16 +29,19 @@
         window.Laravel = {csrfToken: '{{ csrf_token() }}'};
     </script>
 
+    @vite(['resources/assets/less/init.less'])
+
     {{-- stylesheets --}}
-    <link rel="stylesheet" href="{{ url(mix('css/dist/all.css')) }}">
-    @if (($snipeSettings) && ($snipeSettings->allow_user_skin==1) && Auth::check() && Auth::user()->present()->skin != '')
-        <link rel="stylesheet" href="{{ url(mix('css/dist/skins/skin-'.Auth::user()->present()->skin.'.min.css')) }}">
-    @else
-        <link rel="stylesheet"
-              href="{{ url(mix('css/dist/skins/skin-'.($snipeSettings->skin!='' ? $snipeSettings->skin : 'blue').'.css')) }}">
-    @endif
+    {{--<link rel="stylesheet" href="{{ url(mix('css/dist/all.css')) }}">--}}
+    {{--@if (($snipeSettings) && ($snipeSettings->allow_user_skin==1) && Auth::check() && Auth::user()->present()->skin != '')--}}
+    {{--    <link rel="stylesheet" href="{{ url(mix('css/dist/skins/skin-'.Auth::user()->present()->skin.'.min.css')) }}">--}}
+    {{--@else--}}
+    {{--    <link rel="stylesheet"--}}
+    {{--          href="{{ url(mix('css/dist/skins/skin-'.($snipeSettings->skin!='' ? $snipeSettings->skin : 'blue').'.css')) }}">--}}
+    {{--@endif--}}
+
     {{-- page level css --}}
-    @stack('css')
+    {{--@stack('css')--}}
 
 
 
@@ -70,19 +73,19 @@
     @endif
 
 
-    <script nonce="{{ csrf_token() }}">
-        window.snipeit = {
-            settings: {
-                "per_page": {{ $snipeSettings->per_page }}
-            }
-        };
-    </script>
+    {{--<script nonce="{{ csrf_token() }}">--}}
+    {{--    window.snipeit = {--}}
+    {{--        settings: {--}}
+    {{--            "per_page": {{ $snipeSettings->per_page }}--}}
+    {{--        }--}}
+    {{--    };--}}
+    {{--</script>--}}
 
-    <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
-    <script src="{{ url(asset('js/html5shiv.js')) }}" nonce="{{ csrf_token() }}"></script>
-    <script src="{{ url(asset('js/respond.js')) }}" nonce="{{ csrf_token() }}"></script>
+    {{--<!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->--}}
+    {{--<script src="{{ url(asset('js/html5shiv.js')) }}" nonce="{{ csrf_token() }}"></script>--}}
+    {{--<script src="{{ url(asset('js/respond.js')) }}" nonce="{{ csrf_token() }}"></script>--}}
 
-    @livewireStyles
+    {{--@livewireStyles--}}
 
 </head>
 
@@ -936,7 +939,7 @@
                             <button type="button" class="btn btn-default pull-left"
                                     data-dismiss="modal">{{ trans('general.cancel') }}</button>
                             <button type="submit" class="btn btn-outline"
-                                    id="dataConfirmOK">{{ trans('general.yes') }}</button>
+{{--                                    id="dataConfirmOK">{{ trans('general.yes') }}</button>--}}
                         </form>
                     </div>
                 </div>
@@ -944,99 +947,93 @@
         </div>
 
         {{-- Javascript files --}}
-        <script src="{{ url(mix('js/dist/all.js')) }}" nonce="{{ csrf_token() }}"></script>
-        <script defer src="{{ url(mix('js/dist/all-defer.js')) }}" nonce="{{ csrf_token() }}"></script>
 
-        <!-- v5-beta: This pGenerator call must remain here for v5 - until fixed - so that the JS password generator works for the user create modal. -->
-        <script src="{{ url('js/pGenerator.jquery.js') }}"></script>
 
-        {{-- Page level javascript --}}
-        @stack('js')
 
-        @section('moar_scripts')
+{{--        @section('moar_scripts')--}}
         @show
 
 
-        <script nonce="{{ csrf_token() }}">
+        {{--<script nonce="{{ csrf_token() }}">--}}
 
-            var clipboard = new ClipboardJS('.js-copy-link');
+        {{--    var clipboard = new ClipboardJS('.js-copy-link');--}}
 
-            clipboard.on('success', function(e) {
-                $('.js-copy-link').tooltip('hide').attr('data-original-title', '{{ trans('general.copied') }}').tooltip('show');
-            });
+        {{--    clipboard.on('success', function(e) {--}}
+        {{--        $('.js-copy-link').tooltip('hide').attr('data-original-title', '{{ trans('general.copied') }}').tooltip('show');--}}
+        {{--    });--}}
 
-            // Reference: https://jqueryvalidation.org/validate/
-            $('#create-form').validate({
-                ignore: 'input[type=hidden]',
-                errorClass: 'help-block form-error',
-                errorElement: 'span',
-                errorPlacement: function(error, element) {
-                    $(element).hasClass('select2') || $(element).hasClass('js-data-ajax')
-                        // If the element is a select2 then place the error above the input
-                        ? element.parents('.required').append(error)
-                        // Otherwise place it after
-                        : error.insertAfter(element);
-                },
-                highlight: function(inputElement) {
-                    $(inputElement).parent().addClass('has-error');
-                    $(inputElement).closest('.help-block').remove();
-                },
-                onfocusout: function(element) {
-                    return $(element).valid();
-                },
-            });
-
-
-            $(function () {
-
-                // Invoke Bootstrap 3's tooltip
-                $('[data-tooltip="true"]').tooltip({
-                    container: 'body',
-                    animation: true,
-                });
-                
-                $('[data-toggle="popover"]').popover();
-                $('.select2 span').addClass('needsclick');
-                $('.select2 span').removeAttr('title');
-
-                // This javascript handles saving the state of the menu (expanded or not)
-                $('body').bind('expanded.pushMenu', function () {
-                    $.ajax({
-                        type: 'GET',
-                        url: "{{ route('account.menuprefs', ['state'=>'open']) }}",
-                        _token: "{{ csrf_token() }}"
-                    });
-
-                });
-
-                $('body').bind('collapsed.pushMenu', function () {
-                    $.ajax({
-                        type: 'GET',
-                        url: "{{ route('account.menuprefs', ['state'=>'close']) }}",
-                        _token: "{{ csrf_token() }}"
-                    });
-                });
-
-            });
-
-            // Initiate the ekko lightbox
-            $(document).on('click', '[data-toggle="lightbox"]', function (event) {
-                event.preventDefault();
-                $(this).ekkoLightbox();
-            });
+        {{--    // Reference: https://jqueryvalidation.org/validate/--}}
+        {{--    $('#create-form').validate({--}}
+        {{--        ignore: 'input[type=hidden]',--}}
+        {{--        errorClass: 'help-block form-error',--}}
+        {{--        errorElement: 'span',--}}
+        {{--        errorPlacement: function(error, element) {--}}
+        {{--            $(element).hasClass('select2') || $(element).hasClass('js-data-ajax')--}}
+        {{--                // If the element is a select2 then place the error above the input--}}
+        {{--                ? element.parents('.required').append(error)--}}
+        {{--                // Otherwise place it after--}}
+        {{--                : error.insertAfter(element);--}}
+        {{--        },--}}
+        {{--        highlight: function(inputElement) {--}}
+        {{--            $(inputElement).parent().addClass('has-error');--}}
+        {{--            $(inputElement).closest('.help-block').remove();--}}
+        {{--        },--}}
+        {{--        onfocusout: function(element) {--}}
+        {{--            return $(element).valid();--}}
+        {{--        },--}}
+        {{--    });--}}
 
 
-        </script>
+        {{--    $(function () {--}}
 
-        @if ((Session::get('topsearch')=='true') || (Request::is('/')))
-            <script nonce="{{ csrf_token() }}">
-                $("#tagSearch").focus();
-            </script>
-        @endif
+        {{--        // Invoke Bootstrap 3's tooltip--}}
+        {{--        $('[data-tooltip="true"]').tooltip({--}}
+        {{--            container: 'body',--}}
+        {{--            animation: true,--}}
+        {{--        });--}}
+        {{--        --}}
+        {{--        $('[data-toggle="popover"]').popover();--}}
+        {{--        $('.select2 span').addClass('needsclick');--}}
+        {{--        $('.select2 span').removeAttr('title');--}}
+
+        {{--        // This javascript handles saving the state of the menu (expanded or not)--}}
+        {{--        $('body').bind('expanded.pushMenu', function () {--}}
+        {{--            $.ajax({--}}
+        {{--                type: 'GET',--}}
+        {{--                url: "{{ route('account.menuprefs', ['state'=>'open']) }}",--}}
+        {{--                _token: "{{ csrf_token() }}"--}}
+        {{--            });--}}
+
+        {{--        });--}}
+
+        {{--        $('body').bind('collapsed.pushMenu', function () {--}}
+        {{--            $.ajax({--}}
+        {{--                type: 'GET',--}}
+        {{--                url: "{{ route('account.menuprefs', ['state'=>'close']) }}",--}}
+        {{--                _token: "{{ csrf_token() }}"--}}
+        {{--            });--}}
+        {{--        });--}}
+
+        {{--    });--}}
+
+        {{--    // Initiate the ekko lightbox--}}
+        {{--    $(document).on('click', '[data-toggle="lightbox"]', function (event) {--}}
+        {{--        event.preventDefault();--}}
+        {{--        $(this).ekkoLightbox();--}}
+        {{--    });--}}
+
+
+        {{--</script>--}}
+
+{{--        @if ((Session::get('topsearch')=='true') || (Request::is('/')))--}}
+{{--            <script nonce="{{ csrf_token() }}">--}}
+{{--                $("#tagSearch").focus();--}}
+{{--            </script>--}}
+{{--        @endif--}}
 
         @include('partials.bpay')
 
-        @livewireScripts
+{{--        @livewireScripts--}}
 
         </body>
 </html>
