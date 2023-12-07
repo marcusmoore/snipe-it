@@ -939,7 +939,7 @@
                             <button type="button" class="btn btn-default pull-left"
                                     data-dismiss="modal">{{ trans('general.cancel') }}</button>
                             <button type="submit" class="btn btn-outline"
-{{--                                    id="dataConfirmOK">{{ trans('general.yes') }}</button>--}}
+                                    id="dataConfirmOK">{{ trans('general.yes') }}</button>
                         </form>
                     </div>
                 </div>
