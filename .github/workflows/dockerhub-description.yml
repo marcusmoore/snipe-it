@@ -7,7 +7,6 @@ on:
     paths:
       - README.md
       - .github/workflows/dockerhub-description.yml
-  pull_request:
 jobs:
   dockerHubDescription:
     runs-on: ubuntu-latest
