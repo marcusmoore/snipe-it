@@ -82,8 +82,6 @@
     <script src="{{ url(asset('js/html5shiv.js')) }}" nonce="{{ csrf_token() }}"></script>
     <script src="{{ url(asset('js/respond.js')) }}" nonce="{{ csrf_token() }}"></script>
 
-    @livewireStyles
-
 </head>
 
 @if (($snipeSettings) && ($snipeSettings->allow_user_skin==1) && Auth::check() && Auth::user()->present()->skin != '')
@@ -1034,8 +1032,6 @@
         @endif
 
         @include('partials.bpay')
-
-        @livewireScripts
 
         </body>
 </html>
