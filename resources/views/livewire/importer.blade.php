@@ -148,7 +148,7 @@
                                                                     {{ trans('general.import_type') }}
                                                                 </label>
 
-                                                                <div class="col-md-9 col-xs-12">
+                                                                <div class="col-md-9 col-xs-12" wire:ignore>
                                                                     {{ Form::select('activeFile.import_type', $importTypes, $activeFile->import_type, [
                                                                         'id' => 'import_type',
                                                                         'class' => 'livewire-select2',
@@ -222,7 +222,7 @@
                                                                         <div class="form-group col-md-12" wire:key="header-row-{{ $index }}">
 
                                                                             <label for="field_map.{{ $index }}" class="col-md-3 control-label text-right">{{ $header }}</label>
-                                                                            <div class="col-md-4">
+                                                                            <div class="col-md-4" wire:ignore>
 
                                                                                 {{ Form::select('field_map.'.$index, $columnOptions[$activeFile->import_type], @$field_map[$index],
                                                                                     [
