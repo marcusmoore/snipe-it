@@ -74,7 +74,7 @@ class UsersController extends Controller
             'users.vip',
             'users.autoassign_licenses',
 
-        ])->with('manager', 'groups', 'userloc', 'company', 'department', 'assets', 'licenses', 'accessories', 'consumables', 'createdBy',)
+        ])->with('manager', 'groups', 'userloc', 'company', 'department', 'accessories', 'consumables', 'createdBy',)
             ->withCount('assets as assets_count', 'licenses as licenses_count', 'accessories as accessories_count', 'consumables as consumables_count');
 
 
@@ -225,10 +225,8 @@ class UsersController extends Controller
                         'jobtitle',
                         'username',
                         'employee_num',
-                        'assets',
                         'accessories',
                         'consumables',
-                        'licenses',
                         'groups',
                         'activated',
                         'created_at',
