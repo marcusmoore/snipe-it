@@ -16,17 +16,26 @@
     <!-- Use default checkbox -->
     <div class="form-group">
         <div class="col-md-9 col-md-offset-3">
-            @if ($defaultEulaText!='')
-                <label class="form-control">
-                    {{ Form::checkbox('use_default_eula', '1', null, ['wire:model.live' => 'useDefaultEula', 'aria-label'=>'use_default_eula']) }}
+            <label
+                @class([
+                    'form-control',
+                    'form-control--disabled' => !$defaultEulaText,
+                ])
+            >
+                <input
+                    type="checkbox"
+                    name="use_default_eula"
+                    wire:model.boolean.live="useDefaultEula"
+                    aria-label="use_default_eula"
+                    @disabled(!$defaultEulaText)
+                    @class(['disabled' => !$defaultEulaText])
+                >
+                @if ($defaultEulaText)
                     <span>{!! trans('admin/categories/general.use_default_eula') !!}</span>
-                </label>
-            @else
-                <label class="form-control form-control--disabled">
-                    {{ Form::checkbox('use_default_eula', '0', null, ['wire:model.live' => 'useDefaultEula', 'class'=>'disabled','disabled' => 'disabled', 'aria-label'=>'use_default_eula']) }}
+                @else
                     <span>{!! trans('admin/categories/general.use_default_eula_disabled') !!}</span>
-                </label>
-            @endif
+                @endif
+            </label>
         </div>
     </div>
 
@@ -44,7 +53,13 @@
     <div class="form-group">
         <div class="col-md-9 col-md-offset-3">
             <label class="form-control">
-                {{ Form::checkbox('checkin_email', '1', null, ['wire:model.live' => 'sendCheckInEmail', 'aria-label'=>'checkin_email', 'disabled' => $this->sendCheckInEmailDisabled]) }}
+                <input
+                    type="checkbox"
+                    name="checkin_email"
+                    wire:model.live="sendCheckInEmail"
+                    @disabled($this->sendCheckInEmailDisabled)
+                    aria-label="checkin_email"
+                >
                 {{ trans('admin/categories/general.checkin_email') }}
             </label>
             @if ($this->shouldDisplayEmailMessage)

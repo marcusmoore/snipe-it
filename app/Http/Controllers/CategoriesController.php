@@ -130,9 +130,9 @@ class CategoriesController extends Controller
         // don't POST, so if the category_type is blank we just set it to the default.
         $category->category_type = $request->input('category_type', $category->category_type);
         $category->eula_text = $request->input('eula_text');
-        $category->use_default_eula = $request->input('use_default_eula', '0');
-        $category->require_acceptance = $request->input('require_acceptance', '0');
-        $category->checkin_email = $request->input('checkin_email', '0');
+        $category->use_default_eula = $request->boolean('use_default_eula');
+        $category->require_acceptance = $request->boolean('require_acceptance');
+        $category->checkin_email = $request->boolean('checkin_email');
 
         $category = $request->handleImages($category);
 

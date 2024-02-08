@@ -32,6 +32,9 @@ class Category extends SnipeModel
     protected $hidden = ['user_id', 'deleted_at'];
 
     protected $casts = [
+        'checkin_email' => 'boolean',
+        'require_acceptance' => 'boolean',
+        'use_default_eula' => 'boolean',
         'user_id'      => 'integer',
     ];
 

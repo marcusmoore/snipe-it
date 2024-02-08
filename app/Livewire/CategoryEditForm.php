@@ -24,7 +24,7 @@ class CategoryEditForm extends Component
         $this->originalSendCheckInEmailValue = $this->sendCheckInEmail;
 
         if ($this->eulaText || $this->useDefaultEula) {
-            $this->sendCheckInEmail = 1;
+            $this->sendCheckInEmail = true;
         }
     }
 
@@ -39,7 +39,7 @@ class CategoryEditForm extends Component
             return;
         }
 
-        $this->sendCheckInEmail = $this->eulaText || $this->useDefaultEula ? 1 : $this->originalSendCheckInEmailValue;
+        $this->sendCheckInEmail = $this->eulaText || $this->useDefaultEula ? true : $this->originalSendCheckInEmailValue;
     }
 
     #[Computed]
@@ -65,7 +65,7 @@ class CategoryEditForm extends Component
     }
 
     #[Computed]
-    public function sendCheckInEmailDisabled()
+    public function sendCheckInEmailDisabled(): bool
     {
         return $this->eulaText || $this->useDefaultEula;
     }
