@@ -25,6 +25,8 @@ class SlackSettingsForm extends Component
 
     public $webhook_endpoint_rules;
 
+    public $save_button;
+
 
     protected $rules = [
         'webhook_endpoint'                      => 'required_with:webhook_channel|starts_with:http://,https://,ftp://,irc://,https://hooks.slack.com/services/|url|nullable',
