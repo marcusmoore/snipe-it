@@ -58,8 +58,8 @@ class Importer extends Component
 
     public function generate_field_map()
     {
-        \Log::debug("header row is: ".print_r($this->activeFile->header_row,true));
-        \Log::debug("Field map is: ".print_r($this->field_map,true));
+        Log::debug("header row is: ".print_r($this->activeFile->header_row,true));
+        Log::debug("Field map is: ".print_r($this->field_map,true));
         $tmp = array_combine($this->activeFile->header_row, $this->field_map);
         return json_encode(array_filter($tmp));
     }
@@ -107,8 +107,8 @@ class Importer extends Component
     public function updating($name, $new_import_type)
     {
         if ($name == "activeFile.import_type") {
-            \Log::debug("WE ARE CHANGING THE import_type!!!!! TO: " . $new_import_type);
-            \Log::debug("so, what's \$this->>field_map at?: " . print_r($this->field_map, true));
+            Log::debug("WE ARE CHANGING THE import_type!!!!! TO: " . $new_import_type);
+            Log::debug("so, what's \$this->>field_map at?: " . print_r($this->field_map, true));
             // go through each header, find a matching field to try and map it to.
             foreach ($this->activeFile->header_row as $i => $header) {
                 // do we have something mapped already?
@@ -511,7 +511,7 @@ class Importer extends Component
     {
         // TODO: why don't we just do File::find($id)? This seems dumb.
         foreach($this->files as $file) {
-            \Log::debug("File id is: ".$file->id);
+            Log::debug("File id is: ".$file->id);
             if($id == $file->id) {
                 if(Storage::delete('private_uploads/imports/'.$file->file_path)) {
                     $file->delete();
