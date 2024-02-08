@@ -9,13 +9,10 @@ use App\Models\Import;
 use Storage;
 
 use Log;
-use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 
 
 class Importer extends Component
 {
-    use AuthorizesRequests;
-
     public $files;
 
     public $progress; //upload progress - '-1' means don't show
