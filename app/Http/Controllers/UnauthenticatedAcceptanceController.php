@@ -15,9 +15,8 @@ class UnauthenticatedAcceptanceController extends Controller
             abort(404);
         }
 
-        // @todo:
-        // return view();
-
-        return $acceptance->checkoutable->present()->name();
+        return view('acceptance.show', [
+            'acceptance' => $acceptance,
+        ]);
     }
 }

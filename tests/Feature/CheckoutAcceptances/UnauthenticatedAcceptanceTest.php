@@ -3,7 +3,6 @@
 namespace Tests\Feature\CheckoutAcceptances;
 
 use App\Models\CheckoutAcceptance;
-use App\Models\Setting;
 use App\Models\User;
 use Tests\Support\InteractsWithSettings;
 use Tests\TestCase;
@@ -47,7 +46,13 @@ class UnauthenticatedAcceptanceTest extends TestCase
 
         $this->get(route('unauthenticated-acceptance.show', ['acceptance' => $checkoutAcceptance->uuid]))
             ->assertOk()
+            ->assertViewIs('acceptance.show')
             ->assertSee($checkoutAcceptance->checkoutable->present()->name());
+    }
+
+    public function testLoadingAcceptanceViaUuidWhenAuthenticatedRedirectsToAuthenticatedRoute()
+    {
+        $this->markTestIncomplete('not sure if this makes sense yet');
     }
 
     public function testCanAcceptAcceptance()
