@@ -19,6 +19,7 @@ use App\Http\Controllers\ReportsController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\StatuslabelsController;
 use App\Http\Controllers\SuppliersController;
+use App\Http\Controllers\UnauthenticatedAcceptanceController;
 use App\Http\Controllers\ViewAssetsController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
@@ -517,6 +518,11 @@ Route::group(['middleware' => 'web'], function () {
             'middleware' => ['auth'],
             'uses' => 'DashboardController@getIndex' ]
     );
+
+    Route::get(
+        'accept/{acceptance}',
+        [UnauthenticatedAcceptanceController::class, 'show']
+    )->name('unauthenticated-acceptance.show');
 
     // need to keep GET /logout for SAML SLO
     Route::get(

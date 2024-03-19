@@ -62,6 +62,11 @@ class CheckoutAcceptance extends Model
         return $this->accepted_at == null && $this->declined_at == null;
     }
 
+    public function allowsUnauthenticatedAcceptance():bool
+    {
+        return ! is_null($this->uuid);
+    }
+
     /**
      * Was the checkoutable checked out to this user?
      *

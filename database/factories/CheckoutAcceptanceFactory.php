@@ -31,11 +31,34 @@ class CheckoutAcceptanceFactory extends Factory
         ]);
     }
 
+    public function forAsset()
+    {
+        return $this->state([
+            'checkoutable_type' => Asset::class,
+            'checkoutable_id' => Asset::factory(),
+        ]);
+    }
+
     public function pending()
     {
         return $this->state([
             'accepted_at' => null,
             'declined_at' => null,
+        ]);
+    }
+
+    public function accepted()
+    {
+        return $this->state([
+            'accepted_at' => now(),
+            'declined_at' => null,
+        ]);
+    }
+
+    public function allowsUnauthorizedAcceptance()
+    {
+        return $this->state([
+            'uuid' => $this->faker->uuid,
         ]);
     }
 }
