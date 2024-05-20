@@ -279,7 +279,7 @@
                         <td>
                             @if (($accessory->assetlog->first()) && ($accessory->assetlog->first()->accept_signature!=''))
                                 <img style="width:auto;height:100px;"
-                                     src="{{ asset('/') }}display-sig/{{ $accessory_log[$loop->index]->accept_signature }}">
+                                     src="{{ asset('/') }}display-sig/{{ $accessory_logs[$loop->index]->accept_signature }}">
                             @endif
                         </td>
                     </tr>

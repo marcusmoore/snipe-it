@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Controllers\UserNotFoundException;
 use App\Http\Requests\ImageUploadRequest;
 use App\Http\Requests\SaveUserRequest;
+use App\Models\Accessory;
 use App\Models\Actionlog;
 use App\Models\Asset;
 use App\Models\Company;
@@ -647,10 +648,18 @@ class UsersController extends Controller
             'licenses.assetlog'
         ]);
 
+        // @todo: company-scoping
+        $accessoryActionLogs = Actionlog::where([
+            'action_type' => 'accepted',
+            'target_id'   => $show_user->id,
+            'target_type' => User::class,
+            'item_type'   => Accessory::class,
+        ])->get();
+
         return view('users/print')->with('assets', $assets)
             ->with('licenses', $show_user->licenses)
             ->with('accessories', $show_user->accessories)
-            ->with('accessory_log', $show_user->accessories->pluck('assetlog')->flatten()->unique())
+            ->with('accessory_logs', $accessoryActionLogs)
             ->with('consumables', $show_user->consumables)
             ->with('show_user', $show_user)
             ->with('settings', Setting::getSettings());
