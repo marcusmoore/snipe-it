@@ -634,7 +634,12 @@ class UsersController extends Controller
         $assets = Asset::where('assigned_to', $id)->where('assigned_type', User::class)->with('model', 'model.category')->get();
 
         $show_user->load([
-            'accessories.assetlog',
+            'accessories.assetlog' => function ($query) use ($show_user) {
+                $query->where([
+                    'target_id'   => $show_user->id,
+                    'target_type' => User::class,
+                ]);
+            },
             'accessories.category',
             'accessories.manufacturer',
             'consumables.assetlog',
