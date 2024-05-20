@@ -638,6 +638,7 @@ class UsersController extends Controller
                 $query->where([
                     'target_id'   => $show_user->id,
                     'target_type' => User::class,
+                    'action_type' => 'accepted',
                 ]);
             },
             'accessories.category',
@@ -649,6 +650,7 @@ class UsersController extends Controller
         return view('users/print')->with('assets', $assets)
             ->with('licenses', $show_user->licenses)
             ->with('accessories', $show_user->accessories)
+            ->with('accessory_log', $show_user->accessories->pluck('assetlog')->flatten()->unique())
             ->with('consumables', $show_user->consumables)
             ->with('show_user', $show_user)
             ->with('settings', Setting::getSettings());
