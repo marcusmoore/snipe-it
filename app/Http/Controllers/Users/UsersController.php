@@ -632,13 +632,19 @@ class UsersController extends Controller
         $this->authorize('view', $show_user);
 
         $assets = Asset::where('assigned_to', $id)->where('assigned_type', User::class)->with('model', 'model.category')->get();
-        $accessories = $show_user->accessories()->get();
-        $consumables = $show_user->consumables()->get();
+
+        $show_user->load([
+            'accessories.assetlog',
+            'accessories.category',
+            'accessories.manufacturer',
+            'consumables.assetlog',
+            'licenses.assetlog'
+        ]);
 
         return view('users/print')->with('assets', $assets)
-            ->with('licenses', $show_user->licenses()->get())
-            ->with('accessories', $accessories)
-            ->with('consumables', $consumables)
+            ->with('licenses', $show_user->licenses)
+            ->with('accessories', $show_user->accessories)
+            ->with('consumables', $show_user->consumables)
             ->with('show_user', $show_user)
             ->with('settings', Setting::getSettings());
     }
