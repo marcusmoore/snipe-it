@@ -649,12 +649,18 @@ class UsersController extends Controller
         ]);
 
         // @todo: company-scoping
-        $accessoryActionLogs = Actionlog::where([
-            'action_type' => 'accepted',
-            'target_id'   => $show_user->id,
-            'target_type' => User::class,
-            'item_type'   => Accessory::class,
-        ])->get();
+        $accessoryActionLogs = Actionlog::query()
+            ->where([
+                'action_type' => 'accepted',
+                'target_id'   => $show_user->id,
+                'target_type' => User::class,
+                'item_type'   => Accessory::class,
+            ])
+            ->take($show_user->accessories->count())
+            ->orderByDesc('created_at')
+            ->get()
+            ->reverse()
+            ->values();
 
         return view('users/print')->with('assets', $assets)
             ->with('licenses', $show_user->licenses)
