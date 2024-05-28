@@ -52,6 +52,5 @@ jobs:
         run: |
           php artisan key:generate
           chmod -R 777 storage bootstrap/cache
-          php artisan passport:install
           ls -la storage
           php artisan test --parallel
