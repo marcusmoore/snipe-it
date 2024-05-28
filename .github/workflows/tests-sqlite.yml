@@ -52,8 +52,15 @@ jobs:
         run: |
           php artisan key:generate
           php artisan migrate --force
-          chmod -R 777 storage bootstrap/cache
 
+      - name: Setup Laravel
+        env:
+          DB_CONNECTION: sqlite_testing
+        run: |
+          chmod -R 777 storage bootstrap/cache
+          php artisan passport:install
+          ls -la storage
+      
       - name: Execute tests (Unit and Feature tests) via PHPUnit
         env:
           DB_CONNECTION: sqlite_testing
