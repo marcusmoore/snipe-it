@@ -49,13 +49,10 @@ jobs:
       - name: Setup Laravel
         env:
           DB_CONNECTION: sqlite_testing
-          DB_DATABASE: "database/database.sqlite"
         run: |
-          touch database/database.sqlite
-          ls -la database
           php artisan key:generate
           chmod -R 777 storage bootstrap/cache
-          php artisan migrate
-          php artisan passport:install
+          php artisan migrate --force
+          php artisan passport:install --force
           ls -la storage
           php artisan test --parallel
