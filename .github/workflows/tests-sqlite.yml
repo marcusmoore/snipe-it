@@ -53,6 +53,6 @@ jobs:
           php artisan key:generate
           chmod -R 777 storage bootstrap/cache
           php artisan migrate --force
+          php artisan db:show
           php artisan passport:install --force
-          ls -la storage
           php artisan test --parallel
