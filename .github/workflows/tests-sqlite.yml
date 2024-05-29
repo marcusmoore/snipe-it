@@ -52,7 +52,5 @@ jobs:
         run: |
           php artisan key:generate
           chmod -R 777 storage bootstrap/cache
-          php artisan migrate --force
-          php artisan db:show
-          php artisan passport:install --force
+          php artisan passport:keys
           php artisan test --parallel
