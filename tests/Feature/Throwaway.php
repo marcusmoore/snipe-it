@@ -61,11 +61,11 @@ class Throwaway extends TestCase
         // dd($bag);
 
         // @todo: nope...
-        $this->assertEquals($bag()->actor->address, $bag()->actor->address);
+        // $this->assertEquals($bag()->actor->address, $bag()->actor->address);
         // $this->assertEquals($bag->actor->address, $bag->actor->address);
 
-        // $this->actingAsForApi($bag()->actor)
-        //     ->patchJson(route('api.users.update', $bag()->subject))
-        //     ->assertStatus($bag()->statusCode);
+        $this->actingAsForApi($bag()->actor)
+            ->patchJson(route('api.users.update', $bag()->subject))
+            ->assertStatus($bag()->statusCode);
     }
 }
