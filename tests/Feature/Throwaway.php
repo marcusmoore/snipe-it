@@ -10,7 +10,7 @@ class Throwaway extends TestCase
 {
     protected static function provider()
     {
-        yield 'Admin attempting to update user without a company' => Whelp::hereWeGo(function () {
+        yield 'Admin attempting to update user without a company' => Provider::data(function () {
             [$companyA, $companyB] = Company::factory()->count(2)->create();
 
             return [
