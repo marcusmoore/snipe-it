@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Company;
 use App\Models\User;
+use Tests\Support\Provider;
 use Tests\TestCase;
 
 class Throwaway extends TestCase
