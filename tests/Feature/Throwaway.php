@@ -23,12 +23,12 @@ class Throwaway extends TestCase
     }
 
     /** @dataProvider provider */
-    public function testTheThing($bag)
+    public function testTheThing($data)
     {
         $this->settings->enableMultipleFullCompanySupport();
 
-        $this->actingAsForApi($bag()['actor'])
-            ->patchJson(route('api.users.update', $bag()['subject']))
-            ->assertStatus($bag()['status_code']);
+        $this->actingAsForApi($data()['actor'])
+            ->patchJson(route('api.users.update', $data()['subject']))
+            ->assertStatus($data()['status_code']);
     }
 }
