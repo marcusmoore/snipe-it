@@ -10,47 +10,14 @@ class Throwaway extends TestCase
 {
     protected static function provider()
     {
-        // yield 'Admin updating user in same company' => [
-        //     function () {
-        //         return once(function () {
-        //             $company = Company::factory()->create();
-        //
-        //             $bag = new BagOfHolding;
-        //             $bag->setActor(User::factory()->for($company)->admin()->create());
-        //             $bag->setSubject(User::factory()->for($company)->create());
-        //             $bag->setStatusCode(200);
-        //
-        //             return $bag;
-        //         });
-        //     }
-        // ];
-
-        // yield 'Admin attempting to update user in another company' => [
-        //     function () {
-        //         return once(function () {
-        //             [$companyA, $companyB] = Company::factory()->count(2)->create();
-        //
-        //             $bag = new BagOfHolding;
-        //
-        //             $bag->setActor(User::factory()->for($companyA)->admin()->create());
-        //             $bag->setSubject(User::factory()->for($companyB)->create());
-        //             $bag->setStatusCode(403);
-        //
-        //             return $bag;
-        //         });
-        //     }
-        // ];
-
         yield 'Admin attempting to update user without a company' => Whelp::hereWeGo(function () {
             [$companyA, $companyB] = Company::factory()->count(2)->create();
 
-            $bag = new BagOfHolding;
-
-            $bag->setActor(User::factory()->for($companyA)->admin()->create());
-            $bag->setSubject(User::factory()->for($companyB)->create());
-            $bag->setStatusCode(403);
-
-            return $bag;
+            return [
+                'actor' => User::factory()->for($companyA)->admin()->create(),
+                'subject' => User::factory()->for($companyB)->create(),
+                'status_code' => 403,
+            ];
         });
     }
 
@@ -58,14 +25,9 @@ class Throwaway extends TestCase
     public function testTheThing($bag)
     {
         $this->settings->enableMultipleFullCompanySupport();
-        // dd($bag);
 
-        // @todo: nope...
-        // $this->assertEquals($bag()->actor->address, $bag()->actor->address);
-        // $this->assertEquals($bag->actor->address, $bag->actor->address);
-
-        $this->actingAsForApi($bag()->actor)
-            ->patchJson(route('api.users.update', $bag()->subject))
-            ->assertStatus($bag()->statusCode);
+        $this->actingAsForApi($bag()['actor'])
+            ->patchJson(route('api.users.update', $bag()['subject']))
+            ->assertStatus($bag()['status_code']);
     }
 }
