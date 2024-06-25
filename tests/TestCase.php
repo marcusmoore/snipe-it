@@ -6,6 +6,7 @@ use App\Http\Middleware\SecurityHeaders;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 use RuntimeException;
+use Spatie\Once\Cache;
 use Tests\Support\AssertsAgainstSlackNotifications;
 use Tests\Support\CanSkipTests;
 use Tests\Support\CustomTestMacros;
@@ -34,6 +35,8 @@ abstract class TestCase extends BaseTestCase
 
         $this->registerCustomMacros();
 
+        $this->registerFlushingMemoizedVariables();
+
         $this->withoutMiddleware($this->globallyDisabledMiddleware);
 
         $this->initializeSettings();
@@ -46,5 +49,10 @@ abstract class TestCase extends BaseTestCase
                 '.env.testing file does not exist. Aborting to avoid wiping your local database.'
             );
         }
+    }
+
+    private function registerFlushingMemoizedVariables(): void
+    {
+        $this->beforeApplicationDestroyed(fn() => Cache::getInstance()->flush());
     }
 }

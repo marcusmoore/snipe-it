@@ -4,7 +4,6 @@ namespace Tests\Feature;
 
 use App\Models\Company;
 use App\Models\User;
-use Spatie\Once\Cache;
 use Tests\Support\Provider;
 use Tests\TestCase;
 
@@ -63,8 +62,6 @@ class Throwaway extends TestCase
     /** @dataProvider provider */
     public function testTheThing($data)
     {
-        $this->beforeApplicationDestroyed(fn() => Cache::getInstance()->flush());
-
         $this->settings->enableMultipleFullCompanySupport();
 
         $this->actingAsForApi($data()['actor'])
