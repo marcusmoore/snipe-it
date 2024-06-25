@@ -15,9 +15,9 @@ class Throwaway extends TestCase
             $company = Company::factory()->create();
 
             return [
-                'actor' => User::factory()->for($company)->admin()->create(),
-                'subject' => User::factory()->for($company)->create(),
-                'status_code' => 200,
+                'admin' => User::factory()->for($company)->admin()->create(),
+                'target' => User::factory()->for($company)->create(),
+                'expected_status_code' => 200,
             ];
         });
 
@@ -26,9 +26,9 @@ class Throwaway extends TestCase
 
             return [
                 // @todo:
-                'actor' => User::factory()->for($companyA)->admin()->create(),
-                'subject' => User::factory()->for($companyB)->create(),
-                'status_code' => 403,
+                'admin' => User::factory()->for($companyA)->admin()->create(),
+                'target' => User::factory()->for($companyB)->create(),
+                'expected_status_code' => 403,
             ];
         });
 
@@ -36,25 +36,25 @@ class Throwaway extends TestCase
             $company = Company::factory()->create();
 
             return [
-                'actor' => User::factory()->for($company)->admin()->create(),
-                'subject' => User::factory()->create(['company_id' => null]),
-                'status_code' => 403,
+                'admin' => User::factory()->for($company)->admin()->create(),
+                'target' => User::factory()->create(['company_id' => null]),
+                'expected_status_code' => 403,
             ];
         });
 
         yield 'Admin without a company should be allowed to update user without a company' => Provider::data(function () {
             return [
-                'actor' => User::factory()->admin()->create(['company_id' => null]),
-                'subject' => User::factory()->create(['company_id' => null]),
-                'status_code' => 200,
+                'admin' => User::factory()->admin()->create(['company_id' => null]),
+                'target' => User::factory()->create(['company_id' => null]),
+                'expected_status_code' => 200,
             ];
         });
 
         yield 'Admin without a company should NOT be allowed to update user that has a company' => Provider::data(function () {
             return [
-                'actor' => User::factory()->admin()->create(['company_id' => null]),
-                'subject' => User::factory()->for(Company::factory())->create(),
-                'status_code' => 403,
+                'admin' => User::factory()->admin()->create(['company_id' => null]),
+                'target' => User::factory()->for(Company::factory())->create(),
+                'expected_status_code' => 403,
             ];
         });
     }
@@ -64,8 +64,8 @@ class Throwaway extends TestCase
     {
         $this->settings->enableMultipleFullCompanySupport();
 
-        $this->actingAsForApi($data()['actor'])
-            ->patchJson(route('api.users.update', $data()['subject']))
-            ->assertStatus($data()['status_code']);
+        $this->actingAsForApi($data()['admin'])
+            ->patchJson(route('api.users.update', $data()['target']))
+            ->assertStatus($data()['expected_status_code']);
     }
 }
