@@ -25,35 +25,33 @@ class Throwaway extends TestCase
         //     }
         // ];
 
-        yield 'Admin attempting to update user in another company' => [
-            function () {
-                return once(function () {
-                    [$companyA, $companyB] = Company::factory()->count(2)->create();
+        // yield 'Admin attempting to update user in another company' => [
+        //     function () {
+        //         return once(function () {
+        //             [$companyA, $companyB] = Company::factory()->count(2)->create();
+        //
+        //             $bag = new BagOfHolding;
+        //
+        //             $bag->setActor(User::factory()->for($companyA)->admin()->create());
+        //             $bag->setSubject(User::factory()->for($companyB)->create());
+        //             $bag->setStatusCode(403);
+        //
+        //             return $bag;
+        //         });
+        //     }
+        // ];
 
-                    $bag = new BagOfHolding;
+        yield 'Admin attempting to update user without a company' => Whelp::hereWeGo(function () {
+            [$companyA, $companyB] = Company::factory()->count(2)->create();
 
-                    $bag->setActor(User::factory()->for($companyA)->admin()->create());
-                    $bag->setSubject(User::factory()->for($companyB)->create());
-                    $bag->setStatusCode(403);
+            $bag = new BagOfHolding;
 
-                    return $bag;
-                });
-            }
-        ];
+            $bag->setActor(User::factory()->for($companyA)->admin()->create());
+            $bag->setSubject(User::factory()->for($companyB)->create());
+            $bag->setStatusCode(403);
 
-        yield 'Admin attempting to update user without a company' => [
-            Whelp::hereWeGo(function () {
-                [$companyA, $companyB] = Company::factory()->count(2)->create();
-
-                $bag = new BagOfHolding;
-
-                $bag->setActor(User::factory()->for($companyA)->admin()->create());
-                $bag->setSubject(User::factory()->for($companyB)->create());
-                $bag->setStatusCode(403);
-
-                return $bag;
-            }),
-        ];
+            return $bag;
+        });
     }
 
     /** @dataProvider provider */
@@ -64,7 +62,7 @@ class Throwaway extends TestCase
 
         // @todo: nope...
         $this->assertEquals($bag()->actor->address, $bag()->actor->address);
-        // $this->assertEquals($bag->actor, $bag->actor);
+        // $this->assertEquals($bag->actor->address, $bag->actor->address);
 
         // $this->actingAsForApi($bag()->actor)
         //     ->patchJson(route('api.users.update', $bag()->subject))
