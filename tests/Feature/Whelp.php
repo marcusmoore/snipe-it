@@ -8,8 +8,10 @@ class Whelp
 {
     public static function hereWeGo(Closure $closureThatHasBagOfHolding): array
     {
+        $wrappedClosure = fn() => $closureThatHasBagOfHolding();
+        $memoizedWrappedClosure = fn() => once($wrappedClosure);
         return [
-            fn() => once(fn() => $closureThatHasBagOfHolding())
+            $memoizedWrappedClosure
         ];
     }
 }
