@@ -6,6 +6,7 @@ use Closure;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Testing\TestResponse;
 use PHPUnit\Framework\Assert;
+use ReflectionFunction;
 use RuntimeException;
 
 trait CustomTestMacros
@@ -105,7 +106,26 @@ trait CustomTestMacros
         TestResponse::macro(
             'checkAssertionsFromProvider',
             function (Closure|array $data) {
+
+                // @todo: handle $data, $data(), and $data()['assertions']
+                // $data will be a closure with class: "Tests\Support\Provider"
+                // ✅ $data() will be an array. need to check to make sure 'assertions' is key
+                // $data()['assertions'] will be a closure with class: "Tests\Feature\ScopingForAssetIndexTest"
+                //   use: {
+                //     $assetWithNoCompany: App\Models\Asset {#3755 …}
+                //     $assetForCompanyA: App\Models\Asset {#3759 …}
+                //     $assetForCompanyB: App\Models\Asset {#2702 …}
+                //   }
+
+                // if ($data instanceof Closure) {
+                //     $reflection = new ReflectionFunction($data);
+                // }
+
                 if (is_array($data)) {
+                    if (!array_key_exists('assertions', $data)) {
+                        throw new RuntimeException("The key 'assertions' is missing from the array.");
+                    }
+
                     $data = $data['assertions'];
                 }
 
