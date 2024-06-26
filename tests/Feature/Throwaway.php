@@ -13,11 +13,16 @@ class Throwaway extends TestCase
     {
         yield 'Admin for one company should be allowed to update user from same company' => Provider::data(function () {
             $company = Company::factory()->create();
-
             return [
                 'admin' => User::factory()->for($company)->admin()->create(),
                 'target' => User::factory()->for($company)->create(),
                 'expected_status_code' => 200,
+                'assertions' => function () {
+                    $this->assertDatabaseHas('users', [
+                        'first_name' => 'Calvin',
+                        'last_name' => 'Hobbes',
+                    ]);
+                }
             ];
         });
 
@@ -28,6 +33,12 @@ class Throwaway extends TestCase
                 'admin' => User::factory()->for($companyA)->admin()->create(),
                 'target' => User::factory()->for($companyB)->create(),
                 'expected_status_code' => 403,
+                'assertions' => function () {
+                    $this->assertDatabaseMissing('users', [
+                        'first_name' => 'Calvin',
+                        'last_name' => 'Hobbes',
+                    ]);
+                }
             ];
         });
 
@@ -38,6 +49,12 @@ class Throwaway extends TestCase
                 'admin' => User::factory()->for($company)->admin()->create(),
                 'target' => User::factory()->create(['company_id' => null]),
                 'expected_status_code' => 403,
+                'assertions' => function () {
+                    $this->assertDatabaseMissing('users', [
+                        'first_name' => 'Calvin',
+                        'last_name' => 'Hobbes',
+                    ]);
+                }
             ];
         });
 
@@ -46,6 +63,12 @@ class Throwaway extends TestCase
                 'admin' => User::factory()->admin()->create(['company_id' => null]),
                 'target' => User::factory()->create(['company_id' => null]),
                 'expected_status_code' => 200,
+                'assertions' => function () {
+                    $this->assertDatabaseHas('users', [
+                        'first_name' => 'Calvin',
+                        'last_name' => 'Hobbes',
+                    ]);
+                }
             ];
         });
 
@@ -54,9 +77,11 @@ class Throwaway extends TestCase
                 'admin' => User::factory()->admin()->create(['company_id' => null]),
                 'target' => User::factory()->for(Company::factory())->create(),
                 'expected_status_code' => 403,
-                // @todo:
                 'assertions' => function () {
-                    // $this->assert...
+                    $this->assertDatabaseMissing('users', [
+                        'first_name' => 'Calvin',
+                        'last_name' => 'Hobbes',
+                    ]);
                 }
             ];
         });
@@ -68,10 +93,14 @@ class Throwaway extends TestCase
         $this->settings->enableMultipleFullCompanySupport();
 
         $this->actingAsForApi($data()['admin'])
-            // @todo: attempt to update name or another field...
-            ->patchJson(route('api.users.update', $data()['target']))
+            ->patchJson(route('api.users.update', $data()['target']), [
+                'first_name' => 'Calvin',
+                'last_name' => 'Hobbes',
+            ])
             ->assertStatus($data()['expected_status_code']);
-            // @todo: assert user was OR was not changed. Maybe tap($data()['assertions']())
+
+        // @todo: see if we can avoid passing $this
+        Provider::runAssertions($data()['assertions'], $this);
     }
 
     // @todo: do the same for assets (or something else) and find the pattern...
