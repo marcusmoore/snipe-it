@@ -25,7 +25,6 @@ class Throwaway extends TestCase
             [$companyA, $companyB] = Company::factory()->count(2)->create();
 
             return [
-                // @todo:
                 'admin' => User::factory()->for($companyA)->admin()->create(),
                 'target' => User::factory()->for($companyB)->create(),
                 'expected_status_code' => 403,
@@ -55,6 +54,10 @@ class Throwaway extends TestCase
                 'admin' => User::factory()->admin()->create(['company_id' => null]),
                 'target' => User::factory()->for(Company::factory())->create(),
                 'expected_status_code' => 403,
+                // @todo:
+                'assertions' => function () {
+                    // $this->assert...
+                }
             ];
         });
     }
@@ -65,7 +68,11 @@ class Throwaway extends TestCase
         $this->settings->enableMultipleFullCompanySupport();
 
         $this->actingAsForApi($data()['admin'])
+            // @todo: attempt to update name or another field...
             ->patchJson(route('api.users.update', $data()['target']))
             ->assertStatus($data()['expected_status_code']);
+            // @todo: assert user was OR was not changed. Maybe tap($data()['assertions']())
     }
+
+    // @todo: do the same for assets (or something else) and find the pattern...
 }
