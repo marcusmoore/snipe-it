@@ -25,7 +25,6 @@ class ScopingForAssetIndexTest extends TestCase
                 'assertions' => fn() => $this->assertResponseContainsInRows($assetWithNoCompany, 'asset_tag', 'Asset with no company not included')
                     ->assertResponseContainsInRows($assetForCompanyA, 'asset_tag', 'Asset for Company A not included')
                     ->assertResponseContainsInRows($assetForCompanyB, 'asset_tag', 'Asset for Company B not included')
-
             ];
         });
 
@@ -41,7 +40,6 @@ class ScopingForAssetIndexTest extends TestCase
                 'assertions' => fn() => $this->assertResponseDoesNotContainInRows($assetWithNoCompany, 'asset_tag', 'Asset with no company included')
                     ->assertResponseContainsInRows($assetForCompanyA, 'asset_tag', 'Asset for Company A not included')
                     ->assertResponseDoesNotContainInRows($assetForCompanyB, 'asset_tag', 'Asset for Company B included')
-
             ];
         });
 
@@ -57,7 +55,6 @@ class ScopingForAssetIndexTest extends TestCase
                 'assertions' => fn() => $this->assertResponseContainsInRows($assetWithNoCompany, 'asset_tag', 'Asset with no company not included')
                     ->assertResponseDoesNotContainInRows($assetForCompanyA, 'asset_tag', 'Asset for Company A not included')
                     ->assertResponseDoesNotContainInRows($assetForCompanyB, 'asset_tag', 'Asset for Company B not included')
-
             ];
         });
     }
