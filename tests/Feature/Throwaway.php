@@ -9,7 +9,7 @@ use Tests\TestCase;
 
 class Throwaway extends TestCase
 {
-    protected static function provider()
+    protected static function scenarios()
     {
         yield 'Admin for one company should be allowed to update user from same company' => Provider::data(function () {
             $company = Company::factory()->create();
@@ -87,8 +87,8 @@ class Throwaway extends TestCase
         });
     }
 
-    /** @dataProvider provider */
-    public function testTheThing($data)
+    /** @dataProvider scenarios */
+    public function testUpdatingUserWithFullCompanySupport($data)
     {
         $this->settings->enableMultipleFullCompanySupport();
 
