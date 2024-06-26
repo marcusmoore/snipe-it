@@ -2,10 +2,16 @@
 
 namespace Tests\Support;
 
+use Closure;
+
 trait CustomAssertions
 {
-    public function checkAssertionsFromProvider(array $data)
+    public function checkAssertionsFromProvider(Closure|array $data)
     {
-        $data['assertions']->bindTo($this)();
+        if (is_array($data)) {
+            $data = $data['assertions'];
+        }
+
+        $data->bindTo($this)();
     }
 }

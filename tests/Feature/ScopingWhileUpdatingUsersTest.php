@@ -99,11 +99,7 @@ class ScopingWhileUpdatingUsersTest extends TestCase
             ])
             ->assertStatus($data()['expected_status_code']);
 
-        $this->checkAssertionsFromProvider($data());
-
-        // @todo: see if we can avoid passing $this
-        // @todo: maybe custom marco with $this->checkAssertions() ❓
-        // Provider::runAssertions($data()['assertions'], $this);
+        $this->checkAssertionsFromProvider($data);
     }
 
 
