@@ -2,6 +2,7 @@
 
 namespace Tests\Support;
 
+use Closure;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Testing\TestResponse;
 use PHPUnit\Framework\Assert;
@@ -21,12 +22,12 @@ trait CustomTestMacros
 
         TestResponse::macro(
             'assertResponseContainsInRows',
-            function (Model $model, string $property = 'name') use ($guardAgainstNullProperty) {
+            function (Model $model, string $property = 'name', string $message = null) use ($guardAgainstNullProperty) {
                 $guardAgainstNullProperty($model, $property);
 
                 Assert::assertTrue(
                     collect($this['rows'])->pluck($property)->contains(e($model->{$property})),
-                    "Response did not contain the expected value: {$model->{$property}}"
+                    $message ?? "Response did not contain the expected value: {$model->{$property}}"
                 );
 
                 return $this;
@@ -35,12 +36,12 @@ trait CustomTestMacros
 
         TestResponse::macro(
             'assertResponseDoesNotContainInRows',
-            function (Model $model, string $property = 'name') use ($guardAgainstNullProperty) {
+            function (Model $model, string $property = 'name', string $message = null) use ($guardAgainstNullProperty) {
                 $guardAgainstNullProperty($model, $property);
 
                 Assert::assertFalse(
                     collect($this['rows'])->pluck($property)->contains(e($model->{$property})),
-                    "Response contained unexpected value: {$model->{$property}}"
+                    $message ?? "Response contained unexpected value: {$model->{$property}}"
                 );
 
                 return $this;
@@ -96,6 +97,19 @@ trait CustomTestMacros
                     $this['messages'],
                     "Response messages was not {$message}"
                 );
+
+                return $this;
+            }
+        );
+
+        TestResponse::macro(
+            'checkAssertionsFromProvider',
+            function (Closure|array $data) {
+                if (is_array($data)) {
+                    $data = $data['assertions'];
+                }
+
+                $data->bindTo($this)();
 
                 return $this;
             }

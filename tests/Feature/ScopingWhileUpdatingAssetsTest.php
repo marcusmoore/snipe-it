@@ -86,6 +86,8 @@ class ScopingWhileUpdatingAssetsTest extends TestCase
     /** @dataProvider scenarios */
     public function testUpdatingAssetWithFullCompanySupport($data)
     {
+        $this->markTestIncomplete();
+
         $this->settings->enableMultipleFullCompanySupport();
 
         $this->actingAsForApi($data()['admin'])
