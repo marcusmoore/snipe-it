@@ -7,7 +7,7 @@ use App\Models\User;
 use Tests\Support\Provider;
 use Tests\TestCase;
 
-class Throwaway extends TestCase
+class ScopingWhileUpdatingUsersTest extends TestCase
 {
     protected static function scenarios()
     {
