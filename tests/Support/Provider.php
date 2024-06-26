@@ -15,9 +15,4 @@ class Provider
             $memoizedWrappedClosure
         ];
     }
-
-    public static function runAssertions(Closure $closure, $testInstance): void
-    {
-        $closure->bindTo($testInstance)();
-    }
 }
