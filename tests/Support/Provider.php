@@ -16,9 +16,8 @@ class Provider
         ];
     }
 
-    public function runAssertions(Closure $closure): void
+    public static function runAssertions(Closure $closure, $testInstance): void
     {
-        $callingTestInstance = debug_backtrace()[1]['object'];
-        $closure->bindTo($callingTestInstance)();
+        $closure->bindTo($testInstance)();
     }
 }

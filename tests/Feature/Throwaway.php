@@ -99,8 +99,8 @@ class Throwaway extends TestCase
             ])
             ->assertStatus($data()['expected_status_code']);
 
-        // @todo: avoid having to new up Provider
-        (new Provider)->runAssertions($data()['assertions']);
+        // @todo: see if we can avoid passing $this
+        Provider::runAssertions($data()['assertions'], $this);
     }
 
     // @todo: do the same for assets (or something else) and find the pattern...
