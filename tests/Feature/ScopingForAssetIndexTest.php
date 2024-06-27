@@ -36,27 +36,54 @@ class ScopingForAssetIndexTest extends TestCase
         yield 'Super user should see assets from all companies' => Provider::data(function () {
             return [
                 'actor' => User::factory()->superuser()->create(),
-                'assertions' => fn() => $this->assertResponseContainsInRows(Provider::get('asset_with_no_company'), 'asset_tag', 'Asset with no company not included')
-                    ->assertResponseContainsInRows(Provider::get('asset_for_company_a'), 'asset_tag', 'Asset for Company A not included')
-                    ->assertResponseContainsInRows(Provider::get('asset_for_company_b'), 'asset_tag', 'Asset for Company B not included')
+                'assertions' => function () {
+                    return $this->assertResponseContainsInRows(
+                        Provider::get('asset_with_no_company'),
+                        'asset_tag'
+                    )->assertResponseContainsInRows(
+                        Provider::get('asset_for_company_a'),
+                        'asset_tag'
+                    )->assertResponseContainsInRows(
+                        Provider::get('asset_for_company_b'),
+                        'asset_tag'
+                    );
+                }
             ];
         });
 
         yield 'User in company should not see assets without company or from different company' => Provider::data(function () {
             return [
                 'actor' => User::factory()->for(Provider::get('company_a'))->viewAssets()->create(),
-                'assertions' => fn() => $this->assertResponseDoesNotContainInRows(Provider::get('asset_with_no_company'), 'asset_tag', 'Asset with no company included')
-                    ->assertResponseContainsInRows(Provider::get('asset_for_company_a'), 'asset_tag', 'Asset for Company A not included')
-                    ->assertResponseDoesNotContainInRows(Provider::get('asset_for_company_b'), 'asset_tag', 'Asset for Company B included')
+                'assertions' => function () {
+                    return $this->assertResponseDoesNotContainInRows(
+                        Provider::get('asset_with_no_company'),
+                        'asset_tag'
+                    )->assertResponseContainsInRows(
+                        Provider::get('asset_for_company_a'),
+                        'asset_tag'
+                    )->assertResponseDoesNotContainInRows(
+                        Provider::get('asset_for_company_b'),
+                        'asset_tag'
+                    );
+                }
             ];
         });
 
         yield 'User with no company should not see assets belonging to company' => Provider::data(function () {
             return [
                 'actor' => User::factory()->viewAssets()->create(['company_id' => null]),
-                'assertions' => fn() => $this->assertResponseContainsInRows(Provider::get('asset_with_no_company'), 'asset_tag', 'Asset with no company not included')
-                    ->assertResponseDoesNotContainInRows(Provider::get('asset_for_company_a'), 'asset_tag', 'Asset for Company A not included')
-                    ->assertResponseDoesNotContainInRows(Provider::get('asset_for_company_b'), 'asset_tag', 'Asset for Company B not included')
+                'assertions' => function () {
+                    return $this->assertResponseContainsInRows(
+                        Provider::get('asset_with_no_company'),
+                        'asset_tag'
+                    )->assertResponseDoesNotContainInRows(
+                        Provider::get('asset_for_company_a'),
+                        'asset_tag'
+                    )->assertResponseDoesNotContainInRows(
+                        Provider::get('asset_for_company_b'),
+                        'asset_tag'
+                    );
+                }
             ];
         });
     }
