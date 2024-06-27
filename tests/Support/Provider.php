@@ -20,18 +20,26 @@ class Provider
     public static function setUp(Closure $something)
     {
         // @todo: should this be wrapped in a once?
-        $something();
-    }
 
-    public static function share(array $data)
-    {
-        app()->singleton('bad_idea', function () use ($data) {
-            return $data;
+        $results = $something();
+
+        app()->singleton('bad_idea', function () use ($results) {
+            return $results;
         });
+
+        // this needs to 
+        // $something();
     }
 
-    public static function get(string $string)
-    {
-        return resolve('bad_idea')[$string];
-    }
+    // public static function share(array $data)
+    // {
+    //     app()->singleton('bad_idea', function () use ($data) {
+    //         return $data;
+    //     });
+    // }
+    //
+    // public static function get(string $string)
+    // {
+    //     return resolve('bad_idea')[$string];
+    // }
 }

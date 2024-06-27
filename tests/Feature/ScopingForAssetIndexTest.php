@@ -21,13 +21,13 @@ class ScopingForAssetIndexTest extends TestCase
             $assetForCompanyA = Asset::factory()->for($companyA)->create();
             $assetForCompanyB = Asset::factory()->for($companyB)->create();
 
-            Provider::share([
+            return [
                 'company_a' => $companyA,
                 'company_b' => $companyB,
                 'asset_with_no_company' => $assetWithNoCompany,
                 'asset_for_company_a' => $assetForCompanyA,
                 'asset_for_company_b' => $assetForCompanyB
-            ]);
+            ];
         });
     }
 
@@ -37,32 +37,25 @@ class ScopingForAssetIndexTest extends TestCase
             return [
                 'actor' => User::factory()->superuser()->create(),
                 'assertions' => function () {
-                    return $this->assertResponseContainsInRows(
-                        Provider::get('asset_with_no_company'),
-                        'asset_tag'
-                    )->assertResponseContainsInRows(
-                        Provider::get('asset_for_company_a'),
-                        'asset_tag'
-                    )->assertResponseContainsInRows(
-                        Provider::get('asset_for_company_b'),
-                        'asset_tag'
-                    );
+                    return $this->assertResponseContainsInRows($this->provider('asset_with_no_company'), 'asset_tag')
+                        ->assertResponseContainsInRows($this->provider('asset_for_company_a'), 'asset_tag')
+                        ->assertResponseContainsInRows($this->provider('asset_for_company_b'), 'asset_tag');
                 }
             ];
         });
 
         yield 'User in company should not see assets without company or from different company' => Provider::data(function () {
             return [
-                'actor' => User::factory()->for(Provider::get('company_a'))->viewAssets()->create(),
+                'actor' => User::factory()->for($this->provider('company_a'))->viewAssets()->create(),
                 'assertions' => function () {
                     return $this->assertResponseDoesNotContainInRows(
-                        Provider::get('asset_with_no_company'),
+                        $this->provider('asset_with_no_company'),
                         'asset_tag'
                     )->assertResponseContainsInRows(
-                        Provider::get('asset_for_company_a'),
+                        $this->provider('asset_for_company_a'),
                         'asset_tag'
                     )->assertResponseDoesNotContainInRows(
-                        Provider::get('asset_for_company_b'),
+                        $this->provider('asset_for_company_b'),
                         'asset_tag'
                     );
                 }

@@ -134,5 +134,12 @@ trait CustomTestMacros
                 return $this;
             }
         );
+
+        TestResponse::macro(
+            'provider',
+            function ($key) {
+                return resolve('bad_idea')[$key];
+            }
+        );
     }
 }
