@@ -103,7 +103,7 @@ class StoreAssetRequest extends ImageUploadRequest
     {
         // If assigned_to is provided and assigned_type is either 'asset',
         // 'location', or 'user' we merge in the appropriate assigned_{type}
-        if ($this->input('assigned_to') && in_array($this->input('assigned_type'), ['asset', 'location', 'user'])) {
+        if ($this->has('assigned_to') && in_array($this->input('assigned_type'), ['asset', 'location', 'user'])) {
             $this->merge([
                 'assigned_'.$this->input('assigned_type') => $this->input('assigned_to'),
             ]);
