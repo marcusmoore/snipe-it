@@ -630,11 +630,11 @@ class AssetsController extends Controller
         }
 
         if ($asset->save()) {
-            if ($request->get('assigned_user')) {
+            if ($request->input('assigned_user')) {
                 $target = User::find(request('assigned_user'));
-            } elseif ($request->get('assigned_asset')) {
+            } elseif ($request->input('assigned_asset')) {
                 $target = Asset::find(request('assigned_asset'));
-            } elseif ($request->get('assigned_location')) {
+            } elseif ($request->input('assigned_location')) {
                 $target = Location::find(request('assigned_location'));
             }
             if (isset($target)) {

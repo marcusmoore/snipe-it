@@ -32,6 +32,8 @@ class StoreAssetRequest extends ImageUploadRequest
 
         $this->parseLastAuditDate();
 
+        $this->parseAssignedTo();
+
         $this->merge([
             'asset_tag' => $this->asset_tag ?? Asset::autoincrement_asset(),
             'company_id' => $idForCurrentUser,
@@ -95,5 +97,16 @@ class StoreAssetRequest extends ImageUploadRequest
         });
 
         return $rules;
+    }
+
+    private function parseAssignedTo()
+    {
+        // If assigned_to is provided and assigned_type is either 'asset',
+        // 'location', or 'user' we merge in the appropriate assigned_{type}
+        if ($this->input('assigned_to') && in_array($this->input('assigned_type'), ['asset', 'location', 'user'])) {
+            $this->merge([
+                'assigned_'.$this->input('assigned_type') => $this->input('assigned_to'),
+            ]);
+        }
     }
 }

@@ -92,8 +92,6 @@ class CheckoutDuringAssetCreationTest extends TestCase
 
     public function testCanCheckoutAssetToUserViaAssignedToAndAssignedTypeFields()
     {
-        $this->markTestIncomplete();
-
         $model = AssetModel::factory()->create();
         $status = Statuslabel::factory()->create();
         $user = User::factory()->createAssets()->create();
@@ -121,8 +119,6 @@ class CheckoutDuringAssetCreationTest extends TestCase
 
     public function testCanCheckoutAssetToLocationViaAssignedToAndAssignedTypeFields()
     {
-        $this->markTestIncomplete();
-
         $model = AssetModel::factory()->create();
         $status = Statuslabel::factory()->create();
         $location = Location::factory()->create();
@@ -150,8 +146,6 @@ class CheckoutDuringAssetCreationTest extends TestCase
 
     public function testCanCheckoutAssetToAssetViaAssignedToAndAssignedTypeFields()
     {
-        $this->markTestIncomplete();
-
         $model = AssetModel::factory()->create();
         $status = Statuslabel::factory()->create();
         $asset = Asset::factory()->create();
