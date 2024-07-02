@@ -62,6 +62,9 @@ class StoreAssetRequest extends ImageUploadRequest
 
         return array_merge(
             $modelRules,
+            [
+                // can only have either assigned_to and assigned_type or one of assigned_user, assigned_asset, or assigned_location...
+            ],
             parent::rules(),
         );
     }

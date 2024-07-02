@@ -157,8 +157,27 @@ class CheckoutDuringAssetCreationTest extends TestCase
         $this->assertTrue($asset->assignedAssets()->find($response['payload']['id'])->is($apiAsset));
     }
 
-    // @todo: assigned_x not allowed if assigned_to and assigned_type included and vice versa
+    public function testCannotProvideAssignedAssignedToAndAssignedTypeAtTheSameTime()
+    {
+        // $this->markTestIncomplete();
 
+        $userAssigned = User::factory()->create();
+
+        $response = $this->actingAsForApi($this->actor)
+            ->postJson(route('api.assets.store'), [
+                // assigned_user, assigned_asset, assigned_location...
+                'assigned_user' => $userAssigned->id,
+                'assigned_to' => $userAssigned->id,
+                'assigned_type' => 'user',
+                'model_id' => $this->model->id,
+                'status_id' => $this->status->id,
+            ])
+            ->assertOk()
+            ->assertStatusMessageIs('error')
+            ->json();
+
+        dd($response);
+    }
 
     // @todo: ensure user/location/asset exists
 }
