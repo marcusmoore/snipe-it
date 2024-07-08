@@ -11,7 +11,6 @@ use Tests\TestCase;
 
 class CheckoutDuringAssetCreationTest extends TestCase
 {
-
     private AssetModel $model;
     private Statuslabel $status;
     private User $actor;
@@ -159,7 +158,7 @@ class CheckoutDuringAssetCreationTest extends TestCase
 
     public function testCannotProvideAssignedAssignedToAndAssignedTypeAtTheSameTime()
     {
-        // $this->markTestIncomplete();
+        $this->markTestIncomplete('Gets into manipulating model rules...');
 
         $userAssigned = User::factory()->create();
 
