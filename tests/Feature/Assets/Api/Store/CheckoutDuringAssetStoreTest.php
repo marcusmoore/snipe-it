@@ -177,8 +177,18 @@ class CheckoutDuringAssetStoreTest extends TestCase
                 $json->where('messages.assigned_asset.0', fn($message) => str_contains($message, 'assigned_location'))
                     ->where('messages.assigned_location.0', fn($message) => str_contains($message, 'assigned_asset'))
                     ->where('messages.assigned_user.0', fn($message) => str_contains($message, 'assigned_asset'))
+                    // @todo: waiting on manipulating model level validation rule for assigned_to field
+                    // ->where('messages.assigned_to.0', fn($message) => str_contains($message, 'assigned_asset'))
+                    ->where('messages.assigned_type.0', fn($message) => str_contains($message, 'assigned_asset'))
                     ->etc();
             });
+    }
+
+    public function testAssignedToAndAssignedTypeValidation()
+    {
+        $this->markTestIncomplete();
+
+        // @todo: test assigned_to and assigned_type need to be provided together.
     }
 
     private function types()

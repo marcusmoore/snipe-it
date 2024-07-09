@@ -79,6 +79,11 @@ class StoreAssetRequest extends ImageUploadRequest
                     'exists:users,id',
                     'prohibits:assigned_asset,assigned_location,assigned_to'
                 ],
+                'assigned_type' => [
+                    'nullable',
+                    'in:asset,location,user',
+                    'prohibits:assigned_asset,assigned_location,assigned_user'
+                ],
             ],
             parent::rules(),
         );
@@ -88,9 +93,10 @@ class StoreAssetRequest extends ImageUploadRequest
     {
         return [
             // @todo: translate
-            'assigned_asset.prohibits' => 'assigned_asset cannot be used with assigned_user, assigned_location, or assigned_to',
-            'assigned_location.prohibits' => 'assigned_location cannot be used with assigned_user, assigned_asset, or assigned_to',
-            'assigned_user.prohibits' => 'assigned_user cannot be used with assigned_asset, assigned_location, or assigned_to',
+            'assigned_asset.prohibits' => 'assigned_asset cannot be used with assigned_user, assigned_location, or assigned_to and assigned_type',
+            'assigned_location.prohibits' => 'assigned_location cannot be used with assigned_user, assigned_asset, or assigned_to and assigned_type',
+            'assigned_user.prohibits' => 'assigned_user cannot be used with assigned_asset, assigned_location, or assigned_to and assigned_type',
+            'assigned_type.prohibits' => 'assigned_type cannot be used with assigned_asset, assigned_location, or assigned_user',
         ];
     }
 
