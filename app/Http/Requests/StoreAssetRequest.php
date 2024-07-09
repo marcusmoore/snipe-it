@@ -84,6 +84,16 @@ class StoreAssetRequest extends ImageUploadRequest
         );
     }
 
+    public function messages()
+    {
+        return [
+            // @todo: translate
+            'assigned_asset.prohibits' => 'assigned_asset cannot be used with assigned_user, assigned_location, or assigned_to',
+            'assigned_location.prohibits' => 'assigned_location cannot be used with assigned_user, assigned_asset, or assigned_to',
+            'assigned_user.prohibits' => 'assigned_user cannot be used with assigned_asset, assigned_location, or assigned_to',
+        ];
+    }
+
     private function parseLastAuditDate(): void
     {
         if ($this->input('last_audit_date')) {

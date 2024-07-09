@@ -7,6 +7,7 @@ use App\Models\AssetModel;
 use App\Models\Location;
 use App\Models\Statuslabel;
 use App\Models\User;
+use Illuminate\Support\Str;
 use Illuminate\Testing\Fluent\AssertableJson;
 use Tests\TestCase;
 
@@ -159,19 +160,12 @@ class CheckoutDuringAssetStoreTest extends TestCase
 
     public function testCannotProvideAssignedAssignedToAndAssignedTypeAtTheSameTime()
     {
-        $this->markTestIncomplete('Need to fix validation message for prohibits and add assertion');
-
-        $assetAssigned = Asset::factory()->create();
-        $userAssigned = User::factory()->create();
-        $locationAssigned = Location::factory()->create();
-
-        $response = $this->actingAsForApi($this->actor)
+        $this->actingAsForApi($this->actor)
             ->postJson(route('api.assets.store'), [
-                // @todo assigned_user, assigned_asset, assigned_location...
-                'assigned_asset' => $assetAssigned->id,
-                'assigned_location' => $locationAssigned->id,
-                'assigned_user' => $userAssigned->id,
-                'assigned_to' => $userAssigned->id,
+                'assigned_asset' => Asset::factory()->create()->id,
+                'assigned_location' => Location::factory()->create()->id,
+                'assigned_user' => User::factory()->create()->id,
+                'assigned_to' => User::factory()->create()->id,
                 'assigned_type' => 'user',
                 'model_id' => $this->model->id,
                 'status_id' => $this->status->id,
@@ -179,24 +173,11 @@ class CheckoutDuringAssetStoreTest extends TestCase
             ->assertOk()
             ->assertStatusMessageIs('error')
             ->assertJson(function (AssertableJson $json) {
-                // [
-                //   "status" => "error"
-                //   "messages" => array:3 [
-                //     "assigned_asset" => array:1 [
-                //       0 => "validation.prohibits"
-                //     ]
-                //     "assigned_location" => array:1 [
-                //       0 => "validation.prohibits"
-                //     ]
-                //     "assigned_user" => array:1 [
-                //       0 => "validation.prohibits"
-                //     ]
-                //   ]
-                //   "payload" => null
-                // ]
-                // @todo: assert validation message
-
-                $json->etc();
+                // validation messages should contain a reference to the other fields via the prohibits rule:
+                $json->where('messages.assigned_asset.0', fn($message) => str_contains($message, 'assigned_user'))
+                    ->where('messages.assigned_location.0', fn($message) => str_contains($message, 'assigned_user'))
+                    ->where('messages.assigned_user.0', fn($message) => str_contains($message, 'assigned_asset'))
+                    ->etc();
             });
     }
 
