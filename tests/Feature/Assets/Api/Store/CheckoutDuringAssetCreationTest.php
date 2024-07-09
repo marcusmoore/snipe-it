@@ -7,6 +7,7 @@ use App\Models\AssetModel;
 use App\Models\Location;
 use App\Models\Statuslabel;
 use App\Models\User;
+use Illuminate\Testing\Fluent\AssertableJson;
 use Tests\TestCase;
 
 class CheckoutDuringAssetCreationTest extends TestCase
@@ -175,8 +176,29 @@ class CheckoutDuringAssetCreationTest extends TestCase
             ->assertStatusMessageIs('error')
             ->json();
 
-        dd($response);
+        // @todo: assert validation message
     }
 
-    // @todo: ensure user/location/asset exists
+    private function types()
+    {
+        yield 'Non-existent asset' => ['asset'];
+        yield 'Non-existent location' => ['location'];
+        yield 'Non-existent user' => ['user'];
+    }
+
+    /** @dataProvider types */
+    public function testCheckingOutUponStoreRequiresExistingModel($type)
+    {
+        $this->actingAsForApi($this->actor)
+            ->postJson(route('api.assets.store'), [
+                'assigned_' . $type => 999999,
+                'model_id' => $this->model->id,
+                'status_id' => $this->status->id,
+            ])
+            ->assertOk()
+            ->assertStatusMessageIs('error')
+            ->assertJson(function (AssertableJson $json) use ($type) {
+                $json->has('messages.assigned_' . $type)->etc();
+            });
+    }
 }
