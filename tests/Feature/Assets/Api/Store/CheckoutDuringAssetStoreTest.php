@@ -174,8 +174,8 @@ class CheckoutDuringAssetStoreTest extends TestCase
             ->assertStatusMessageIs('error')
             ->assertJson(function (AssertableJson $json) {
                 // validation messages should contain a reference to the other fields via the prohibits rule:
-                $json->where('messages.assigned_asset.0', fn($message) => str_contains($message, 'assigned_user'))
-                    ->where('messages.assigned_location.0', fn($message) => str_contains($message, 'assigned_user'))
+                $json->where('messages.assigned_asset.0', fn($message) => str_contains($message, 'assigned_location'))
+                    ->where('messages.assigned_location.0', fn($message) => str_contains($message, 'assigned_asset'))
                     ->where('messages.assigned_user.0', fn($message) => str_contains($message, 'assigned_asset'))
                     ->etc();
             });
