@@ -10,7 +10,7 @@ use App\Models\User;
 use Illuminate\Testing\Fluent\AssertableJson;
 use Tests\TestCase;
 
-class CheckoutDuringAssetCreationTest extends TestCase
+class CheckoutDuringAssetStoreTest extends TestCase
 {
     private AssetModel $model;
     private Statuslabel $status;
