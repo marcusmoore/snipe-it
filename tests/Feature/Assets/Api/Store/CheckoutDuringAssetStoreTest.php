@@ -7,7 +7,6 @@ use App\Models\AssetModel;
 use App\Models\Location;
 use App\Models\Statuslabel;
 use App\Models\User;
-use Illuminate\Support\Str;
 use Illuminate\Testing\Fluent\AssertableJson;
 use Tests\TestCase;
 
