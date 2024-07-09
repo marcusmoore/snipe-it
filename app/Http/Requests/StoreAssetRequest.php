@@ -63,10 +63,22 @@ class StoreAssetRequest extends ImageUploadRequest
         return array_merge(
             $modelRules,
             [
-                'assigned_asset' => 'nullable|exists:assets,id',
-                'assigned_location' => 'nullable|exists:locations,id',
-                'assigned_user' => 'nullable|exists:users,id',
                 // can only have either assigned_to and assigned_type or one of assigned_user, assigned_asset, or assigned_location...
+                'assigned_asset' => [
+                    'nullable',
+                    'exists:assets,id',
+                    'prohibits:assigned_user,assigned_location,assigned_to'
+                ],
+                'assigned_location' => [
+                    'nullable',
+                    'exists:locations,id',
+                    'prohibits:assigned_user,assigned_asset,assigned_to'
+                ],
+                'assigned_user' => [
+                    'nullable',
+                    'exists:users,id',
+                    'prohibits:assigned_asset,assigned_location,assigned_to'
+                ],
             ],
             parent::rules(),
         );
@@ -112,7 +124,7 @@ class StoreAssetRequest extends ImageUploadRequest
         if ($this->has('assigned_to') && in_array($this->input('assigned_type'), ['asset', 'location', 'user'])) {
             $this->merge([
                 // end result: assigned_{user|asset|location} => $this->input('assigned_to')
-                'assigned_'.$this->input('assigned_type') => $this->input('assigned_to'),
+                'assigned_' . $this->input('assigned_type') => $this->input('assigned_to'),
             ]);
         }
     }

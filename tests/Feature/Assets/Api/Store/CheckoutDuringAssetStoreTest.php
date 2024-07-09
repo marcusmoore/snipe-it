@@ -159,13 +159,17 @@ class CheckoutDuringAssetStoreTest extends TestCase
 
     public function testCannotProvideAssignedAssignedToAndAssignedTypeAtTheSameTime()
     {
-        $this->markTestIncomplete('Gets into manipulating model rules...');
+        $this->markTestIncomplete('Need to fix validation message for prohibits and add assertion');
 
+        $assetAssigned = Asset::factory()->create();
         $userAssigned = User::factory()->create();
+        $locationAssigned = Location::factory()->create();
 
         $response = $this->actingAsForApi($this->actor)
             ->postJson(route('api.assets.store'), [
-                // assigned_user, assigned_asset, assigned_location...
+                // @todo assigned_user, assigned_asset, assigned_location...
+                'assigned_asset' => $assetAssigned->id,
+                'assigned_location' => $locationAssigned->id,
                 'assigned_user' => $userAssigned->id,
                 'assigned_to' => $userAssigned->id,
                 'assigned_type' => 'user',
@@ -174,9 +178,26 @@ class CheckoutDuringAssetStoreTest extends TestCase
             ])
             ->assertOk()
             ->assertStatusMessageIs('error')
-            ->json();
+            ->assertJson(function (AssertableJson $json) {
+                // [
+                //   "status" => "error"
+                //   "messages" => array:3 [
+                //     "assigned_asset" => array:1 [
+                //       0 => "validation.prohibits"
+                //     ]
+                //     "assigned_location" => array:1 [
+                //       0 => "validation.prohibits"
+                //     ]
+                //     "assigned_user" => array:1 [
+                //       0 => "validation.prohibits"
+                //     ]
+                //   ]
+                //   "payload" => null
+                // ]
+                // @todo: assert validation message
 
-        // @todo: assert validation message
+                $json->etc();
+            });
     }
 
     private function types()
