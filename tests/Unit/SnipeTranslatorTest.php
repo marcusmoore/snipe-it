@@ -1,92 +1,42 @@
 <?php
 
-namespace Tests\Unit;
+test('basic', function () {
+    expect(trans('general.admin_tooltip',[],'en-US'))->toEqual('This user has admin privileges');
+});
 
-use Tests\TestCase;
+test('portuguese', function () {
+    expect(trans('general.accessory',[],'pt-PT'))->toEqual('Acessório');
+});
 
-class SnipeTranslatorTest extends TestCase
-{
-    // the 'meatiest' of these tests will explicitly choose non-English as the language, because otherwise
-    // the fallback-logic (which is to fall-back to 'en-US') will be conflated in with the translation logic
+test('fallback', function () {
+    expect(trans('general.admin_tooltip',[],'xx-ZZ'))->toEqual('This user has admin privileges', "Nonexistent locale should fall-back to en-US");
+});
 
-    // WARNING: If these translation strings are updated, these tests will start to fail. Update them as appropriate.
+test('backup string', function () {
+    expect(trans('backup::notifications.no_backups_info',[],'nb-NO'))->toEqual('Ingen sikkerhetskopier ble gjort ennå', "Norwegian 'no backups info' message should be here");
+});
 
-    public function testBasic()
-    {
-        $this->assertEquals('This user has admin privileges',trans('general.admin_tooltip',[],'en-US'));
-    }
+test('backup fallback', function () {
+    expect(trans('backup::notifications.no_backups_info',[],'xx-ZZ'))->toEqual('No backups were made yet', "'no backups info' string should fallback to 'en'");
+});
 
-    public function testPortuguese()
-    {
-        $this->assertEquals('Acessório',trans('general.accessory',[],'pt-PT'));
-    }
+test('trans choice singular', function () {
+    expect(trans_choice('general.countable.consumables',1,[],'pt-PT'))->toEqual('1 Consumível');
+});
 
-    public function testFallback()
-    {
-        $this->assertEquals(
-            'This user has admin privileges',
-            trans('general.admin_tooltip',[],'xx-ZZ'),
-            "Nonexistent locale should fall-back to en-US"
-        );
-    }
+test('trans choice plural', function () {
+    expect(trans_choice('general.countable.consumables',2,[],'pt-PT'))->toEqual('2 Consumíveis');
+});
 
-    public function testBackupString()
-    {
-        $this->assertEquals(
-            'Ingen sikkerhetskopier ble gjort ennå',
-            trans('backup::notifications.no_backups_info',[],'nb-NO'),
-            "Norwegian 'no backups info' message should be here"
-        );
-    }
+test('totally bogus key', function () {
+    expect(trans('bogus_key',[],'pt-PT'))->toEqual('bogus_key', "Translating a completely bogus key should at least just return back that key");
+});
 
-    public function testBackupFallback()
-    {
-        $this->assertEquals(
-            'No backups were made yet',
-            trans('backup::notifications.no_backups_info',[],'xx-ZZ'),
-            "'no backups info' string should fallback to 'en'"
-        );
+test('replacements', function () {
+    expect(trans('admin/users/general.assets_user',['name' => 'Some Name Here'],'pt-PT'))->toEqual('Artigos alocados a Some Name Here', "Text should get replaced in translations when given");
+});
 
-    }
-
-    public function testTransChoiceSingular()
-    {
-        $this->assertEquals(
-            '1 Consumível',
-            trans_choice('general.countable.consumables',1,[],'pt-PT')
-        );
-    }
-
-    public function testTransChoicePlural()
-    {
-        $this->assertEquals(
-            '2 Consumíveis',
-            trans_choice('general.countable.consumables',2,[],'pt-PT')
-        );
-    }
-
-    public function testTotallyBogusKey()
-    {
-        $this->assertEquals(
-            'bogus_key',
-            trans('bogus_key',[],'pt-PT'),
-            "Translating a completely bogus key should at least just return back that key"
-        );
-    }
-
-    public function testReplacements() {
-        $this->assertEquals(
-            'Artigos alocados a Some Name Here',
-            trans('admin/users/general.assets_user',['name' => 'Some Name Here'],'pt-PT'),
-            "Text should get replaced in translations when given"
-        );
-    }
-
-    public function testNonlegacyBackupLocale() {
-        //Spatie backup *usually* uses two-character locales, but pt-BR is an exception
-        $this->assertEquals(
-            'Mensagem de exceção: MESSAGE',
-            trans('backup::notifications.exception_message',['message' => 'MESSAGE'],'pt-BR')
-        );
-    }
-}
+test('nonlegacy backup locale', function () {
+    //Spatie backup *usually* uses two-character locales, but pt-BR is an exception
+    expect(trans('backup::notifications.exception_message',['message' => 'MESSAGE'],'pt-BR'))->toEqual('Mensagem de exceção: MESSAGE');
+});

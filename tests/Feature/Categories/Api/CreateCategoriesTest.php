@@ -1,83 +1,68 @@
 <?php
 
-namespace Tests\Feature\Categories\Api;
-
 use App\Models\Asset;
 use App\Models\AssetModel;
 use App\Models\Category;
 use App\Models\User;
 use Illuminate\Testing\Fluent\AssertableJson;
-use Tests\TestCase;
 
-class CreateCategoriesTest extends TestCase
-{
+test('requires permission to create category', function () {
+    $this->actingAsForApi(User::factory()->create())
+        ->postJson(route('api.categories.store'))
+        ->assertForbidden();
+});
 
+test('can create category with valid category type', function () {
+    $response = $this->actingAsForApi(User::factory()->superuser()->create())
+        ->postJson(route('api.categories.store'), [
+            'name' => 'Test Category',
+            'eula_text' => 'Test EULA',
+            'category_type' => 'accessory',
+        ])
+        ->assertOk()
+        ->assertStatusMessageIs('success')
+        ->assertStatus(200)
+        ->json();
 
-    public function testRequiresPermissionToCreateCategory()
-    {
-        $this->actingAsForApi(User::factory()->create())
-            ->postJson(route('api.categories.store'))
-            ->assertForbidden();
-    }
+    expect(Category::where('name', 'Test Category')->exists())->toBeTrue();
 
-    public function testCanCreateCategoryWithValidCategoryType()
-    {
-        $response = $this->actingAsForApi(User::factory()->superuser()->create())
-            ->postJson(route('api.categories.store'), [
-                'name' => 'Test Category',
-                'eula_text' => 'Test EULA',
-                'category_type' => 'accessory',
-            ])
-            ->assertOk()
-            ->assertStatusMessageIs('success')
-            ->assertStatus(200)
-            ->json();
+    $category = Category::find($response['payload']['id']);
+    expect($category->name)->toEqual('Test Category');
+    expect($category->eula_text)->toEqual('Test EULA');
+    expect($category->category_type)->toEqual('accessory');
+});
 
-        $this->assertTrue(Category::where('name', 'Test Category')->exists());
+test('cannot create category without category type', function () {
+    $response = $this->actingAsForApi(User::factory()->superuser()->create())
+        ->postJson(route('api.categories.store'), [
+            'name' => 'Test Category',
+        ])
+        ->assertOk()
+        ->assertStatus(200)
+        ->assertStatusMessageIs('error')
+        ->assertJson([
+            'messages' => [
+                'category_type'    => ['The category type field is required.'],
+            ],
+        ]);
+    expect(Category::where('name', 'Test Category')->exists())->toBeFalse();
+});
 
-        $category = Category::find($response['payload']['id']);
-        $this->assertEquals('Test Category', $category->name);
-        $this->assertEquals('Test EULA', $category->eula_text);
-        $this->assertEquals('accessory', $category->category_type);
-    }
+test('cannot create category with invalid category type', function () {
+    $this->actingAsForApi(User::factory()->superuser()->create())
+        ->postJson(route('api.categories.store'), [
+            'name' => 'Test Category',
+            'eula_text' => 'Test EULA',
+            'category_type' => 'invalid',
+        ])
+        ->assertOk()
+        ->assertStatus(200)
+        ->assertStatusMessageIs('error')
+        ->assertJson([
+            'messages' => [
+                'category_type'    => ['The selected category type is invalid.'],
+            ],
+        ]);
 
-    public function testCannotCreateCategoryWithoutCategoryType()
-    {
-        $response = $this->actingAsForApi(User::factory()->superuser()->create())
-            ->postJson(route('api.categories.store'), [
-                'name' => 'Test Category',
-            ])
-            ->assertOk()
-            ->assertStatus(200)
-            ->assertStatusMessageIs('error')
-            ->assertJson([
-                'messages' => [
-                    'category_type'    => ['The category type field is required.'],
-                ],
-            ]);
-        $this->assertFalse(Category::where('name', 'Test Category')->exists());
-
-    }
-
-    public function testCannotCreateCategoryWithInvalidCategoryType()
-    {
-        $this->actingAsForApi(User::factory()->superuser()->create())
-            ->postJson(route('api.categories.store'), [
-                'name' => 'Test Category',
-                'eula_text' => 'Test EULA',
-                'category_type' => 'invalid',
-            ])
-            ->assertOk()
-            ->assertStatus(200)
-            ->assertStatusMessageIs('error')
-            ->assertJson([
-                'messages' => [
-                    'category_type'    => ['The selected category type is invalid.'],
-                ],
-            ]);
-        
-        $this->assertFalse(Category::where('name', 'Test Category')->exists());
-
-    }
-
-}
+    expect(Category::where('name', 'Test Category')->exists())->toBeFalse();
+});

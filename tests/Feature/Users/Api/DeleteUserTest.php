@@ -1,155 +1,132 @@
 <?php
 
-namespace Tests\Feature\Users\Api;
-
 use App\Models\Company;
 use App\Models\LicenseSeat;
 use App\Models\Location;
 use App\Models\User;
-use Tests\TestCase;
 
-class DeleteUserTest extends TestCase
-{
+test('error returned via api if user does not exist', function () {
+    $this->actingAsForApi(User::factory()->deleteUsers()->create())
+        ->deleteJson(route('api.users.destroy', 'invalid-id'))
+        ->assertOk()
+        ->assertStatus(200)
+        ->assertStatusMessageIs('error')
+        ->json();
+});
 
+test('error returned via api if user is already deleted', function () {
+    $user = User::factory()->deletedUser()->create();
+    $this->actingAsForApi(User::factory()->deleteUsers()->create())
+        ->deleteJson(route('api.users.destroy', $user->id))
+        ->assertOk()
+        ->assertStatus(200)
+        ->assertStatusMessageIs('error')
+        ->json();
+});
 
-    public function testErrorReturnedViaApiIfUserDoesNotExist()
-    {
-        $this->actingAsForApi(User::factory()->deleteUsers()->create())
-            ->deleteJson(route('api.users.destroy', 'invalid-id'))
-            ->assertOk()
-            ->assertStatus(200)
-            ->assertStatusMessageIs('error')
-            ->json();
-    }
+test('disallow user deletion via api if still managing people', function () {
+    $manager = User::factory()->create();
+    User::factory()->count(5)->create(['manager_id' => $manager->id]);
+    expect($manager->isDeletable())->toBeFalse();
 
-    public function testErrorReturnedViaApiIfUserIsAlreadyDeleted()
-    {
-        $user = User::factory()->deletedUser()->create();
-        $this->actingAsForApi(User::factory()->deleteUsers()->create())
-            ->deleteJson(route('api.users.destroy', $user->id))
-            ->assertOk()
-            ->assertStatus(200)
-            ->assertStatusMessageIs('error')
-            ->json();
-    }
+    $this->actingAsForApi(User::factory()->deleteUsers()->create())
+        ->deleteJson(route('api.users.destroy', $manager->id))
+        ->assertOk()
+        ->assertStatus(200)
+        ->assertStatusMessageIs('error')
+        ->json();
+});
 
+test('disallow user deletion via api if still managing locations', function () {
+    $manager = User::factory()->create();
+    Location::factory()->count(5)->create(['manager_id' => $manager->id]);
 
-    public function testDisallowUserDeletionViaApiIfStillManagingPeople()
-    {
-        $manager = User::factory()->create();
-        User::factory()->count(5)->create(['manager_id' => $manager->id]);
-        $this->assertFalse($manager->isDeletable());
+    expect($manager->isDeletable())->toBeFalse();
 
-        $this->actingAsForApi(User::factory()->deleteUsers()->create())
-            ->deleteJson(route('api.users.destroy', $manager->id))
-            ->assertOk()
-            ->assertStatus(200)
-            ->assertStatusMessageIs('error')
-            ->json();
-    }
+    $this->actingAsForApi(User::factory()->deleteUsers()->create())
+        ->deleteJson(route('api.users.destroy', $manager->id))
+        ->assertOk()
+        ->assertStatus(200)
+        ->assertStatusMessageIs('error')
+        ->json();
+});
 
-    public function testDisallowUserDeletionViaApiIfStillManagingLocations()
-    {
-        $manager = User::factory()->create();
-        Location::factory()->count(5)->create(['manager_id' => $manager->id]);
+test('disallow user deletion via api if still has licenses', function () {
+    $manager = User::factory()->create();
+    LicenseSeat::factory()->count(5)->create(['assigned_to' => $manager->id]);
 
-        $this->assertFalse($manager->isDeletable());
+    expect($manager->isDeletable())->toBeFalse();
 
-        $this->actingAsForApi(User::factory()->deleteUsers()->create())
-            ->deleteJson(route('api.users.destroy', $manager->id))
-            ->assertOk()
-            ->assertStatus(200)
-            ->assertStatusMessageIs('error')
-            ->json();
-    }
+    $this->actingAsForApi(User::factory()->deleteUsers()->create())
+        ->deleteJson(route('api.users.destroy', $manager->id))
+        ->assertOk()
+        ->assertStatus(200)
+        ->assertStatusMessageIs('error')
+        ->json();
+});
 
-    public function testDisallowUserDeletionViaApiIfStillHasLicenses()
-    {
-        $manager = User::factory()->create();
-        LicenseSeat::factory()->count(5)->create(['assigned_to' => $manager->id]);
+test('denied permissions for deleting user via api', function () {
+    $this->actingAsForApi(User::factory()->create())
+        ->deleteJson(route('api.users.destroy', User::factory()->create()))
+        ->assertStatus(403)
+        ->json();
+});
 
-        $this->assertFalse($manager->isDeletable());
+test('success permissions for deleting user via api', function () {
+    $this->actingAsForApi(User::factory()->deleteUsers()->create())
+        ->deleteJson(route('api.users.destroy', User::factory()->create()))
+        ->assertOk()
+        ->assertStatus(200)
+        ->assertStatusMessageIs('success')
+        ->json();
+});
 
-        $this->actingAsForApi(User::factory()->deleteUsers()->create())
-            ->deleteJson(route('api.users.destroy', $manager->id))
-            ->assertOk()
-            ->assertStatus(200)
-            ->assertStatusMessageIs('error')
-            ->json();
-    }
+test('permissions for deleting if not in same company and not superadmin', function () {
+    $this->settings->enableMultipleFullCompanySupport();
 
-    public function testDeniedPermissionsForDeletingUserViaApi()
-    {
-        $this->actingAsForApi(User::factory()->create())
-            ->deleteJson(route('api.users.destroy', User::factory()->create()))
-            ->assertStatus(403)
-            ->json();
-    }
+    [$companyA, $companyB] = Company::factory()->count(2)->create();
 
-    public function testSuccessPermissionsForDeletingUserViaApi()
-    {
-        $this->actingAsForApi(User::factory()->deleteUsers()->create())
-            ->deleteJson(route('api.users.destroy', User::factory()->create()))
-            ->assertOk()
-            ->assertStatus(200)
-            ->assertStatusMessageIs('success')
-            ->json();
-    }
+    $superuser = User::factory()->superuser()->create();
+    $userFromA = User::factory()->deleteUsers()->for($companyA)->create();
+    $userFromB = User::factory()->deleteUsers()->for($companyB)->create();
 
-    
-    public function testPermissionsForDeletingIfNotInSameCompanyAndNotSuperadmin()
-    {
-        $this->settings->enableMultipleFullCompanySupport();
+    $this->actingAsForApi($userFromA)
+        ->deleteJson(route('api.users.destroy', ['user' => $userFromB->id]))
+        ->assertOk()
+        ->assertStatus(200)
+        ->assertStatusMessageIs('error')
+        ->json();
 
-        [$companyA, $companyB] = Company::factory()->count(2)->create();
+    $userFromB->refresh();
+    expect($userFromB->deleted_at)->toBeNull();
 
-        $superuser = User::factory()->superuser()->create();
-        $userFromA = User::factory()->deleteUsers()->for($companyA)->create();
-        $userFromB = User::factory()->deleteUsers()->for($companyB)->create();
+    $this->actingAsForApi($userFromB)
+        ->deleteJson(route('api.users.destroy', ['user' => $userFromA->id]))
+        ->assertOk()
+        ->assertStatus(200)
+        ->assertStatusMessageIs('error')
+        ->json();
 
-        $this->actingAsForApi($userFromA)
-            ->deleteJson(route('api.users.destroy', ['user' => $userFromB->id]))
-            ->assertOk()
-            ->assertStatus(200)
-            ->assertStatusMessageIs('error')
-            ->json();
+    $userFromA->refresh();
+    expect($userFromA->deleted_at)->toBeNull();
 
-        $userFromB->refresh();
-        $this->assertNull($userFromB->deleted_at);
+    $this->actingAsForApi($superuser)
+        ->deleteJson(route('api.users.destroy', ['user' => $userFromA->id]))
+        ->assertOk()
+        ->assertStatus(200)
+        ->assertStatusMessageIs('success')
+        ->json();
 
-        $this->actingAsForApi($userFromB)
-            ->deleteJson(route('api.users.destroy', ['user' => $userFromA->id]))
-            ->assertOk()
-            ->assertStatus(200)
-            ->assertStatusMessageIs('error')
-            ->json();
+    $userFromA->refresh();
+    expect($userFromA->deleted_at)->not->toBeNull();
+});
 
-        $userFromA->refresh();
-        $this->assertNull($userFromA->deleted_at);
-
-        $this->actingAsForApi($superuser)
-            ->deleteJson(route('api.users.destroy', ['user' => $userFromA->id]))
-            ->assertOk()
-            ->assertStatus(200)
-            ->assertStatusMessageIs('success')
-            ->json();
-
-        $userFromA->refresh();
-        $this->assertNotNull($userFromA->deleted_at);
-
-    }
-
-    public function testUsersCannotDeleteThemselves()
-    {
-        $user = User::factory()->deleteUsers()->create();
-        $this->actingAsForApi($user)
-            ->deleteJson(route('api.users.destroy', $user))
-            ->assertOk()
-            ->assertStatus(200)
-            ->assertStatusMessageIs('error')
-            ->json();
-
-    }
-
-
-}
+test('users cannot delete themselves', function () {
+    $user = User::factory()->deleteUsers()->create();
+    $this->actingAsForApi($user)
+        ->deleteJson(route('api.users.destroy', $user))
+        ->assertOk()
+        ->assertStatus(200)
+        ->assertStatusMessageIs('error')
+        ->json();
+});

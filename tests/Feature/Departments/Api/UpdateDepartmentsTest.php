@@ -1,41 +1,28 @@
 <?php
 
-namespace Tests\Feature\Departments\Api;
-
 use App\Models\Department;
 use App\Models\Category;
 use App\Models\User;
-use Tests\TestCase;
 
-class UpdateDepartmentsTest extends TestCase
-{
+test('requires permission to edit department', function () {
+    $department = Department::factory()->create();
+    $this->actingAsForApi(User::factory()->create())
+        ->patchJson(route('api.departments.update', $department))
+        ->assertForbidden();
+});
 
-    public function testRequiresPermissionToEditDepartment()
-    {
-        $department = Department::factory()->create();
-        $this->actingAsForApi(User::factory()->create())
-            ->patchJson(route('api.departments.update', $department))
-            ->assertForbidden();
-    }
+test('can update department via patch', function () {
+    $department = Department::factory()->create();
 
-    public function testCanUpdateDepartmentViaPatch()
-    {
-        $department = Department::factory()->create();
+    $this->actingAsForApi(User::factory()->superuser()->create())
+        ->patchJson(route('api.departments.update', $department), [
+            'name' => 'Test Department',
+        ])
+        ->assertOk()
+        ->assertStatusMessageIs('success')
+        ->assertStatus(200)
+        ->json();
 
-        $this->actingAsForApi(User::factory()->superuser()->create())
-            ->patchJson(route('api.departments.update', $department), [
-                'name' => 'Test Department',
-            ])
-            ->assertOk()
-            ->assertStatusMessageIs('success')
-            ->assertStatus(200)
-            ->json();
-
-        $department->refresh();
-        $this->assertEquals('Test Department', $department->name, 'Name was not updated');
-
-    }
-
-
-
-}
+    $department->refresh();
+    expect($department->name)->toEqual('Test Department', 'Name was not updated');
+});

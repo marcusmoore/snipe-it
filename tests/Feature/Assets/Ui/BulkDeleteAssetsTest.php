@@ -1,166 +1,148 @@
 <?php
 
-namespace Tests\Feature\Assets\Ui;
-
 use App\Models\Accessory;
 use App\Models\Actionlog;
 use App\Models\Asset;
 use App\Models\User;
-use Tests\TestCase;
 
-class BulkDeleteAssetsTest extends TestCase
-{
-    public function testUserWithPermissionsCanAccessPage()
-    {
-        $user = User::factory()->viewAssets()->deleteAssets()->editAssets()->create();
-        $assets = Asset::factory()->count(2)->create();
+test('user with permissions can access page', function () {
+    $user = User::factory()->viewAssets()->deleteAssets()->editAssets()->create();
+    $assets = Asset::factory()->count(2)->create();
 
-        $id_array = $assets->pluck('id')->toArray();
+    $id_array = $assets->pluck('id')->toArray();
 
-        $this->actingAs($user)->post('/hardware/bulkedit', [
-            'ids'          => $id_array,
-            'order'        => 'asc',
+    $this->actingAs($user)->post('/hardware/bulkedit', [
+        'ids'          => $id_array,
+        'order'        => 'asc',
+        'bulk_actions' => 'delete',
+        'sort'         => 'id'
+    ])->assertStatus(200);
+});
+
+test('standard user cannot access page', function () {
+    $user = User::factory()->create();
+    $assets = Asset::factory()->count(2)->create();
+
+    $id_array = $assets->pluck('id')->toArray();
+
+    $this->actingAs($user)->post('/hardware/bulkdelete', [
+        'ids'          => $id_array,
+        'bulk_actions' => 'delete',
+    ])->assertStatus(403);
+});
+
+test('page redirect from interstitial if no assets selected to delete', function () {
+    $user = User::factory()->viewAssets()->deleteAssets()->editAssets()->create();
+    $response = $this->actingAs($user)
+        ->post('/hardware/bulkdelete', [
+            'ids'          => null,
             'bulk_actions' => 'delete',
-            'sort'         => 'id'
-        ])->assertStatus(200);
-    }
+    ])
+    ->assertStatus(302)
+    ->assertRedirect(route('hardware.index'));
 
-    public function testStandardUserCannotAccessPage()
-    {
-        $user = User::factory()->create();
-        $assets = Asset::factory()->count(2)->create();
+    $this->followRedirects($response)->assertSee('alert-danger');
+});
 
-        $id_array = $assets->pluck('id')->toArray();
-
-        $this->actingAs($user)->post('/hardware/bulkdelete', [
-            'ids'          => $id_array,
+test('page redirect from interstitial if no assets selected to restore', function () {
+    $user = User::factory()->viewAssets()->deleteAssets()->editAssets()->create();
+    $response = $this->actingAs($user)
+        ->from(route('hardware.index'))
+        ->post('/hardware/bulkrestore', [
+            'ids'          => null,
             'bulk_actions' => 'delete',
-        ])->assertStatus(403);
-    }
-
-    public function testPageRedirectFromInterstitialIfNoAssetsSelectedToDelete()
-    {
-        $user = User::factory()->viewAssets()->deleteAssets()->editAssets()->create();
-        $response = $this->actingAs($user)
-            ->post('/hardware/bulkdelete', [
-                'ids'          => null,
-                'bulk_actions' => 'delete',
         ])
         ->assertStatus(302)
         ->assertRedirect(route('hardware.index'));
 
-       $this->followRedirects($response)->assertSee('alert-danger');
-    }
+    $this->followRedirects($response)->assertSee('alert-danger');
+});
 
-    public function testPageRedirectFromInterstitialIfNoAssetsSelectedToRestore()
-    {
-        $user = User::factory()->viewAssets()->deleteAssets()->editAssets()->create();
-        $response = $this->actingAs($user)
-            ->from(route('hardware.index'))
-            ->post('/hardware/bulkrestore', [
-                'ids'          => null,
-                'bulk_actions' => 'delete',
-            ])
-            ->assertStatus(302)
-            ->assertRedirect(route('hardware.index'));
+test('bulk delete selected assets from interstitial', function () {
+    $user = User::factory()->viewAssets()->deleteAssets()->editAssets()->create();
+    $assets = Asset::factory()->count(2)->create();
 
-        $this->followRedirects($response)->assertSee('alert-danger');
-    }
+    $id_array = $assets->pluck('id')->toArray();
 
+    $response = $this->actingAs($user)
+        ->from(route('hardware/bulkedit'))
+        ->post('/hardware/bulkdelete', [
+        'ids'          => $id_array,
+        'bulk_actions' => 'delete',
+    ])->assertStatus(302);
 
-    public function testBulkDeleteSelectedAssetsFromInterstitial()
-    {
-        $user = User::factory()->viewAssets()->deleteAssets()->editAssets()->create();
-        $assets = Asset::factory()->count(2)->create();
+    Asset::findMany($id_array)->each(function (Asset $asset)  {
+        expect($asset->deleted_at)->not->toBeNull();
+    });
 
-        $id_array = $assets->pluck('id')->toArray();
+    $this->followRedirects($response)->assertSee('alert-success');
+});
 
-        $response = $this->actingAs($user)
-            ->from(route('hardware/bulkedit'))
-            ->post('/hardware/bulkdelete', [
-            'ids'          => $id_array,
-            'bulk_actions' => 'delete',
+test('bulk restore selected assets from interstitial', function () {
+    $user = User::factory()->viewAssets()->deleteAssets()->editAssets()->create();
+    $asset = Asset::factory()->deleted()->create();
+
+    $asset->refresh();
+    $id_array = $asset->pluck('id')->toArray();
+
+    // Check that the assets are deleted
+    Asset::findMany($id_array)->each(function (Asset $asset)  {
+        expect($asset->deleted_at)->toBeNull();
+    });
+
+    $response = $this->actingAs($user)
+        ->from(route('hardware/bulkedit'))
+        ->post(route('hardware/bulkrestore'), [
+            'ids'          => [$asset->id],
         ])->assertStatus(302);
 
-        Asset::findMany($id_array)->each(function (Asset $asset)  {
-            $this->assertNotNull($asset->deleted_at);
-        });
+    $this->followRedirects($response)->assertSee('alert-success');
 
-        $this->followRedirects($response)->assertSee('alert-success');
-    }
+    Asset::findMany($id_array)->each(function (Asset $asset)  {
+        expect($asset->deleted_at)->toBeNull();
+    });
+});
 
-    public function testBulkRestoreSelectedAssetsFromInterstitial()
-    {
-        $user = User::factory()->viewAssets()->deleteAssets()->editAssets()->create();
-        $asset = Asset::factory()->deleted()->create();
+test('action log created upon bulk delete', function () {
+    $user = User::factory()->viewAssets()->deleteAssets()->editAssets()->create();
+    $asset = Asset::factory()->create();
 
-        $asset->refresh();
-        $id_array = $asset->pluck('id')->toArray();
+    $this->actingAs($user)
+        ->from(route('hardware/bulkedit'))
+        ->post('/hardware/bulkdelete', [
+            'ids'          => [$asset->id],
+            'bulk_actions' => 'delete',
+        ]);
 
-        // Check that the assets are deleted
-        Asset::findMany($id_array)->each(function (Asset $asset)  {
-            $this->assertNull($asset->deleted_at);
-        });
+    $this->assertDatabaseHas('action_logs',
+        [
+            'action_type' => 'delete',
+            'target_id' => null,
+            'target_type' => null,
+            'item_id' => $asset->id,
+            'item_type' => Asset::class,
+        ]
+    );
+});
 
-        $response = $this->actingAs($user)
-            ->from(route('hardware/bulkedit'))
-            ->post(route('hardware/bulkrestore'), [
-                'ids'          => [$asset->id],
-            ])->assertStatus(302);
+test('action log created upon bulk restore', function () {
+    $user = User::factory()->viewAssets()->deleteAssets()->editAssets()->create();
+    $asset = Asset::factory()->deleted()->create();
 
-        $this->followRedirects($response)->assertSee('alert-success');
+    $this->actingAs($user)
+        ->from(route('hardware/bulkedit'))
+        ->post(route('hardware/bulkrestore'), [
+            'ids'          => [$asset->id],
+            'bulk_actions' => 'restore',
+        ]);
 
-        Asset::findMany($id_array)->each(function (Asset $asset)  {
-            $this->assertNull($asset->deleted_at);
-        });
-    }
-
-
-    public function testActionLogCreatedUponBulkDelete()
-    {
-        $user = User::factory()->viewAssets()->deleteAssets()->editAssets()->create();
-        $asset = Asset::factory()->create();
-
-        $this->actingAs($user)
-            ->from(route('hardware/bulkedit'))
-            ->post('/hardware/bulkdelete', [
-                'ids'          => [$asset->id],
-                'bulk_actions' => 'delete',
-            ]);
-
-        $this->assertDatabaseHas('action_logs',
-            [
-                'action_type' => 'delete',
-                'target_id' => null,
-                'target_type' => null,
-                'item_id' => $asset->id,
-                'item_type' => Asset::class,
-            ]
-        );
-    }
-
-    public function testActionLogCreatedUponBulkRestore()
-    {
-        $user = User::factory()->viewAssets()->deleteAssets()->editAssets()->create();
-        $asset = Asset::factory()->deleted()->create();
-
-        $this->actingAs($user)
-            ->from(route('hardware/bulkedit'))
-            ->post(route('hardware/bulkrestore'), [
-                'ids'          => [$asset->id],
-                'bulk_actions' => 'restore',
-            ]);
-
-        $this->assertDatabaseHas('action_logs',
-            [
-                'action_type' => 'restore',
-                'target_id' => null,
-                'target_type' => null,
-                'item_id' => $asset->id,
-                'item_type' => Asset::class,
-            ]
-        );
-    }
-
-
-}
+    $this->assertDatabaseHas('action_logs',
+        [
+            'action_type' => 'restore',
+            'target_id' => null,
+            'target_type' => null,
+            'item_id' => $asset->id,
+            'item_type' => Asset::class,
+        ]
+    );
+});

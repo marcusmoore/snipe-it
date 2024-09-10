@@ -1,88 +1,78 @@
 <?php
 
-namespace Tests\Feature\Checkins\Ui;
-
 use App\Events\CheckoutableCheckedIn;
 use App\Models\Accessory;
 use App\Models\User;
 use App\Notifications\CheckinAccessoryNotification;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Notification;
-use Tests\TestCase;
 
-class AccessoryCheckinTest extends TestCase
-{
-    public function testCheckingInAccessoryRequiresCorrectPermission()
-    {
-        $accessory = Accessory::factory()->checkedOutToUser()->create();
+test('checking in accessory requires correct permission', function () {
+    $accessory = Accessory::factory()->checkedOutToUser()->create();
 
-        $this->actingAs(User::factory()->create())
-            ->post(route('accessories.checkin.store', $accessory->checkouts->first()->id))
-            ->assertForbidden();
-    }
+    $this->actingAs(User::factory()->create())
+        ->post(route('accessories.checkin.store', $accessory->checkouts->first()->id))
+        ->assertForbidden();
+});
 
-    public function testAccessoryCanBeCheckedIn()
-    {
-        Event::fake([CheckoutableCheckedIn::class]);
+test('accessory can be checked in', function () {
+    Event::fake([CheckoutableCheckedIn::class]);
 
-        $user = User::factory()->create();
-        $accessory = Accessory::factory()->checkedOutToUser($user)->create();
+    $user = User::factory()->create();
+    $accessory = Accessory::factory()->checkedOutToUser($user)->create();
 
-        $this->assertTrue($accessory->checkouts()->where('assigned_type', User::class)->where('assigned_to', $user->id)->count() > 0);
+    expect($accessory->checkouts()->where('assigned_type', User::class)->where('assigned_to', $user->id)->count() > 0)->toBeTrue();
 
-        $this->actingAs(User::factory()->checkinAccessories()->create())
-            ->post(route('accessories.checkin.store', $accessory->checkouts->first()->id));
+    $this->actingAs(User::factory()->checkinAccessories()->create())
+        ->post(route('accessories.checkin.store', $accessory->checkouts->first()->id));
 
-        $this->assertFalse($accessory->fresh()->checkouts()->where('assigned_type', User::class)->where('assigned_to', $user->id)->count() > 0);
+    expect($accessory->fresh()->checkouts()->where('assigned_type', User::class)->where('assigned_to', $user->id)->count() > 0)->toBeFalse();
 
-        Event::assertDispatched(CheckoutableCheckedIn::class, 1);
-    }
+    Event::assertDispatched(CheckoutableCheckedIn::class, 1);
+});
 
-    public function testEmailSentToUserIfSettingEnabled()
-    {
-        Notification::fake();
+test('email sent to user if setting enabled', function () {
+    Notification::fake();
 
-        $user = User::factory()->create();
-        $accessory = Accessory::factory()->checkedOutToUser($user)->create();
+    $user = User::factory()->create();
+    $accessory = Accessory::factory()->checkedOutToUser($user)->create();
 
-        $accessory->category->update(['checkin_email' => true]);
+    $accessory->category->update(['checkin_email' => true]);
 
-        event(new CheckoutableCheckedIn(
-            $accessory,
-            $user,
-            User::factory()->checkinAccessories()->create(),
-            '',
-        ));
+    event(new CheckoutableCheckedIn(
+        $accessory,
+        $user,
+        User::factory()->checkinAccessories()->create(),
+        '',
+    ));
 
-        Notification::assertSentTo(
-            [$user],
-            function (CheckinAccessoryNotification $notification, $channels) {
-                return in_array('mail', $channels);
-            },
-        );
-    }
+    Notification::assertSentTo(
+        [$user],
+        function (CheckinAccessoryNotification $notification, $channels) {
+            return in_array('mail', $channels);
+        },
+    );
+});
 
-    public function testEmailNotSentToUserIfSettingDisabled()
-    {
-        Notification::fake();
+test('email not sent to user if setting disabled', function () {
+    Notification::fake();
 
-        $user = User::factory()->create();
-        $accessory = Accessory::factory()->checkedOutToUser($user)->create();
+    $user = User::factory()->create();
+    $accessory = Accessory::factory()->checkedOutToUser($user)->create();
 
-        $accessory->category->update(['checkin_email' => false]);
+    $accessory->category->update(['checkin_email' => false]);
 
-        event(new CheckoutableCheckedIn(
-            $accessory,
-            $user,
-            User::factory()->checkinAccessories()->create(),
-            '',
-        ));
+    event(new CheckoutableCheckedIn(
+        $accessory,
+        $user,
+        User::factory()->checkinAccessories()->create(),
+        '',
+    ));
 
-        Notification::assertNotSentTo(
-            [$user],
-            function (CheckinAccessoryNotification $notification, $channels) {
-                return in_array('mail', $channels);
-            },
-        );
-    }
-}
+    Notification::assertNotSentTo(
+        [$user],
+        function (CheckinAccessoryNotification $notification, $channels) {
+            return in_array('mail', $channels);
+        },
+    );
+});

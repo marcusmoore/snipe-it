@@ -1,51 +1,41 @@
 <?php
 
-namespace Tests\Feature\Categories\Ui;
-
 use App\Models\AssetModel;
 use App\Models\Category;
 use App\Models\User;
-use Tests\TestCase;
 
-class CreateCategoriesTest extends TestCase
-{
-    public function testPermissionRequiredToCreateCategories()
-    {
-        $this->actingAs(User::factory()->create())
-            ->post(route('categories.store'), [
-                'name' => 'Test Category',
-                'category_type' => 'asset',
-            ])
-            ->assertForbidden();
-    }
+test('permission required to create categories', function () {
+    $this->actingAs(User::factory()->create())
+        ->post(route('categories.store'), [
+            'name' => 'Test Category',
+            'category_type' => 'asset',
+        ])
+        ->assertForbidden();
+});
 
-    public function testUserCanCreateCategories()
-    {
-        $this->assertFalse(Category::where('name', 'Test Category')->exists());
+test('user can create categories', function () {
+    expect(Category::where('name', 'Test Category')->exists())->toBeFalse();
 
-        $this->actingAs(User::factory()->superuser()->create())
-            ->post(route('categories.store'), [
-                'name' => 'Test Category',
-                'category_type' => 'asset'
-            ])
-            ->assertRedirect(route('categories.index'));
+    $this->actingAs(User::factory()->superuser()->create())
+        ->post(route('categories.store'), [
+            'name' => 'Test Category',
+            'category_type' => 'asset'
+        ])
+        ->assertRedirect(route('categories.index'));
 
-        $this->assertTrue(Category::where('name', 'Test Category')->exists());
-    }
+    expect(Category::where('name', 'Test Category')->exists())->toBeTrue();
+});
 
-    public function testUserCannotCreateCategoriesWithInvalidType()
-    {
-        $this->assertFalse(Category::where('name', 'Test Category')->exists());
+test('user cannot create categories with invalid type', function () {
+    expect(Category::where('name', 'Test Category')->exists())->toBeFalse();
 
-        $this->actingAs(User::factory()->superuser()->create())
-            ->from(route('categories.create'))
-            ->post(route('categories.store'), [
-                'name' => 'Test Category',
-                'category_type' => 'invalid'
-            ])
-            ->assertRedirect(route('categories.create'));
+    $this->actingAs(User::factory()->superuser()->create())
+        ->from(route('categories.create'))
+        ->post(route('categories.store'), [
+            'name' => 'Test Category',
+            'category_type' => 'invalid'
+        ])
+        ->assertRedirect(route('categories.create'));
 
-        $this->assertFalse(Category::where('name', 'Test Category')->exists());
-    }
-
-}
+    expect(Category::where('name', 'Test Category')->exists())->toBeFalse();
+});

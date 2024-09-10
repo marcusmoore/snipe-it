@@ -1,73 +1,61 @@
 <?php
-namespace Tests\Unit;
 
 use App\Models\SnipeModel;
-use Tests\TestCase;
 
-class SnipeModelTest extends TestCase
-{
-    public function testSetsPurchaseDatesAppropriately()
-    {
-        $c = new SnipeModel;
-        $c->purchase_date = '';
-        $this->assertTrue($c->purchase_date === null);
-        $c->purchase_date = '2016-03-25 12:35:50';
-        $this->assertTrue($c->purchase_date === '2016-03-25 12:35:50');
-    }
+test('sets purchase dates appropriately', function () {
+    $c = new SnipeModel;
+    $c->purchase_date = '';
+    expect($c->purchase_date === null)->toBeTrue();
+    $c->purchase_date = '2016-03-25 12:35:50';
+    expect($c->purchase_date === '2016-03-25 12:35:50')->toBeTrue();
+});
 
-    public function testSetsPurchaseCostsAppropriately()
-    {
-        $c = new SnipeModel;
-        $c->purchase_cost = '0.00';
-        $this->assertTrue($c->purchase_cost === null);
-        $c->purchase_cost = '9.54';
-        $this->assertTrue($c->purchase_cost === 9.54);
-        $c->purchase_cost = '9.50';
-        $this->assertTrue($c->purchase_cost === 9.5);
-    }
+test('sets purchase costs appropriately', function () {
+    $c = new SnipeModel;
+    $c->purchase_cost = '0.00';
+    expect($c->purchase_cost === null)->toBeTrue();
+    $c->purchase_cost = '9.54';
+    expect($c->purchase_cost === 9.54)->toBeTrue();
+    $c->purchase_cost = '9.50';
+    expect($c->purchase_cost === 9.5)->toBeTrue();
+});
 
-    public function testNullsBlankLocationIdsButNotOthers()
-    {
-        $c = new SnipeModel;
-        $c->location_id = '';
-        $this->assertTrue($c->location_id === null);
-        $c->location_id = '5';
-        $this->assertTrue($c->location_id == 5);
-    }
+test('nulls blank location ids but not others', function () {
+    $c = new SnipeModel;
+    $c->location_id = '';
+    expect($c->location_id === null)->toBeTrue();
+    $c->location_id = '5';
+    expect($c->location_id == 5)->toBeTrue();
+});
 
-    public function testNullsBlankCategoriesButNotOthers()
-    {
-        $c = new SnipeModel;
-        $c->category_id = '';
-        $this->assertTrue($c->category_id === null);
-        $c->category_id = '1';
-        $this->assertTrue($c->category_id == 1);
-    }
+test('nulls blank categories but not others', function () {
+    $c = new SnipeModel;
+    $c->category_id = '';
+    expect($c->category_id === null)->toBeTrue();
+    $c->category_id = '1';
+    expect($c->category_id == 1)->toBeTrue();
+});
 
-    public function testNullsBlankSuppliersButNotOthers()
-    {
-        $c = new SnipeModel;
-        $c->supplier_id = '';
-        $this->assertTrue($c->supplier_id === null);
-        $c->supplier_id = '4';
-        $this->assertTrue($c->supplier_id == 4);
-    }
+test('nulls blank suppliers but not others', function () {
+    $c = new SnipeModel;
+    $c->supplier_id = '';
+    expect($c->supplier_id === null)->toBeTrue();
+    $c->supplier_id = '4';
+    expect($c->supplier_id == 4)->toBeTrue();
+});
 
-    public function testNullsBlankDepreciationsButNotOthers()
-    {
-        $c = new SnipeModel;
-        $c->depreciation_id = '';
-        $this->assertTrue($c->depreciation_id === null);
-        $c->depreciation_id = '4';
-        $this->assertTrue($c->depreciation_id == 4);
-    }
+test('nulls blank depreciations but not others', function () {
+    $c = new SnipeModel;
+    $c->depreciation_id = '';
+    expect($c->depreciation_id === null)->toBeTrue();
+    $c->depreciation_id = '4';
+    expect($c->depreciation_id == 4)->toBeTrue();
+});
 
-    public function testNullsBlankManufacturersButNotOthers()
-    {
-        $c = new SnipeModel;
-        $c->manufacturer_id = '';
-        $this->assertTrue($c->manufacturer_id === null);
-        $c->manufacturer_id = '4';
-        $this->assertTrue($c->manufacturer_id == 4);
-    }
-}
+test('nulls blank manufacturers but not others', function () {
+    $c = new SnipeModel;
+    $c->manufacturer_id = '';
+    expect($c->manufacturer_id === null)->toBeTrue();
+    $c->manufacturer_id = '4';
+    expect($c->manufacturer_id == 4)->toBeTrue();
+});

@@ -1,72 +1,58 @@
 <?php
 
-namespace Tests\Feature\Locations\Ui;
-
 use App\Models\Location;
 use App\Models\User;
-use Tests\TestCase;
 
-class UpdateLocationsTest extends TestCase
-{
-    public function testPermissionRequiredToStoreLocation()
-    {
-        $this->actingAs(User::factory()->create())
-            ->post(route('locations.store'), [
-                'name' => 'Test Location',
-            ])
-            ->assertStatus(403)
-            ->assertForbidden();
-    }
+test('permission required to store location', function () {
+    $this->actingAs(User::factory()->create())
+        ->post(route('locations.store'), [
+            'name' => 'Test Location',
+        ])
+        ->assertStatus(403)
+        ->assertForbidden();
+});
 
+test('user can edit locations', function () {
+    $location = Location::factory()->create(['name' => 'Test Location']);
+    expect(Location::where('name', 'Test Location')->exists())->toBeTrue();
 
-    public function testUserCanEditLocations()
-    {
-        $location = Location::factory()->create(['name' => 'Test Location']);
-        $this->assertTrue(Location::where('name', 'Test Location')->exists());
+    $response = $this->actingAs(User::factory()->superuser()->create())
+        ->put(route('locations.update', ['location' => $location]), [
+            'name' => 'Test Location Edited',
+        ])
+        ->assertStatus(302)
+        ->assertSessionHasNoErrors()
+        ->assertRedirect(route('locations.index'));
 
-        $response = $this->actingAs(User::factory()->superuser()->create())
-            ->put(route('locations.update', ['location' => $location]), [
-                'name' => 'Test Location Edited',
-            ])
-            ->assertStatus(302)
-            ->assertSessionHasNoErrors()
-            ->assertRedirect(route('locations.index'));
+    $this->followRedirects($response)->assertSee('Success');
+    expect(Location::where('name', 'Test Location Edited')->exists())->toBeTrue();
+});
 
-        $this->followRedirects($response)->assertSee('Success');
-        $this->assertTrue(Location::where('name', 'Test Location Edited')->exists());
-    }
+test('user cannot edit locations to make them their own parent', function () {
+    $location = Location::factory()->create();
 
-    public function testUserCannotEditLocationsToMakeThemTheirOwnParent()
-    {
-        $location = Location::factory()->create();
+    $response = $this->actingAs(User::factory()->superuser()->create())
+        ->from(route('locations.edit', ['location' => $location->id]))
+        ->put(route('locations.update', ['location' => $location]), [
+            'name' => 'Test Location',
+            'parent_id' => $location->id,
+        ])
+        ->assertRedirect(route('locations.edit', ['location' => $location]));
 
-        $response = $this->actingAs(User::factory()->superuser()->create())
-            ->from(route('locations.edit', ['location' => $location->id]))
-            ->put(route('locations.update', ['location' => $location]), [
-                'name' => 'Test Location',
-                'parent_id' => $location->id,
-            ])
-            ->assertRedirect(route('locations.edit', ['location' => $location]));
+    $this->followRedirects($response)->assertSee(trans('general.error'));
+    expect(Location::where('name', 'Test Location')->exists())->toBeFalse();
+});
 
-        $this->followRedirects($response)->assertSee(trans('general.error'));
-        $this->assertFalse(Location::where('name', 'Test Location')->exists());
-    }
+test('user cannot edit locations with invalid parent', function () {
+    $location = Location::factory()->create();
+    $response = $this->actingAs(User::factory()->superuser()->create())
+        ->from(route('locations.edit', ['location' => $location->id]))
+        ->put(route('locations.update', ['location' => $location]), [
+            'name' => 'Test Location',
+            'parent_id' => '100000000'
+        ])
+        ->assertRedirect(route('locations.edit', ['location' => $location->id]));
 
-    public function testUserCannotEditLocationsWithInvalidParent()
-    {
-        $location = Location::factory()->create();
-        $response = $this->actingAs(User::factory()->superuser()->create())
-            ->from(route('locations.edit', ['location' => $location->id]))
-            ->put(route('locations.update', ['location' => $location]), [
-                'name' => 'Test Location',
-                'parent_id' => '100000000'
-            ])
-            ->assertRedirect(route('locations.edit', ['location' => $location->id]));
-
-        $this->followRedirects($response)->assertSee(trans('general.error'));
-        $this->assertFalse(Location::where('name', 'Test Location')->exists());
-    }
-
-
-
-}
+    $this->followRedirects($response)->assertSee(trans('general.error'));
+    expect(Location::where('name', 'Test Location')->exists())->toBeFalse();
+});
