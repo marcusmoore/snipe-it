@@ -80,6 +80,7 @@
     "mockery/mockery": "^1.4",
     "nunomaduro/phpinsights": "^2.11",
     "pestphp/pest": "^2.35",
+    "pestphp/pest-plugin-drift": "^2.5",
     "php-mock/php-mock-phpunit": "^2.10",
     "squizlabs/php_codesniffer": "^3.5",
     "symfony/css-selector": "^4.4",
