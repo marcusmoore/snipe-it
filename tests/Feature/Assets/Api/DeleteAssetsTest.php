@@ -58,6 +58,21 @@ class DeleteAssetsTest extends TestCase implements TestsFullMultipleCompaniesSup
         $this->markTestSkipped('This behavior is not functioning yet.');
     }
 
+    public function testCannotDeleteAssetThatHasAssetsCheckedOutToIt()
+    {
+        $this->markTestIncomplete();
+    }
+
+    public function testCannotDeleteAssetThatHasComponentsCheckedOutToIt()
+    {
+        $this->markTestIncomplete();
+    }
+
+    public function testCannotDeleteAssetThatHasLicensesCheckedOutToIt()
+    {
+        $this->markTestIncomplete();
+    }
+
     public function testCanDeleteAsset()
     {
         $asset = Asset::factory()->create();
