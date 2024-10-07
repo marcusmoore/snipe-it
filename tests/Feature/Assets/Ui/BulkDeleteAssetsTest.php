@@ -67,6 +67,20 @@ class BulkDeleteAssetsTest extends TestCase
         $this->followRedirects($response)->assertSee('alert-danger');
     }
 
+    public function testCannotBulkDeleteAssetThatHasAssetsCheckedOutToIt()
+    {
+        $this->markTestIncomplete();
+    }
+
+    public function testCannotBulkDeleteAssetThatHasComponentsCheckedOutToIt()
+    {
+        $this->markTestIncomplete();
+    }
+
+    public function testCannotBulkDeleteAssetThatHasLicensesCheckedOutToIt()
+    {
+        $this->markTestIncomplete();
+    }
 
     public function testBulkDeleteSelectedAssetsFromInterstitial()
     {

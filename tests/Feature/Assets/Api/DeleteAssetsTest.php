@@ -53,11 +53,6 @@ class DeleteAssetsTest extends TestCase implements TestsFullMultipleCompaniesSup
         $this->assertSoftDeleted($assetC);
     }
 
-    public function testCannotDeleteAssetThatIsCheckedOut()
-    {
-        $this->markTestSkipped('This behavior is not functioning yet.');
-    }
-
     public function testCannotDeleteAssetThatHasAssetsCheckedOutToIt()
     {
         $this->markTestIncomplete();
@@ -82,5 +77,10 @@ class DeleteAssetsTest extends TestCase implements TestsFullMultipleCompaniesSup
             ->assertStatusMessageIs('success');
 
         $this->assertSoftDeleted($asset);
+    }
+
+    public function testAssetCanBeCheckedInAndDeleted()
+    {
+        $this->markTestIncomplete();
     }
 }
