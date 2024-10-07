@@ -4,6 +4,8 @@ namespace Tests\Feature\Assets\Api;
 
 use App\Models\Asset;
 use App\Models\Company;
+use App\Models\Component;
+use App\Models\LicenseSeat;
 use App\Models\User;
 use Tests\Concerns\TestsFullMultipleCompaniesSupport;
 use Tests\Concerns\TestsPermissionsRequirement;
@@ -55,17 +57,43 @@ class DeleteAssetsTest extends TestCase implements TestsFullMultipleCompaniesSup
 
     public function testCannotDeleteAssetThatHasAssetsCheckedOutToIt()
     {
-        $this->markTestIncomplete();
+        $computer = Asset::factory()->create();
+        $fancyKeyboard = Asset::factory()->create();
+
+        $fancyKeyboard->checkOut(
+            $computer,
+            User::factory()->create()
+        );
+
+        $this->actingAsForApi(User::factory()->deleteAssets()->create())
+            ->deleteJson(route('api.assets.destroy', $computer))
+            ->assertStatusMessageIs('error');
+
+        $this->assertNotSoftDeleted($computer);
     }
 
     public function testCannotDeleteAssetThatHasComponentsCheckedOutToIt()
     {
-        $this->markTestIncomplete();
+        $computer = Asset::factory()->create();
+        Component::factory()->checkedOutToAsset($computer)->create();
+
+        $this->actingAsForApi(User::factory()->deleteAssets()->create())
+            ->deleteJson(route('api.assets.destroy', $computer))
+            ->assertStatusMessageIs('error');
+
+        $this->assertNotSoftDeleted($computer);
     }
 
     public function testCannotDeleteAssetThatHasLicensesCheckedOutToIt()
     {
-        $this->markTestIncomplete();
+        $computer = Asset::factory()->create();
+        LicenseSeat::factory()->assignedToAsset($computer)->create();
+
+        $this->actingAsForApi(User::factory()->deleteAssets()->create())
+            ->deleteJson(route('api.assets.destroy', $computer))
+            ->assertStatusMessageIs('error');
+
+        $this->assertNotSoftDeleted($computer);
     }
 
     public function testCanDeleteAsset()

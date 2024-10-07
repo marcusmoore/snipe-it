@@ -777,9 +777,19 @@ class AssetsController extends Controller
     {
         $this->authorize('delete', Asset::class);
 
-        if ($asset = Asset::find($id)) {
+        $asset = Asset::with([
+            'assignedAssets',
+            'components',
+            'licenses',
+        ])->find($id);
+
+        if ($asset) {
             $this->authorize('delete', $asset);
 
+            if ($asset->assignedAssets->count() > 0 || $asset->components->count() > 0 || $asset->licenses->count() > 0) {
+                return response()->json(Helper::formatStandardApiResponse('error', null, trans('admin/hardware/message.cannot_delete_due_to_having_checkouts')), 200);
+            }
+            
             if ($asset->assignedTo) {
 
                 $target = $asset->assignedTo;
