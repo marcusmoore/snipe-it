@@ -431,12 +431,22 @@ class AssetsController extends Controller
     public function destroy(Request $request, $assetId) : RedirectResponse
     {
         // Check if the asset exists
-        if (is_null($asset = Asset::find($assetId))) {
+        $asset = Asset::with([
+            'assignedAssets',
+            'components',
+            'licenses',
+        ])->find($assetId);
+
+        if (is_null($asset)) {
             // Redirect to the asset management page with error
             return redirect()->route('hardware.index')->with('error', trans('admin/hardware/message.does_not_exist'));
         }
 
         $this->authorize('delete', $asset);
+
+        if ($asset->assignedAssets->count() > 0 || $asset->components->count() > 0 || $asset->licenses->count() > 0) {
+            return redirect()->route('hardware.show', $asset)->with('error', trans('admin/hardware/message.cannot_delete_due_to_having_checkouts'));
+        }
 
         if ($asset->assignedTo) {
 
