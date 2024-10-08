@@ -4,6 +4,9 @@ namespace Tests\Unit;
 use App\Models\Asset;
 use App\Models\AssetModel;
 use App\Models\Category;
+use App\Models\Component;
+use App\Models\LicenseSeat;
+use App\Models\User;
 use Carbon\Carbon;
 use Tests\TestCase;
 use App\Models\Setting;
@@ -188,5 +191,29 @@ class AssetTest extends TestCase
         $this->assertEquals(Carbon::createFromDate(2017, 1, 1)->format('Y-m-d'), $asset->purchase_date->format('Y-m-d'));
         $this->assertEquals(Carbon::createFromDate(2019, 1, 1)->format('Y-m-d'), $asset->warranty_expires->format('Y-m-d'));
 
+    }
+
+    public function testKnowsIfItIsDeletable()
+    {
+        $asset = Asset::factory()->create();
+
+        $assetWithAssetCheckedOutToIt = Asset::factory()->create();
+        Asset::factory()->create()->checkOut(
+            $assetWithAssetCheckedOutToIt,
+            User::factory()->create()
+        );
+
+        $assetWithComponentCheckedOutToIt = Asset::factory()->create();
+        Component::factory()->checkedOutToAsset($assetWithComponentCheckedOutToIt)->create();
+
+        $assetWithLicenseCheckedOutToIt = Asset::factory()->create();
+        LicenseSeat::factory()->assignedToAsset($assetWithLicenseCheckedOutToIt)->create();
+
+        $this->actingAs(User::factory()->deleteAssets()->create());
+
+        $this->assertTrue($asset->isDeletable());
+        $this->assertFalse($assetWithAssetCheckedOutToIt->isDeletable());
+        $this->assertFalse($assetWithComponentCheckedOutToIt->isDeletable());
+        $this->assertFalse($assetWithLicenseCheckedOutToIt->isDeletable());
     }
 }

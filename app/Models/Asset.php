@@ -10,6 +10,7 @@ use App\Models\Traits\Acceptable;
 use App\Models\Traits\Searchable;
 use App\Presenters\Presentable;
 use App\Presenters\AssetPresenter;
+use Gate;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -978,6 +979,15 @@ class Asset extends Depreciable
             $cost += $component->pivot->assigned_qty*$component->purchase_cost;
         }
         return $cost;
+    }
+
+    public function isDeletable(): bool
+    {
+        // @todo: optimize queries
+        return Gate::allows('delete', $this)
+            && $this->assignedAssets->count() === 0
+            && $this->components->count() === 0
+            && $this->licenses->count() === 0;
     }
 
     /**

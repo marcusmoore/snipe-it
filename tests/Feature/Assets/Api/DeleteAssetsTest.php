@@ -106,9 +106,4 @@ class DeleteAssetsTest extends TestCase implements TestsFullMultipleCompaniesSup
 
         $this->assertSoftDeleted($asset);
     }
-
-    public function testAssetCanBeCheckedInAndDeleted()
-    {
-        $this->markTestIncomplete();
-    }
 }
