@@ -3,6 +3,7 @@
 namespace Tests\Feature\Assets\Ui;
 
 use App\Models\Asset;
+use App\Models\Company;
 use App\Models\Component;
 use App\Models\LicenseSeat;
 use App\Models\User;
@@ -25,7 +26,33 @@ class DeleteAssetsTest extends TestCase implements TestsFullMultipleCompaniesSup
 
     public function testAdheresToFullMultipleCompaniesSupportScoping()
     {
-        $this->markTestIncomplete();
+        [$companyA, $companyB] = Company::factory()->count(2)->create();
+
+        $assetA = Asset::factory()->for($companyA)->create();
+        $assetB = Asset::factory()->for($companyB)->create();
+        $assetC = Asset::factory()->for($companyB)->create();
+
+        $superUser = $companyA->users()->save(User::factory()->superuser()->make());
+        $userInCompanyA = $companyA->users()->save(User::factory()->deleteAssets()->make());
+        $userInCompanyB = $companyB->users()->save(User::factory()->deleteAssets()->make());
+
+        $this->settings->enableMultipleFullCompanySupport();
+
+        $this->actingAsForApi($userInCompanyA)
+            ->deleteJson(route('api.assets.destroy', $assetB))
+            ->assertStatusMessageIs('error');
+
+        $this->actingAsForApi($userInCompanyB)
+            ->deleteJson(route('api.assets.destroy', $assetA))
+            ->assertStatusMessageIs('error');
+
+        $this->actingAsForApi($superUser)
+            ->deleteJson(route('api.assets.destroy', $assetC))
+            ->assertStatusMessageIs('success');
+
+        $this->assertNotSoftDeleted($assetA);
+        $this->assertNotSoftDeleted($assetB);
+        $this->assertSoftDeleted($assetC);
     }
 
     public function testCannotDeleteAssetThatHasAssetsCheckedOutToIt()
