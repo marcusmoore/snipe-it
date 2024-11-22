@@ -96,7 +96,10 @@ class CompaniesController extends Controller
     {
         $this->authorize('create', Company::class);
         $company = new Company;
-        $company->fill($request->all());
+        $company->fill(array_merge(
+            $request->all(),
+            ['created_by' => $request->user()->id]
+        ));
         $company = $request->handleImages($company);
         
         if ($company->save()) {
