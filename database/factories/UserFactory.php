@@ -285,6 +285,11 @@ class UserFactory extends Factory
         return $this->appendPermission(['companies.create' => '1']);
     }
 
+    public function editCompanies()
+    {
+        return $this->appendPermission(['companies.edit' => '1']);
+    }
+
     public function deleteCompanies()
     {
         return $this->appendPermission(['companies.delete' => '1']);
