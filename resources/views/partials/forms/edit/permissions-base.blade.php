@@ -16,7 +16,7 @@
       </td>
 
       @php
-        // $localPermissionName will be "superuser", "admin", "import", "reports.view"
+        // As of now, $localPermissionName will be "superuser", "admin", "import", or "reports.view"
         $localPermissionName = $localPermission['permission'];
         $inputName = 'permission['.$localPermissionName.']';
       @endphp
