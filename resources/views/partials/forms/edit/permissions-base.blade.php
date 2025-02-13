@@ -1,6 +1,13 @@
 @foreach ($permissions as $area => $permissionsArray)
   @if (count($permissionsArray) == 1)
     <?php $localPermission = $permissionsArray[0]; ?>
+
+    @php
+      // As of now, $localPermissionName will be "superuser", "admin", "import", or "reports.view"
+      $localPermissionName = $localPermission['permission'];
+      $inputName = 'permission['.$localPermissionName.']';
+    @endphp
+
     <tbody class="permissions-group">
     <tr class="header-row permissions-row">
       <td class="col-md-5 tooltip-base permissions-item"
@@ -14,12 +21,6 @@
           <h2>{{ $area }}</h2>
         @endunless
       </td>
-
-      @php
-        // As of now, $localPermissionName will be "superuser", "admin", "import", or "reports.view"
-        $localPermissionName = $localPermission['permission'];
-        $inputName = 'permission['.$localPermissionName.']';
-      @endphp
 
       <td class="col-md-1 permissions-item">
         <label class="sr-only" for="{{ $inputName }}">{{ $inputName }}</label>
