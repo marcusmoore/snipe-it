@@ -117,4 +117,8 @@
     @endforeach
     </tbody>
   @endif
+  @php
+      unset($localPermissionName);
+      unset($inputName);
+  @endphp
 @endforeach
