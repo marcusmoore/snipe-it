@@ -16,7 +16,9 @@
       </td>
 
       @php
-        $inputName = 'permission['.$localPermission['permission'].']';
+        // $localPermissionName will be "superuser", "admin", "import", "reports.view"
+        $localPermissionName = $localPermission['permission'];
+        $inputName = 'permission['.$localPermissionName.']';
       @endphp
 
       <td class="col-md-1 permissions-item">
