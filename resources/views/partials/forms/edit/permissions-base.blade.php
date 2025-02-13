@@ -57,6 +57,10 @@
       </td>
     </tr>
   </tbody>
+    @php
+      unset($localPermissionName);
+      unset($inputName);
+    @endphp
 
   @else <!-- count($permissionsArray) == 1-->
   <tbody class="permissions-group">
@@ -123,8 +127,4 @@
     @endforeach
     </tbody>
   @endif
-  @php
-      unset($localPermissionName);
-      unset($inputName);
-  @endphp
 @endforeach
