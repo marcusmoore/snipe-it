@@ -25,11 +25,11 @@
       <td class="col-md-1 permissions-item">
         <label class="sr-only" for="{{ $inputName }}">{{ $inputName }}</label>
         @if (($localPermissionName == 'superuser') && (!Auth::user()->isSuperUser()))
-          {{ Form::radio($inputName, '1',$userPermissions[$localPermissionName ] == '1',['disabled'=>"disabled", 'aria-label'=> $inputName]) }}
+          {{ Form::radio($inputName, '1',$userPermissions[$localPermissionName] == '1',['disabled'=>"disabled", 'aria-label'=> $inputName]) }}
         @elseif (($localPermissionName == 'admin') && (!Auth::user()->hasAccess('admin')))
-          {{ Form::radio($inputName, '1',$userPermissions[$localPermissionName ] == '1',['disabled'=>"disabled", 'aria-label'=> $inputName]) }}
+          {{ Form::radio($inputName, '1',$userPermissions[$localPermissionName] == '1',['disabled'=>"disabled", 'aria-label'=> $inputName]) }}
         @else
-          {{ Form::radio($inputName, '1',$userPermissions[$localPermissionName ] == '1',['value'=>"grant",  'aria-label'=> $inputName]) }}
+          {{ Form::radio($inputName, '1',$userPermissions[$localPermissionName] == '1',['value'=>"grant",  'aria-label'=> $inputName]) }}
         @endif
 
         
@@ -37,22 +37,22 @@
       <td class="col-md-1 permissions-item">
         <label class="sr-only" for="{{ $inputName }}">{{ $inputName }}</label>
         @if (($localPermissionName == 'superuser') && (!Auth::user()->isSuperUser()))
-          {{ Form::radio($inputName, '-1',$userPermissions[$localPermissionName ] == '-1',['disabled'=>"disabled", 'aria-label'=> $inputName]) }}
+          {{ Form::radio($inputName, '-1',$userPermissions[$localPermissionName] == '-1',['disabled'=>"disabled", 'aria-label'=> $inputName]) }}
         @elseif (($localPermissionName == 'admin') && (!Auth::user()->hasAccess('admin')))
-          {{ Form::radio($inputName, '-1',$userPermissions[$localPermissionName ] == '-1',['disabled'=>"disabled", 'aria-label'=> $inputName]) }}
+          {{ Form::radio($inputName, '-1',$userPermissions[$localPermissionName] == '-1',['disabled'=>"disabled", 'aria-label'=> $inputName]) }}
         @else
-          {{ Form::radio($inputName, '-1',$userPermissions[$localPermissionName ] == '-1',['value'=>"deny",   'aria-label'=> $inputName]) }}
+          {{ Form::radio($inputName, '-1',$userPermissions[$localPermissionName] == '-1',['value'=>"deny",   'aria-label'=> $inputName]) }}
         @endif
       </td>
       <td class="col-md-1 permissions-item">
         <label class="sr-only" for="{{ $inputName }}">
            {{ $inputName }}</label>
         @if (($localPermissionName == 'superuser') && (!Auth::user()->isSuperUser()))
-          {{ Form::radio($inputName,'0',$userPermissions[$localPermissionName ] == '0',['disabled'=>"disabled", 'aria-label'=> $inputName] ) }}
+          {{ Form::radio($inputName,'0',$userPermissions[$localPermissionName] == '0',['disabled'=>"disabled", 'aria-label'=> $inputName] ) }}
         @elseif (($localPermissionName == 'admin') && (!Auth::user()->hasAccess('admin')))
-          {{ Form::radio($inputName,'0',$userPermissions[$localPermissionName ] == '0',['disabled'=>"disabled", 'aria-label'=> $inputName] ) }}
+          {{ Form::radio($inputName,'0',$userPermissions[$localPermissionName] == '0',['disabled'=>"disabled", 'aria-label'=> $inputName] ) }}
         @else
-          {{ Form::radio($inputName,'0',$userPermissions[$localPermissionName ] == '0',['value'=>"inherit",   'aria-label'=> $inputName] ) }}
+          {{ Form::radio($inputName,'0',$userPermissions[$localPermissionName] == '0',['value'=>"inherit",   'aria-label'=> $inputName] ) }}
         @endif
       </td>
     </tr>
@@ -102,16 +102,16 @@
             <label class="sr-only" for="{{ $inputName }}">{{ $inputName }}</label>
 
             @if (($permissionName == 'superuser') && (!Auth::user()->isSuperUser()))
-              {{ Form::radio($inputName, '1', $userPermissions[$permissionName ] == '1', ["value"=>"grant", 'disabled'=>'disabled', 'class'=>'radiochecker-'.str_slug($area), 'aria-label'=>$inputName]) }}
+              {{ Form::radio($inputName, '1', $userPermissions[$permissionName] == '1', ["value"=>"grant", 'disabled'=>'disabled', 'class'=>'radiochecker-'.str_slug($area), 'aria-label'=>$inputName]) }}
             @else
-              {{ Form::radio($inputName, '1', $userPermissions[ $permissionName ] == '1', ["value"=>"grant",'class'=>'radiochecker-'.str_slug($area), 'aria-label' =>$inputName]) }}
+              {{ Form::radio($inputName, '1', $userPermissions[$permissionName] == '1', ["value"=>"grant",'class'=>'radiochecker-'.str_slug($area), 'aria-label' =>$inputName]) }}
             @endif
           </td>
           <td class="col-md-1 permissions-item">
             @if (($permissionName == 'superuser') && (!Auth::user()->isSuperUser()))
-              {{ Form::radio($inputName, '-1', $userPermissions[$permissionName ] == '-1', ["value"=>"deny", 'disabled'=>'disabled', 'class'=>'radiochecker-'.str_slug($area), 'aria-label'=>$inputName]) }}
+              {{ Form::radio($inputName, '-1', $userPermissions[$permissionName] == '-1', ["value"=>"deny", 'disabled'=>'disabled', 'class'=>'radiochecker-'.str_slug($area), 'aria-label'=>$inputName]) }}
             @else
-              {{ Form::radio($inputName, '-1', $userPermissions[$permissionName ] == '-1', ["value"=>"deny",'class'=>'radiochecker-'.str_slug($area), 'aria-label'=>$inputName]) }}
+              {{ Form::radio($inputName, '-1', $userPermissions[$permissionName] == '-1', ["value"=>"deny",'class'=>'radiochecker-'.str_slug($area), 'aria-label'=>$inputName]) }}
             @endif
           </td>
           <td class="col-md-1 permissions-item">
