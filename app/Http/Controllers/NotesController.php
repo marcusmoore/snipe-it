@@ -2,9 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Events\NoteAdded;
-use App\Models\Actionlog;
 use App\Models\Asset;
+use App\Models\Note;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
@@ -27,12 +26,11 @@ class NotesController extends Controller
 
         $this->authorize('update', $item);
 
-        $logaction = new Actionlog();
-        $logaction->item_id = $item->id;
-        $logaction->item_type = get_class($item);
-        $logaction->note = $validated['note'];
-        $logaction->created_by = Auth::id();
-        $logaction->logaction('note added');
+        $note = new Note();
+        $note->createdBy()->associate(Auth::user());
+        $note->commentable()->associate($item);
+        $note->content = $validated['note'];
+        $note->save();
 
         return redirect()
             ->route('hardware.show', $validated['id'])
