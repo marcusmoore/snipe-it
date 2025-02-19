@@ -650,6 +650,11 @@ class Asset extends Depreciable
                   ->withTrashed();
     }
 
+    public function notes()
+    {
+        return $this->hasMany(Note::class);
+    }
+
     /**
      * Get the list of checkouts for this asset
      *
