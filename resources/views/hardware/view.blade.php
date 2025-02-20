@@ -232,7 +232,6 @@
                                                     <x-icon type="note" />
                                                     {{ trans('general.add_note') }}
                                                 </a>
-                                                @include ('modals.add-note', ['type' => 'asset', 'id' => $asset->id])
                                             </div>
                                         @endcan
 
@@ -1450,6 +1449,9 @@
 
     @can('update', \App\Models\Asset::class)
         @include ('modals.upload-file', ['item_type' => 'asset', 'item_id' => $asset->id])
+    @endcan
+    @can('update', \App\Models\Asset::class)
+        @include ('modals.add-note', ['type' => 'asset', 'id' => $asset->id])
     @endcan
 @stop
             @section('moar_scripts')
