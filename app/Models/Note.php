@@ -14,7 +14,7 @@ class Note extends Model
             $logaction->target()->associate($note);
 
             // @todo: duplicate content?
-            $logaction->note = $note->content;
+            // $logaction->note = $note->content;
             $logaction->created_by = $note->created_by;
             $logaction->logaction('note added');
         });
