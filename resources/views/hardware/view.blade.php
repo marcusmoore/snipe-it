@@ -96,6 +96,16 @@
                     </li>
 
                     <li>
+                        <a href="#notes" data-toggle="tab">
+                          <span class="hidden-lg hidden-md">
+                              <x-icon type="note" class="fa-2x "/>
+                          </span>
+                            <span class="hidden-xs hidden-sm">{{ trans('general.notes') }}
+                          </span>
+                        </a>
+                    </li>
+
+                    <li>
                         <a href="#maintenances" data-toggle="tab">
                           <span class="hidden-lg hidden-md">
                               <x-icon type="maintenances" class="fa-2x" />
@@ -1376,6 +1386,42 @@
                             </div>
                         </div> <!-- /.row -->
                     </div> <!-- /.tab-pane history -->
+
+                    <div class="tab-pane fade" id="notes">
+                        <!-- notes table -->
+                        <div class="row">
+                            <div class="col-md-12">
+                                <table
+                                    class="table table-striped snipe-table"
+                                    id="assetNotes"
+                                    data-pagination="true"
+                                    data-id-table="assetNotes"
+                                    data-search="true"
+                                    data-side-pagination="server"
+                                    data-show-columns="true"
+                                    data-show-fullscreen="true"
+                                    data-show-refresh="true"
+                                    data-sort-order="desc"
+                                    data-sort-name="created_at"
+                                    data-show-export="true"
+                                    data-export-options='{
+                                        "fileName": "export-asset-{{  $asset->id }}-history",
+                                        "ignoreColumn": ["actions","image","change","checkbox","checkincheckout","icon"]
+                                    }'
+                                    data-url="{{ route('api.activity.index', ['item_id' => $asset->id, 'item_type' => 'asset', 'target_type' => 'note']) }}"
+                                    data-cookie-id-table="assetNotes"
+                                    data-cookie="true">
+                                    <thead>
+                                    <tr>
+                                        <th data-visible="true" data-field="action_date" data-sortable="true" data-formatter="dateDisplayFormatter">{{ trans('general.date') }}</th>
+                                        <th data-visible="true" data-field="admin" data-formatter="usersLinkObjFormatter">{{ trans('general.admin') }}</th>
+                                        <th data-field="note">{{ trans('general.notes') }}</th>
+                                    </tr>
+                                    </thead>
+                                </table>
+                            </div>
+                        </div> <!-- /.row -->
+                    </div> <!-- /.tab-pane notes -->
 
                     <div class="tab-pane fade" id="files">
                         <div class="row{{ ($asset->uploads->count() > 0 ) ? '' : ' hidden-print' }}">

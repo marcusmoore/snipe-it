@@ -26,9 +26,14 @@ class ReportsController extends Controller
             $actionlogs = $actionlogs->TextSearch(e($request->input('search')));
         }
 
-        if (($request->filled('target_type')) && ($request->filled('target_id'))) {
-            $actionlogs = $actionlogs->where('target_id', '=', $request->input('target_id'))
-                ->where('target_type', '=', 'App\\Models\\'.ucwords($request->input('target_type')));
+        // @todo: merge this back in...
+        // if (($request->filled('target_type')) && ($request->filled('target_id'))) {
+        //     $actionlogs = $actionlogs->where('target_id', '=', $request->input('target_id'))
+        //         ->where('target_type', '=', 'App\\Models\\'.ucwords($request->input('target_type')));
+        // }
+
+        if (($request->filled('target_type'))) {
+            $actionlogs = $actionlogs->where('target_type', '=', 'App\\Models\\' . ucwords($request->input('target_type')));
         }
 
         if (($request->filled('item_type')) && ($request->filled('item_id'))) {
