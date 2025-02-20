@@ -352,6 +352,50 @@ class AssetPresenter extends Presenter
         return json_encode($layout);
     }
 
+    // @todo: fix name...maybe move this somewhere else?
+    public static function dataTableLayoutForNotes()
+    {
+
+        return json_encode([
+            [
+                // @todo: action_date?
+                'field' => 'created_at',
+                // 'searchable' => true,
+                // 'sortable' => true,
+                // 'switchable' => true,
+                'title' => trans('general.created_at'),
+                'visible' => true,
+                'formatter' => 'dateDisplayFormatter',
+            ],
+            [
+                'field' => 'created_by',
+                'searchable' => true,
+                'sortable' => true,
+                // @todo: translate
+                'title' => 'Admin',
+                'visible' => true,
+                'formatter' => 'usersLinkObjFormatter',
+            ],
+            [
+                'field' => 'note',
+                'searchable' => true,
+                'sortable' => false,
+                // @todo: translate
+                'title' => 'Content',
+                'visible' => true,
+                'formatter' => 'notesFormatter',
+            ],
+            [
+                'field' => 'actions',
+                'searchable' => false,
+                'sortable' => false,
+                'switchable' => false,
+                'title' => trans('table.actions'),
+                'formatter' => 'hardwareActionsFormatter',
+            ],
+        ]);
+    }
+
     /**
      * Generate html link to this items name.
      * @return string

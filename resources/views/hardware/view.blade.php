@@ -1392,6 +1392,7 @@
                         <div class="row">
                             <div class="col-md-12">
                                 <table
+                                    data-columns="{{ \App\Presenters\AssetPresenter::dataTableLayoutForNotes() }}"
                                     class="table table-striped snipe-table"
                                     id="assetNotes"
                                     data-pagination="true"
@@ -1410,15 +1411,8 @@
                                     }'
                                     data-url="{{ route('api.activity.index', ['item_id' => $asset->id, 'item_type' => 'asset', 'target_type' => 'note']) }}"
                                     data-cookie-id-table="assetNotes"
-                                    data-cookie="true">
-                                    <thead>
-                                    <tr>
-                                        <th data-visible="true" data-field="action_date" data-sortable="true" data-formatter="dateDisplayFormatter">{{ trans('general.date') }}</th>
-                                        <th data-visible="true" data-field="admin" data-formatter="usersLinkObjFormatter">{{ trans('general.admin') }}</th>
-                                        <th data-field="note">{{ trans('general.notes') }}</th>
-                                    </tr>
-                                    </thead>
-                                </table>
+                                    data-cookie="true"
+                                ></table>
                             </div>
                         </div> <!-- /.row -->
                     </div> <!-- /.tab-pane notes -->
