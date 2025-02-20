@@ -5,6 +5,7 @@ use App\Helpers\Helper;
 use App\Models\Actionlog;
 use App\Models\Asset;
 use App\Models\CustomField;
+use App\Models\Note;
 use App\Models\Setting;
 use App\Models\Statuslabel;
 use App\Models\Company;
@@ -195,7 +196,7 @@ class ActionlogsTransformer
                 'type' => e($actionlog->targetType()),
             ] : null,
 
-            'note'          => ($actionlog->note) ? Helper::parseEscapedMarkedownInline($actionlog->note): null,
+            'note' => $this->getTransformedNote($actionlog),
             'signature_file'   => ($actionlog->accept_signature) ? route('log.signature.view', ['filename' => $actionlog->accept_signature ]) : null,
             'log_meta'          => ((isset($clean_meta)) && (is_array($clean_meta))) ? $clean_meta: null,
             'remote_ip'          => ($actionlog->remote_ip) ??  null,
@@ -345,6 +346,16 @@ class ActionlogsTransformer
 
     }
 
+    private function getTransformedNote(Actionlog $actionlog): ?string
+    {
+        if ($actionlog->target instanceof Note) {
+            return Helper::parseEscapedMarkedownInline($actionlog->target->content);
+        }
 
+        if ($actionlog->note) {
+            return Helper::parseEscapedMarkedownInline($actionlog->note);
+        }
 
+        return null;
+    }
 }
