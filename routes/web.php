@@ -341,6 +341,7 @@ Route::group(['prefix' => 'account', 'middleware' => ['auth']], function () {
 });
 
 Route::group(['middleware' => ['auth']], function () {
+    Route::get('notes/{note}', [NotesController::class, 'show'])->name('notes.show');
     Route::post('notes', [NotesController::class, 'store'])->name('notes.store');
 });
 

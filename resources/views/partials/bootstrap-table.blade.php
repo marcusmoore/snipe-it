@@ -378,6 +378,9 @@
             } else if (value.type == 'model') {
                 item_destination = 'models'
                 item_icon = '';
+            } else if (value.type == 'note') {
+                item_destination = 'notes';
+                item_icon = 'fas fa-sticky-note';
             }
 
             // display the username if it's checked out to a user, but don't do it if the username's there already

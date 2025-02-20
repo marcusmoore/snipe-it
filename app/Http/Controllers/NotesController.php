@@ -10,6 +10,13 @@ use Illuminate\Validation\Rule;
 
 class NotesController extends Controller
 {
+    public function show(Note $note)
+    {
+        return redirect()
+            ->route('hardware.show', $note->commentable->id)
+            ->withFragment('notes');
+    }
+
     public function store(Request $request)
     {
         $validated = $request->validate([
