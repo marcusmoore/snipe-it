@@ -511,7 +511,8 @@
         'depreciations',
         'fieldsets',
         'groups',
-        'kits'
+        'kits',
+        'notes',
     ];
 
     for (var i in formatters) {

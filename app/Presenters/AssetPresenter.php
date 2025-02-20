@@ -391,7 +391,7 @@ class AssetPresenter extends Presenter
                 'sortable' => false,
                 'switchable' => false,
                 'title' => trans('table.actions'),
-                'formatter' => 'hardwareActionsFormatter',
+                'formatter' => 'notesActionsFormatter',
             ],
         ]);
     }
