@@ -154,7 +154,7 @@ class ActionlogsTransformer
         }
 
         $array = [
-            'id'          => (int) $actionlog->id,
+            'id' => (int) $this->getTransformedId($actionlog),
             'icon'          => $icon,
             'file' => ($actionlog->filename!='')
                 ?
@@ -205,7 +205,8 @@ class ActionlogsTransformer
             'action_date'   => ($actionlog->action_date) ? Helper::getFormattedDateObject($actionlog->action_date, 'datetime'): Helper::getFormattedDateObject($actionlog->created_at, 'datetime'),
             'available_actions' => [
                 // @todo: permissions...check assets transformer
-                'update',
+                'update' => true,
+                'delete' => false,
             ],
         ];
 
@@ -348,6 +349,16 @@ class ActionlogsTransformer
 
         return $clean_meta;
 
+    }
+
+    private function getTransformedId(Actionlog $actionlog): mixed
+    {
+        // @todo: this might be a bad idea...
+        if ($actionlog->target instanceof Note) {
+            return $actionlog->target->id;
+        }
+
+        return $actionlog->id;
     }
 
     private function getTransformedNote(Actionlog $actionlog): ?string
