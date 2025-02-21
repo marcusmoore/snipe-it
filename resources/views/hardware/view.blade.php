@@ -1452,6 +1452,7 @@
     @endcan
     @can('update', \App\Models\Asset::class)
         @include ('modals.add-note', ['type' => 'asset', 'id' => $asset->id])
+        <livewire:update-note-modal />
     @endcan
 @stop
             @section('moar_scripts')
