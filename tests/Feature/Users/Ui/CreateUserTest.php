@@ -3,20 +3,22 @@
 use App\Models\User;
 
 describe('permission checks', function () {
+    beforeEach(function () {
+        $this->actingAs(User::factory()->create());
+    });
+
     test('permission required to view create page', function () {
-        $this->actingAs(User::factory()->create())
-            ->get(route('users.create'))
+        $this->get(route('users.create'))
             ->assertForbidden();
     });
 
     test('permission required to create user', function () {
-        $this->actingAs(User::factory()->create())
-            ->post(route('users.store'), [
-                'first_name' => 'Suki',
-                'username' => 'suki',
-                'password' => 'super-secret',
-                'password_confirmation' => 'super-secret',
-            ])
+        $this->post(route('users.store'), [
+            'first_name' => 'Suki',
+            'username' => 'suki',
+            'password' => 'super-secret',
+            'password_confirmation' => 'super-secret',
+        ])
             ->assertForbidden();
     });
 });
