@@ -43,13 +43,13 @@ test('can create user', function () {
     $manager = User::factory()->create();
     $department = Department::factory()->create();
     $location = Location::factory()->create();
-    $group = Group::factory()->create();
+    [$groupA, $groupB, $groupC] = Group::factory()->count(3)->create();
 
     $this->actingAs(User::factory()->createUsers()->create())
         ->post(route('users.store'), [
             'first_name' => 'Suki',
             'last_name' => 'Waterhouse',
-            'username' => 'suki',
+            'username' => 'sukiwaterhouse',
             'password' => 'super-secret',
             'password_confirmation' => 'super-secret',
             'activated' => '1',
@@ -75,9 +75,9 @@ test('can create user', function () {
             'country' => 'AE',
             'zip' => '12345',
             'notes' => 'some notes',
-            // @todo:
             'groups' => [
-                $group->id,
+                $groupA->id,
+                $groupB->id,
             ],
             // @todo:
             'permission' => [
@@ -183,7 +183,7 @@ test('can create user', function () {
     $this->assertDatabaseHas('users', [
         'first_name' => 'Suki',
         'last_name' => 'Waterhouse',
-        'username' => 'suki',
+        'username' => 'sukiwaterhouse',
         'activated' => 1,
         'email' => 'suki@example.com',
         'company_id' => $company->id,
@@ -208,4 +208,10 @@ test('can create user', function () {
         'zip' => '12345',
         'notes' => 'some notes',
     ]);
+
+    $suki = User::where('username', 'sukiwaterhouse')->first();
+
+    $this->assertTrue($groupA->users->contains($suki));
+    $this->assertTrue($groupB->users->contains($suki));
+    $this->assertFalse($groupC->users->contains($suki));
 });
