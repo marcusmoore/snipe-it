@@ -106,11 +106,23 @@
                                         <div class="form-group">
                                             <div class="col-md-9 col-md-offset-3">
                                                 <label class="form-control">
-                                                    {{ Form::radio('update_default_location', '1', old('update_default_location'), ['checked'=> 'checked', 'aria-label'=>'update_default_location']) }}
+                                                    <input
+                                                        type="radio"
+                                                        name="update_default_location"
+                                                        value="1"
+                                                        @checked(is_null(old('update_default_location')) || old('update_default_location') === '1')
+                                                        aria-label="update_default_location"
+                                                    />
                                                     {{ trans('admin/hardware/form.asset_location') }}
                                                 </label>
                                                 <label class="form-control">
-                                                    {{ Form::radio('update_default_location', '0', old('update_default_location'), ['aria-label'=>'update_default_location']) }}
+                                                    <input
+                                                        type="radio"
+                                                        name="update_default_location"
+                                                        value="0"
+                                                        @checked(old('update_default_location') === '0')
+                                                        aria-label="update_default_location"
+                                                    />
                                                     {{ trans('admin/hardware/form.asset_location_update_default_current') }}
                                                 </label>
                                             </div>
