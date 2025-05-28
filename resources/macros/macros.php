@@ -238,25 +238,6 @@ Form::macro('two_factor_options', function ($name = 'two_factor_enabled', $selec
     return $select;
 });
 
-Form::macro('customfield_elements', function ($name = 'customfield_elements', $selected = null, $class = null) {
-    $formats = [
-        'text' => 'Text Box',
-        'listbox' => 'List Box',
-        'textarea' => 'Textarea (multi-line) ',
-        'checkbox' => 'Checkbox',
-        'radio' => 'Radio Buttons',
-    ];
-
-    $select = '<select name="'.$name.'" class="'.$class.'" style="width: 100%" aria-label="'.$name.'">';
-    foreach ($formats as $format => $label) {
-        $select .= '<option value="'.$format.'"'.($selected == $format ? ' selected="selected" role="option" aria-selected="true"' : ' aria-selected="false"').'>'.$label.'</option> '."\n";
-    }
-
-    $select .= '</select>';
-
-    return $select;
-});
-
 Form::macro('skin', function ($name = 'skin', $selected = null, $class = null) {
     $formats = [
         'blue' => trans('general.skins.default_blue'),
