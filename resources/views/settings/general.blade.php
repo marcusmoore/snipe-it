@@ -98,7 +98,25 @@
                                    <label for="username_format">{{ trans('admin/settings/general.username_formats.username_format') }}</label>
                                </div>
                                <div class="col-md-8">
-                                   {!! Form::username_format('username_format', old('username_format', $setting->username_format), 'select2') !!}
+                                   <x-input.select
+                                       name="username_format"
+                                       :selected="old('username_format', $setting->username_format)"
+                                       :options="[
+                                            'firstname.lastname' => trans('admin/settings/general.username_formats.firstname_lastname_format'),
+                                            'firstname' => trans('admin/settings/general.username_formats.first_name_format'),
+                                            'lastname' => trans('admin/settings/general.username_formats.last_name_format'),
+                                            'filastname' => trans('admin/settings/general.username_formats.filastname_format'),
+                                            'lastnamefirstinitial' => trans('admin/settings/general.username_formats.lastnamefirstinitial_format'),
+                                            'firstname_lastname' => trans('admin/settings/general.username_formats.firstname_lastname_underscore_format'),
+                                            'firstinitial.lastname' => trans('admin/settings/general.username_formats.firstinitial.lastname'),
+                                            'lastname_firstinitial' => trans('admin/settings/general.username_formats.lastname_firstinitial'),
+                                            'lastname.firstinitial' => trans('admin/settings/general.username_formats.lastname_dot_firstinitial_format'),
+                                            'firstnamelastname' => trans('admin/settings/general.username_formats.firstnamelastname'),
+                                            'firstnamelastinitial' => trans('admin/settings/general.username_formats.firstnamelastinitial'),
+                                            'lastname.firstname' => trans('admin/settings/general.username_formats.lastnamefirstname'),
+                                        ]"
+                                       style="width: 100%"
+                                   />
                                    {!! $errors->first('username_format', '<span class="alert-msg" aria-hidden="true">:message</span>') !!}
 
                                    <p class="help-block">
