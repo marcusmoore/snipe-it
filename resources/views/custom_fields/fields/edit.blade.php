@@ -58,7 +58,19 @@
             </label>
             <div class="col-md-8 required">
 
-            {!! Form::customfield_elements('element', old('element', $field->element), 'field_element select2 form-control') !!}
+            <x-input.select
+                name="element"
+                :selected="old('element', $field->element)"
+                class="field_element"
+                style="width: 100%;"
+                :options="[
+                    'text' => 'Text Box',
+                    'listbox' => 'List Box',
+                    'textarea' => 'Textarea (multi-line) ',
+                    'checkbox' => 'Checkbox',
+                    'radio' => 'Radio Buttons',
+                ]"
+            />
             {!! $errors->first('element', '<span class="alert-msg" aria-hidden="true"><i class="fas fa-times" aria-hidden="true"></i> :message</span>') !!}
 
             </div>
