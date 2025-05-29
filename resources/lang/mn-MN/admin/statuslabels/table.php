@@ -1,14 +1,14 @@
 <?php
 
 return array(
-    'about'      	=> 'About Status Types',
+    'about'      	=> 'Статусын гарчгийн талаар',
     'archived'      	=> 'Архивлагдсан',
     'create'      	=> 'Статусын шошго үүсгэнэ үү',
     'color'      	=> 'График өнгө',
     'default_label' => 'Анхдагч шошго',
     'default_label_help' => 'Энэ нь хөрөнгө үүсгэх/засах үед таны хамгийн их ашиглагддаг статусын шошго сонгох талбарын дээд талд гарч ирэхэд ашиглагддаг.',
     'deployable'      	=> 'Даалгавартай',
-    'info'      	=> 'Status label types are used to describe the various states your assets could be in. They may be out for repair, lost/stolen, etc. You can create new status labels for your deployable, pending and archived assets according to your own workflow. For more information, <a href="https://snipe-it.readme.io/docs/overview#status-labels" target="_blank">see the documentation <i class="fa fa-external-link"></i></a>.',
+    'info'      	=> 'Статусын шошгонууд нь таны өмч хөрөнгүүдийн янз бүрийн мужуудыг тодорхойлоход хэрэглэгддэг. Засварлах, алдагдах, хулгайлагдах гэх мэтчилэн байж болно. Та байршуулах боломжтой, хүлээгдэж байгаа, архивлагдсан хөрөнгөд зориулсан шинэ статусыг үүсгэж болно.',
     'name'      	=> 'Статусын нэр',
     'pending'      	=> 'Хүлээгдэж байна',
     'status_type'   => 'Статус төрөл',

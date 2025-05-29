@@ -11,7 +11,6 @@ use Illuminate\Support\Facades\Log;
 use Throwable;
 use JsonException;
 use Carbon\Exceptions\InvalidFormatException;
-use Illuminate\Http\Exceptions\ThrottleRequestsException;
 
 class Handler extends ExceptionHandler
 {
@@ -108,10 +107,11 @@ class Handler extends ExceptionHandler
 
                 $statusCode = $e->getStatusCode();
 
-                // API throttle requests are handled in the RouteServiceProvider configureRateLimiting() method, so we don't need to handle them here
                 switch ($e->getStatusCode()) {
                     case '404':
                        return response()->json(Helper::formatStandardApiResponse('error', null, $statusCode . ' endpoint not found'), 404);
+                    case '429':
+                        return response()->json(Helper::formatStandardApiResponse('error', null, 'Too many requests'), 429);
                      case '405':
                         return response()->json(Helper::formatStandardApiResponse('error', null, 'Method not allowed'), 405);
                     default:
@@ -143,8 +143,6 @@ class Handler extends ExceptionHandler
                 $route = 'maintenances.index';
             } elseif ($route === 'licenseseats.index') {
                 $route = 'licenses.index';
-            } elseif ($route === 'customfields.index') {
-                $route = 'fields.index';
             }
 
             return redirect()
@@ -203,7 +201,6 @@ class Handler extends ExceptionHandler
      */
     public function register()
     {
-
         $this->reportable(function (Throwable $e) {
             //
         });

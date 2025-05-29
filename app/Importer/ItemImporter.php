@@ -110,7 +110,7 @@ class ItemImporter extends Importer
     protected function determineCheckout($row)
     {
         // Locations don't get checked out to anyone/anything
-        if ((get_class($this) == LocationImporter::class) || (get_class($this) == AssetModelImporter::class) || (get_class($this) == SupplierImporter::class)) {
+        if ((get_class($this) == LocationImporter::class) || (get_class($this) == AssetModelImporter::class)) {
             return;
         }
 

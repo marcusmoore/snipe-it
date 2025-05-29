@@ -2,7 +2,7 @@
 
 return array(
 
-    'invalid_category_type' => 'Категоряита трябва да бъде от консумативи.',
+    'invalid_category_type' => 'The category must be a consumable category.',
     'does_not_exist' => 'Консуматива не съществува.',
 
     'create' => array(

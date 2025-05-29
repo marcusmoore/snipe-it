@@ -1,14 +1,14 @@
 <?php
 
 return array(
-    'about'      	=> 'Statusbezeichnungen erklärt',
+    'about'      	=> 'Über Statusbezeichnungen',
     'archived'      	=> 'Archiviert',
     'create'      	=> 'Statusbezeichnung erstellen',
     'color'      	=> 'Diagrammfarbe',
     'default_label' => 'Standardbezeichnung',
     'default_label_help' => 'Dies wird verwendet, um sicherzustellen, dass die am häufigsten verwendeten Statusbeschriftungen beim Erstellen / Bearbeiten von Assets oben im Auswahlfeld angezeigt werden.',
     'deployable'      	=> 'Einsetzbar',
-    'info'      	=> 'Statusbezeichnungen werden verwendet, um die verschiedenen Zustände Ihrer Assets zu beschreiben. Diese können z. B. in Reparatur, verloren oder gestohlen sein. Sie können eigene Statusbezeichnungen für einsetzbare, ausstehende und archivierte Assets gemäß Ihrem Workflow erstellen. Weitere Informationen finden Sie in der <a href="https://snipe-it.readme.io/docs/overview#status-labels" target="_blank">Dokumentation <i class="fa fa-external-link"></i></a>.',
+    'info'      	=> 'Statusbezeichnungen werden eingesetzt, um diverse Zustände Ihrer Assets zu beschreiben. Diese können z. B. in Reparatur, gestohlen oder verloren sein. Sie können neue Statusbezeichnungen für einsetzbare, ausstehende und archivierte Assets erstellen.',
     'name'      	=> 'Statusname',
     'pending'      	=> 'Ausstehend',
     'status_type'   => 'Statustyp',

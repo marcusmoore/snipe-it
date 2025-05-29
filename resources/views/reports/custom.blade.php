@@ -736,69 +736,52 @@
           clearBtn: true,
           todayHighlight: true,
           endDate: '0d',
-          format: 'yyyy-mm-dd',
-          keepEmptyValues: true,
+          format: 'yyyy-mm-dd'
       });
-
-      $('.created-range .input-daterange').datepicker({
-          clearBtn: true,
-          todayHighlight: true,
-          endDate: '0d',
-          format: 'yyyy-mm-dd',
-          keepEmptyValues: true,
-      });
-
       $('.checkout-range .input-daterange').datepicker({
           clearBtn: true,
           todayHighlight: true,
           endDate: '0d',
-          format: 'yyyy-mm-dd',
-          keepEmptyValues: true,
+          format: 'yyyy-mm-dd'
       });
 
       $('.checkin-range .input-daterange').datepicker({
           clearBtn: true,
           todayHighlight: true,
           endDate: '0d',
-          format: 'yyyy-mm-dd',
-          keepEmptyValues: true,
+          format: 'yyyy-mm-dd'
       });
 
       $('.expected_checkin-range .input-daterange').datepicker({
           clearBtn: true,
           todayHighlight: true,
-          format: 'yyyy-mm-dd',
-          keepEmptyValues: true,
+          format: 'yyyy-mm-dd'
       });
 
       $('.asset_eol_date-range .input-daterange').datepicker({
           clearBtn: true,
           todayHighlight: true,
-          format: 'yyyy-mm-dd',
-          keepEmptyValues: true,
+          format: 'yyyy-mm-dd'
       });
 
       $('.last_audit-range .input-daterange').datepicker({
           clearBtn: true,
           todayHighlight: true,
           endDate:'0d',
-          format: 'yyyy-mm-dd',
-          keepEmptyValues: true,
+          format: 'yyyy-mm-dd'
       });
 
       $('.next_audit-range .input-daterange').datepicker({
           clearBtn: true,
           todayHighlight: true,
-          format: 'yyyy-mm-dd',
-          keepEmptyValues: true,
+          format: 'yyyy-mm-dd'
       });
 
       $('.last_updated-range .input-daterange').datepicker({
           clearBtn: true,
           todayHighlight: true,
           endDate:'0d',
-          format: 'yyyy-mm-dd',
-          keepEmptyValues: true,
+          format: 'yyyy-mm-dd'
       });
 
 

@@ -52,7 +52,6 @@ class Kernel extends HttpKernel
             'auth:api',
             \App\Http\Middleware\CheckLocale::class,
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
-            \App\Http\Middleware\SetAPIResponseHeaders::class,
         ],
 
         'health' => [
