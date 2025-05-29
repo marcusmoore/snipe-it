@@ -522,7 +522,7 @@ return [
     'checked_out_to_fields' => 'Kolom Informasi Peminjam',
     'percent_complete' => '% lengkap',
     'uploading' => 'Sedang mengunggah... ',
-    'upload_error' => 'Terjadi kesalahan saat mengunggah berkas. Pastikan tidak ada baris yang kosong dan nama kolom tidak ada yang ganda.',
+    'upload_error' => 'Error uploading file. Please check that you have no empty rows or duplicated column names in your CSV, and that the server permissions allow uploads.',
     'copy_to_clipboard' => 'Salin ke Papan Klip',
     'copied' => 'Disalin!',
     'status_compatibility' => 'Jika aset telah dialokasikan, statusnya tidak dapat diubah menjadi tidak dapat digunakan, dan perubahan ini akan diabaikan.',

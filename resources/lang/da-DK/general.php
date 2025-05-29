@@ -522,7 +522,7 @@ return [
     'checked_out_to_fields' => 'Checked Out To Fields',
     'percent_complete' => '% komplet',
     'uploading' => 'Uploader... ',
-    'upload_error' => 'Fejl under upload af fil. Kontroller, at der ikke er nogen tomme rækker og at ingen kolonnenavne er duplikeret.',
+    'upload_error' => 'Error uploading file. Please check that you have no empty rows or duplicated column names in your CSV, and that the server permissions allow uploads.',
     'copy_to_clipboard' => 'Kopiér til udklipsholder',
     'copied' => 'Kopieret!',
     'status_compatibility' => 'Hvis aktiverne allerede er tildelt, kan de ikke ændres til en ikke-deployérbar statustype og denne værdiændring vil blive sprunget over.',

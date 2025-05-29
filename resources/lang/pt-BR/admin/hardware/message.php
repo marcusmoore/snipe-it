@@ -87,8 +87,8 @@ return [
     ],
 
     'multi-checkout' => [
-        'error'   => 'Asset was not checked out, please try again|Assets were not checked out, please try again',
-        'success' => 'Asset checked out successfully.|Assets checked out successfully.',
+        'error'   => 'O ativo não foi registrado, por favor tente novamente. | Os ativos não foram registrados, por favor tente novamente',
+        'success' => 'Ativo registrado com sucesso. | Ativos registrados com sucesso.',
     ],
 
     'checkin' => [

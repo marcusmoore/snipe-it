@@ -522,7 +522,7 @@ return [
     'checked_out_to_fields' => 'Checked Out To Fields',
     'percent_complete' => '% اكتمال',
     'uploading' => 'تحميل... ',
-    'upload_error' => 'خطأ في تحميل الملف. الرجاء التحقق من أنه لا توجد صفوف فارغة وأنه لا يوجد تكرار لأسماء الأعمدة.',
+    'upload_error' => 'Error uploading file. Please check that you have no empty rows or duplicated column names in your CSV, and that the server permissions allow uploads.',
     'copy_to_clipboard' => 'نسخ إلى الحافظة',
     'copied' => 'نسخ!',
     'status_compatibility' => 'إذا تم تعيين الأصول بالفعل، فإنه لا يمكن تغييرها إلى نوع حالة غير قابل للنشر وسيتم تخطي هذا التغيير في القيمة.',

@@ -65,7 +65,7 @@
             {{ trans('general.skin') }}
           </label>
           <div class="col-md-8">
-            {!! Form::user_skin('skin', old('skin', $user->skin), 'select2') !!}
+            <x-input.skin name="skin" :selected="old('skin', $user->skin)" :include-blank-option="true"/>
             {!! $errors->first('skin', '<span class="alert-msg">:message</span>') !!}
           </div>
         </div>

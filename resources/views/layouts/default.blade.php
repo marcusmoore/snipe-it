@@ -852,9 +852,9 @@ dir="{{ Helper::determineLanguageDirection() }}">
                                             <li class="breadcrumb-item">
                                                 <a href="{{ $crumbs->url() }}">
                                                     @if ($loop->first)
-                                                        {!! Blade::render($crumbs->title()) !!}
+                                                        <x-icon type="home" />
                                                     @else
-                                                        {{ Blade::render($crumbs->title()) }}
+                                                        {{ $crumbs->title() }}
                                                     @endif
                                                 </a>
                                                 <x-icon type="angle-right" />

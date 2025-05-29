@@ -522,7 +522,7 @@ return [
     'checked_out_to_fields' => 'Визначено полями',
     'percent_complete' => '% завершити',
     'uploading' => 'Відвантаження... ',
-    'upload_error' => 'Помилка завантаження файлу. Будь ласка, перевірте, чи немає порожніх рядків і що не дубльовані назви стовпців.',
+    'upload_error' => 'Error uploading file. Please check that you have no empty rows or duplicated column names in your CSV, and that the server permissions allow uploads.',
     'copy_to_clipboard' => 'Копіювати в буфер обміну',
     'copied' => 'Скопійовано!',
     'status_compatibility' => 'Якщо активи вже призначені, вони не можуть бути змінені на тип статусу, який не розгортається, і ця зміна значення буде пропущена.',

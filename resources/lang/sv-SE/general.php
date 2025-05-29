@@ -522,7 +522,7 @@ return [
     'checked_out_to_fields' => 'Utcheckad till fält',
     'percent_complete' => '% slutförd',
     'uploading' => 'Laddar upp... ',
-    'upload_error' => 'Fel vid uppladdning av fil. Kontrollera att det inte finns några tomma rader och att inga kolumnnamn dupliceras.',
+    'upload_error' => 'Error uploading file. Please check that you have no empty rows or duplicated column names in your CSV, and that the server permissions allow uploads.',
     'copy_to_clipboard' => 'Kopiera till urklipp',
     'copied' => 'Kopierad!',
     'status_compatibility' => 'Om tillgångar redan tilldelats kan de inte ändras till en otillgänglig statustyp varvid denna värdeändring kommer att ignoreras.',

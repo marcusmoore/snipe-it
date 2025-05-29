@@ -521,7 +521,7 @@ return [
     'checked_out_to_fields' => 'Checked Out To Fields',
     'percent_complete' => '% dhamaystiran',
     'uploading' => 'Soo dejinta... ',
-    'upload_error' => 'Error uploading file. Please check that there are no empty rows and that no column names are duplicated.',
+    'upload_error' => 'Error uploading file. Please check that you have no empty rows or duplicated column names in your CSV, and that the server permissions allow uploads.',
     'copy_to_clipboard' => 'Ku koobi kara sabuuradda',
     'copied' => 'La guuriyay!',
     'status_compatibility' => 'If assets are already assigned, they cannot be changed to a non-deployable status type and this value change will be skipped.',

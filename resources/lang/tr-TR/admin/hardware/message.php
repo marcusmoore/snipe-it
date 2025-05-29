@@ -24,10 +24,10 @@ return [
     'update' => [
         'error'   			=> 'Demirbaş güncellenemedi, lütfen tekrar deneyin',
         'success' 			=> 'Demirbaş güncellendi.',
-        'encrypted_warning' => 'Asset updated successfully, but encrypted custom fields were not due to permissions',
+        'encrypted_warning' => 'Varlık başarıyla güncellendi, ancak şifreli özel alanlar izin nedeniyle güncellenemedi',
         'nothing_updated'	=>  'Hiçbir alan seçilmedi, dolayısıyla hiç bir alan güncellenmedi.',
         'no_assets_selected'  =>  'Hiçbir varlık seçilmedi, bu nedenle hiçbir şey güncellenmedi.',
-        'assets_do_not_exist_or_are_invalid' => 'Selected assets cannot be updated.',
+        'assets_do_not_exist_or_are_invalid' => '',
     ],
 
     'restore' => [

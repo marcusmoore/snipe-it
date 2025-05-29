@@ -379,6 +379,7 @@
             <!-- checked out assets table -->
 
             <table
+                  data-cookie-id-table="userAssignedAssets"
                   data-toolbar="#userAssetToolbar"
                   data-pagination="true"
                   data-id-table="userAssets"

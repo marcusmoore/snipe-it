@@ -522,7 +522,7 @@ return [
     'checked_out_to_fields' => 'Checked Out To Fields',
     'percent_complete' => '% valmis',
     'uploading' => 'Lähetetään... ',
-    'upload_error' => 'Virhe tiedostoa lähetettäessä. Tarkista, että tyhjiä rivejä ei ole ja että sarakkeiden nimiä ei ole kopioitu.',
+    'upload_error' => 'Error uploading file. Please check that you have no empty rows or duplicated column names in your CSV, and that the server permissions allow uploads.',
     'copy_to_clipboard' => 'Kopioi leikepöydälle',
     'copied' => 'Kopioitu!',
     'status_compatibility' => 'Jos varat on jo määritetty, niitä ei voi muuttaa käyttökelvottomaksi tilatyypiksi, ja tämä arvon muutos ohitetaan.',

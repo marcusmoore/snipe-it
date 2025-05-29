@@ -522,7 +522,7 @@ return [
     'checked_out_to_fields' => 'Folgenden Feldern zugewiesen',
     'percent_complete' => '% vollständig',
     'uploading' => 'Wird hochgeladen ... ',
-    'upload_error' => 'Fehler beim Hochladen der Datei. Bitte überprüfen Sie, dass keine leeren Zeilen vorhanden sind und keine Spaltennamen dupliziert werden.',
+    'upload_error' => 'Fehler beim Hochladen der Datei. Bitte überprüfen Sie, ob Sie keine leeren Zeilen oder doppelte Spaltennamen in Ihrem CSV haben und dass die Serverrechte das Hochladen erlauben.',
     'copy_to_clipboard' => 'In die Zwischenablage kopieren',
     'copied' => 'Kopiert!',
     'status_compatibility' => 'Wenn Assets bereits zugewiesen sind, können sie nicht zu einem nicht einsetzbaren Statustyp geändert werden, und diese Änderung wird übersprungen.',

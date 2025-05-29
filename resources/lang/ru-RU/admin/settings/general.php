@@ -378,7 +378,7 @@ return [
     'help_blank_to_use'     => 'Оставьте пустым, чтобы использовать значение из <code>:setting_name</code>',
     'help_default_will_use' => '<code>:default</code> will use the value from <code>:setting_name</code>. <br>Note that the value of the barcodes must comply with the respective barcode spec in order to be successfully generated. Please see <a href="https://snipe-it.readme.io/docs/barcodes">the documentation <i class="fa fa-external-link"></i></a> for more details. ',
     'asset_id'              => 'Asset ID',
-    'data'               => 'Data',
+    'data'               => '',
     'default'               => 'По умолчанию',
     'none'                  => 'None',
     'google_callback_help' => 'Это должно быть введено как URL обратного вызова в настройках приложения Google OAuth в вашей организации&apos;s <strong><a href="https://console.cloud.google.com/" target="_blank">консоль разработчика Google <i class="fa fa-external-link" aria-hidden="true"></i></a></strong>.',

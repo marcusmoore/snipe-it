@@ -522,7 +522,7 @@ return [
     'checked_out_to_fields' => 'Checked Out To Fields',
     'percent_complete' => '% terminé',
     'uploading' => 'Téléversement... ',
-    'upload_error' => 'Erreur lors du téléversement du fichier. Veuillez vérifier qu\'il n\'y a pas de lignes vides et qu\'aucun nom de colonne n\'est dupliqué.',
+    'upload_error' => 'Error uploading file. Please check that you have no empty rows or duplicated column names in your CSV, and that the server permissions allow uploads.',
     'copy_to_clipboard' => 'Copier dans le presse-papier',
     'copied' => 'Copié !',
     'status_compatibility' => 'Si les actifs sont déjà assignés, ils ne peuvent pas être changés en un type d\'état non déployable et ce changement de valeur sera ignoré.',

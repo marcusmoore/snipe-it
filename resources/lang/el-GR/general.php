@@ -522,7 +522,7 @@ return [
     'checked_out_to_fields' => 'Checked Out To Fields',
     'percent_complete' => '% πλήρης',
     'uploading' => 'Μεταφόρτωση... ',
-    'upload_error' => 'Σφάλμα κατά τη μεταφόρτωση του αρχείου. Παρακαλώ ελέγξτε ότι δεν υπάρχουν κενές γραμμές και ότι δεν υπάρχουν διπλότυπα ονόματα στηλών.',
+    'upload_error' => 'Error uploading file. Please check that you have no empty rows or duplicated column names in your CSV, and that the server permissions allow uploads.',
     'copy_to_clipboard' => 'Αντιγραφή στο πρόχειρο',
     'copied' => 'Αντιγράφηκε!',
     'status_compatibility' => 'Εάν τα περιουσιακά στοιχεία έχουν ήδη εκχωρηθεί, δεν μπορούν να αλλάξουν σε μη εγκατεστημένο τύπο κατάστασης και αυτή η αλλαγή αξίας θα παραλειφθεί.',

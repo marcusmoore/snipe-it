@@ -522,7 +522,7 @@ return [
     'checked_out_to_fields' => 'Polia pre odovzdanie',
     'percent_complete' => '% hotovo',
     'uploading' => 'Nahrávam... ',
-    'upload_error' => 'Chyba pri nahrávaní súboru. Prosím overte že súbor neobsahuje žiadne prázdne riadky a žiadne duplicitné stĺpce.',
+    'upload_error' => 'Error uploading file. Please check that you have no empty rows or duplicated column names in your CSV, and that the server permissions allow uploads.',
     'copy_to_clipboard' => 'Kopírovať do schránky',
     'copied' => 'Skopírované!',
     'status_compatibility' => 'Keď je majetok už priradený, nemôže byť jeho stav zmenený na nepriraditeľný a hodnota tejto položky bude preskočená.',

@@ -522,7 +522,7 @@ return [
     'checked_out_to_fields' => 'Campi degli assegnati',
     'percent_complete' => '% completato',
     'uploading' => 'Caricamento... ',
-    'upload_error' => 'Errore nel caricamento del file. Controlla che non ci siano righe vuote e che nessun nome di colonna sia duplicato.',
+    'upload_error' => 'Errore nel caricamento del file. Si prega di controllare che non ci siano righe vuote o nomi di colonne duplicati nel CSV e che le autorizzazioni del server consentano i caricamenti.',
     'copy_to_clipboard' => 'Copia negli Appunti',
     'copied' => 'Copiato!',
     'status_compatibility' => 'Se i Beni sono già assegnati, il loro stato non può essere cambiato in "Non consegnabile" e la modifica di questo valore verrà ignorata.',

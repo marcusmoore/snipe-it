@@ -522,7 +522,7 @@ return [
     'checked_out_to_fields' => 'Checked Out To Fields',
     'percent_complete' => '% complet',
     'uploading' => 'Încărcare... ',
-    'upload_error' => 'Eroare la încărcarea fișierului. Vă rugăm să verificați că nu există rânduri goale și că nici un nume de coloane nu este duplicat.',
+    'upload_error' => 'Error uploading file. Please check that you have no empty rows or duplicated column names in your CSV, and that the server permissions allow uploads.',
     'copy_to_clipboard' => 'Copiază în clipboard',
     'copied' => 'Copiat!',
     'status_compatibility' => 'Dacă activele sunt deja alocate, acestea nu pot fi schimbate la un tip de stare neimplementabil și această modificare de valoare va fi omisă.',

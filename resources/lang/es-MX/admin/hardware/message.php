@@ -66,14 +66,14 @@ return [
         'file_already_deleted' => 'El archivo seleccionado ya fue eliminado',
         'header_row_has_malformed_characters' => 'Uno o más atributos de la fila de encabezado contiene caracteres UTF-8 mal formados',
         'content_row_has_malformed_characters' => 'Uno o más atributos en la primera fila contienen caracteres UTF-8 mal formados',
-        'transliterate_failure' => 'Transliteration from :encoding to UTF-8 failed due to invalid characters in input'
+        'transliterate_failure' => 'La transliteración de :encoding a UTF-8 falló debido a caracteres no válidos en la entrada'
     ],
 
 
     'delete' => [
         'confirm'   	=> '¿Está seguro de que desea eliminar este activo?',
         'error'   		=> 'Hubo un problema al eliminar el activo. Por favor, inténtelo de nuevo.',
-        'assigned_to_error' => '{1}Asset Tag: :asset_tag is currently checked out. Check in this device before deletion.|[2,*]Asset Tags: :asset_tag are currently checked out. Check in these devices before deletion.',
+        'assigned_to_error' => '{1}Tag de activos: :asset_tag está actualmente desprotegido. Compruebe este dispositivo antes de eliminarlo. [2,*]Etiquetas de activos: :asset_tag están desactivadas. Revisa estos dispositivos antes de eliminarlos.',
         'nothing_updated'   => 'No se seleccionaron los activos, por lo que no se eliminó nada.',
         'success' 		=> 'El activo se ha eliminado correctamente.',
     ],
@@ -100,9 +100,9 @@ return [
     ],
 
     'requests' => [
-        'error'   		=> 'Request was not successful, please try again.',
-        'success' 		=> 'Request successfully submitted.',
-        'canceled'      => 'Request successfully canceled.',
+        'error'   		=> 'Solicitud no exitosa, por favor inténtelo de nuevo.',
+        'success' 		=> 'Solicitud enviada con éxito.',
+        'canceled'      => 'Solicitud cancelada con éxito.',
         'cancel'        => 'Cancelar solicitud para este elemento',
     ],
 

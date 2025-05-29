@@ -522,7 +522,7 @@ return [
     'checked_out_to_fields' => '签出到字段',
     'percent_complete' => '% 完成',
     'uploading' => '正在上传... ',
-    'upload_error' => '上传文件时出错。请检查是否没有空行，并且没有重复的列名。',
+    'upload_error' => '文件上传失败。请检查您的 CSV 文件，确保其中没有空行或重复的列名，并确认服务器权限允许上传。',
     'copy_to_clipboard' => '复制到剪贴板',
     'copied' => '已复制！',
     'status_compatibility' => '如果资产已经分配，它们不能被更改为不可部署的状态类型，并且这个值的变化将被跳过。',

@@ -522,7 +522,7 @@ return [
     'checked_out_to_fields' => 'Checked Out To Fields',
     'percent_complete' => '% 完成',
     'uploading' => '上傳中... ',
-    'upload_error' => '上傳檔案錯誤，請檢查是否有空行，列名稱是否重複。',
+    'upload_error' => 'Error uploading file. Please check that you have no empty rows or duplicated column names in your CSV, and that the server permissions allow uploads.',
     'copy_to_clipboard' => '複製到剪貼簿',
     'copied' => '已複製!',
     'status_compatibility' => 'If assets are already assigned, they cannot be changed to a non-deployable status type and this value change will be skipped.',

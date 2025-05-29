@@ -522,7 +522,7 @@ return [
     'checked_out_to_fields' => 'Checked Out To Fields',
     'percent_complete' => '% completo',
     'uploading' => 'Enviando... ',
-    'upload_error' => 'Erro ao enviar o arquivo. Por favor, verifique se não existem linhas vazias e se nenhum nome de coluna está duplicado.',
+    'upload_error' => 'Error uploading file. Please check that you have no empty rows or duplicated column names in your CSV, and that the server permissions allow uploads.',
     'copy_to_clipboard' => 'Copiar para Área de Transferência',
     'copied' => 'Copiado!',
     'status_compatibility' => 'Se os ativos já estão atribuídos, eles não podem ser alterados para um tipo de status não implantável e este valor será ignorado.',

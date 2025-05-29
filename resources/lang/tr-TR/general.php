@@ -525,7 +525,7 @@ Context | Request Context
     'checked_out_to_fields' => 'Checked Out To Fields',
     'percent_complete' => '% tamamlandı',
     'uploading' => 'Yükleniyor... ',
-    'upload_error' => 'Dosya yüklenirken hata oluştu. Lütfen boş satır olmadığından ve hiçbir sütun adının kopyalanmadığından emin olun.',
+    'upload_error' => 'Error uploading file. Please check that you have no empty rows or duplicated column names in your CSV, and that the server permissions allow uploads.',
     'copy_to_clipboard' => 'Panoya kopyala',
     'copied' => 'Kopyalandı!',
     'status_compatibility' => 'Varlıklar zaten atanmışsa konuşlandırılamayan bir durum türüne değiştirilemezler ve bu değer değişikliği atlanır.',
@@ -538,14 +538,14 @@ Context | Request Context
     'or' => 'veya',
     'url'                   => 'Link',
     'edit_fieldset' => 'Edit fieldset fields and options',
-    'permission_denied_superuser_demo' => 'Permission denied. You cannot update user information for superadmins on the demo.',
-    'pwd_reset_not_sent' => 'User is not activated, is LDAP synced, or does not have an email address',
-    'error_sending_email' => 'Error sending email',
+    'permission_denied_superuser_demo' => 'İzin reddedildi. Demo üzerinde süper yöneticilerin kullanıcı bilgilerini güncelleyemezsiniz.',
+    'pwd_reset_not_sent' => 'Kullanıcı etkinleştirilmemiş, LDAP ile senkronize edilmemiş ya da bir e-posta adresine sahip değil',
+    'error_sending_email' => 'E-posta gönderme hatası',
     'sad_panda' => 'Sad panda. You are not authorized to do the thing. Maybe <a href=":link">return to the dashboard</a>, or contact your administrator.',
     'bulk' => [
             'delete' =>
                 [
-                'header' => 'Bulk Delete :object_type',
+                'header' => 'Toplu Silme: :object_type',
                 'warn'   =>  'You are about to delete one :object_type|You are about to delete :count :object_type',
                 'success'   =>  ':object_type successfully deleted|Successfully deleted :count :object_type',
                 'error'   =>  'Could not delete :object_type',
@@ -616,16 +616,16 @@ Context | Request Context
     'select_all_none' => 'Select/Unselect All',
     'generic_model_not_found' => 'That :model was not found or you do not have permission to access it',
     'deleted_models' => 'Deleted Asset Models',
-    'deleted_users' => 'Deleted Users',
+    'deleted_users' => 'Silinen Kullanıcılar',
     'cost_each' => ':amount each',
-    'remove_current_image' => 'Remove current :type image',
+    'remove_current_image' => 'Mevcut :type görselini kaldır',
 
     'seeding' => [
         'manufacturers' => [
-            'button' => 'Create Manufacturers',
+            'button' => 'Üreticiler Oluştur',
             'prompt' => 'You do not have any manufacturers yet. Would you like to seed a list of common manufacturers? (THIS WILL OVERWRITE EXISTING MANUFACTURERS, including those that have been soft-deleted.)',
             'success' => 'Manufacturers seeded successfully',
-            'error' => 'Could not seed manufacturers. A manufacturer record already exists and seeding would overwrite it.|Could not seed manufacturers. :count manufacturer records already exist and seeding would overwrite them.',
+            'error' => 'Üreticiler eklenemedi. Bir üretici kaydı zaten mevcut ve ekleme işlemi üzerine yazacaktır.|Üreticiler eklenemedi. :count üretici kaydı zaten mevcut ve ekleme işlemi bunların üzerine yazacaktır.',
         ],
     ],
 

@@ -522,7 +522,7 @@ return [
     'checked_out_to_fields' => 'Задолжено на полиња',
     'percent_complete' => '% завршено',
     'uploading' => 'Прикачување... ',
-    'upload_error' => 'Грешка при прикачувањето. Потврдете дека нема празни полиња и нема дупликат колони.',
+    'upload_error' => 'Error uploading file. Please check that you have no empty rows or duplicated column names in your CSV, and that the server permissions allow uploads.',
     'copy_to_clipboard' => 'Копирај во Clipboard',
     'copied' => 'Копирано!',
     'status_compatibility' => 'Ако средството е доделено, не е можно статусот да биде променет во статус од не-распоредлив тип и оваа вредност ќе биде прескокната.',

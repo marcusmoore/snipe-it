@@ -522,7 +522,7 @@ return [
     'checked_out_to_fields' => 'Checked Out To Fields',
     'percent_complete' => '% fullført',
     'uploading' => 'Laster opp... ',
-    'upload_error' => 'Feil ved opplasting av fil. Vennligst sjekk at det ikke er noen tomme rader og at ingen kolonnenavn er duplisert.',
+    'upload_error' => 'Error uploading file. Please check that you have no empty rows or duplicated column names in your CSV, and that the server permissions allow uploads.',
     'copy_to_clipboard' => 'Kopier til utklippstavlen',
     'copied' => 'Kopiert!',
     'status_compatibility' => 'Hvis eiendelene allerede er tilordnet, kan de ikke endres til en ikke-distribuerbar statustype og denne verdien vil bli hoppet over.',

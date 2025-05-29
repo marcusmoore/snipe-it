@@ -1,14 +1,14 @@
 <?php
 
 return array(
-    'about'      	=> 'Informazioni sulle etichette di stato',
+    'about'      	=> 'About Status Types',
     'archived'      	=> 'Archiviato',
     'create'      	=> 'Crea Etichetta di Stato',
     'color'      	=> 'Colore del grafico',
     'default_label' => 'Etichetta predefinita',
     'default_label_help' => 'Viene utilizzato per garantire che le etichette di stato più comuni vengano visualizzate nella parte superiore della casella di selezione durante la creazione / modifica delle risorse.',
     'deployable'      	=> 'Assegnabile',
-    'info'      	=> 'Le etichette di stato sono usate per descrivere i vari stati dei beni. Essi possono essere fuori per la riparazione, perso o rubato, etc. È possibile creare nuove etichette di stato per schierabili, in attesa e dei beni archiviati.',
+    'info'      	=> 'Status label types are used to describe the various states your assets could be in. They may be out for repair, lost/stolen, etc. You can create new status labels for your deployable, pending and archived assets according to your own workflow. For more information, <a href="https://snipe-it.readme.io/docs/overview#status-labels" target="_blank">see the documentation <i class="fa fa-external-link"></i></a>.',
     'name'      	=> 'Nome Stato',
     'pending'      	=> 'In attesa',
     'status_type'   => 'Tipo di stato',

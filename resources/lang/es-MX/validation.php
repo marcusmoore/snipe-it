@@ -172,7 +172,7 @@ return [
     'url' => 'El campo :attribute debe ser una URL válida.',
     'ulid' => 'El campo :attribute debe ser un ULID válido.',
     'uuid' => 'El campo :attribute debe ser un UUID válido.',
-    'fmcs_location' => 'Full multiple company support and location scoping is enabled in the Admin Settings, and the selected location and selected company are not compatible.',
+    'fmcs_location' => 'El soporte completo de múltiples empresas y el alcance de la ubicación están habilitados en la Configuración de Administración, y la ubicación seleccionada y la empresa seleccionada no son compatibles.',
 
 
     /*

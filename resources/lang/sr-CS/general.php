@@ -522,7 +522,7 @@ return [
     'checked_out_to_fields' => 'Zaduženo poljima',
     'percent_complete' => '% završeno',
     'uploading' => 'Slanje... ',
-    'upload_error' => 'Greška tokom slanja datoteke. Molim vas potvrdite da nema praznih redova i da nazivi kolona nisu duplirani.',
+    'upload_error' => 'Greška pri slanju datoteke. Molim vas proverite da nemate prazne redove ili duplirane nazive kolona u vašem CSV-u i da dozvole na serveru dozvoljavaju snimanje datoteka.',
     'copy_to_clipboard' => 'Kopiraj u beležnicu',
     'copied' => 'Kopirano!',
     'status_compatibility' => 'Ako je imovina već zadužena, ne može biti promenjena u nezaduživi status i promena ove vrednosti će biti preskočena.',

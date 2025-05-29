@@ -522,7 +522,7 @@ return [
     'checked_out_to_fields' => 'Zaznaczone pola',
     'percent_complete' => '% ukończone',
     'uploading' => 'Wgrywanie... ',
-    'upload_error' => 'Błąd podczas przesyłania pliku. Sprawdź, czy nie ma pustych wierszy i czy nazwy kolumn nie są zduplikowane.',
+    'upload_error' => 'Error uploading file. Please check that you have no empty rows or duplicated column names in your CSV, and that the server permissions allow uploads.',
     'copy_to_clipboard' => 'Kopiuj do schowka',
     'copied' => 'Skopiowano!',
     'status_compatibility' => 'Jeśli zasoby są już przypisane, nie mogą zostać zmienione na niewdrożalny typ statusu i ta zmiana wartości zostanie pominięta.',

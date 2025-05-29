@@ -522,7 +522,7 @@ return [
     'checked_out_to_fields' => 'Checked Out To Fields',
     'percent_complete' => '% 成功',
     'uploading' => 'アップロード中... ',
-    'upload_error' => 'ファイルのアップロード中にエラーが発生しました。空の行がなく、列名が重複していないことを確認してください。',
+    'upload_error' => 'Error uploading file. Please check that you have no empty rows or duplicated column names in your CSV, and that the server permissions allow uploads.',
     'copy_to_clipboard' => 'クリップボードにコピー',
     'copied' => 'コピーしました！',
     'status_compatibility' => 'アセットがすでに割り当てられている場合、デプロイできないステータスタイプに変更することはできません。この値の変更はスキップされます。',

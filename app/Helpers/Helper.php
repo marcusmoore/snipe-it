@@ -1313,25 +1313,20 @@ class Helper
         switch ($item) {
             case 'asset':
                 return 'fas fa-barcode';
-                break;
             case 'accessory':
                 return 'fas fa-keyboard';
-                break;
             case 'component':
                 return 'fas fa-hdd';
-                break;
             case 'consumable':
                 return 'fas fa-tint';
-                break;
             case 'license':
                 return 'far fa-save';
-                break;
             case 'location':
                 return 'fas fa-map-marker-alt';
-                break;
             case 'user':
                 return 'fas fa-user';
-                break;
+            case 'supplier':
+                return 'fa-solid fa-store';
         }
 
     }

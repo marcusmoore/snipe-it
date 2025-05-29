@@ -522,7 +522,7 @@ return [
     'checked_out_to_fields' => 'Priskyrimo laukai',
     'percent_complete' => '% baigta',
     'uploading' => 'Įkeliama... ',
-    'upload_error' => 'Klaida įkeliant failą. Patikrinkite, ar nėra tuščių eilučių ir besidubliuojančių stulpelių pavadinimų.',
+    'upload_error' => 'Error uploading file. Please check that you have no empty rows or duplicated column names in your CSV, and that the server permissions allow uploads.',
     'copy_to_clipboard' => 'Kopijuoti į iškarpinę',
     'copied' => 'Nukopijuota!',
     'status_compatibility' => 'Jei turtas jau yra išduotas, jo būsena negali būti pakeista į neišduotinos būsenos tipą, todėl šios reikšmės pakeitimas nebus atliekamas.',

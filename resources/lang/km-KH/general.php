@@ -522,7 +522,7 @@ return [
     'checked_out_to_fields' => 'វាលច្រើន បានចេញយកទៅកាន់',
     'percent_complete' => '% រួចរាល់',
     'uploading' => 'កំពុងបង្ហោះ... ',
-    'upload_error' => 'កំហុសក្នុងការបង្ហោះឯកសារ។ សូម​ពិនិត្យ​មើល​ថា​គ្មាន​ជួរ​ដេក​ទទេ ហើយ​ថា​គ្មាន​ឈ្មោះ​ជួរ​ឈរ​ត្រូវ​បាន​ស្ទួន​ទេ។',
+    'upload_error' => 'Error uploading file. Please check that you have no empty rows or duplicated column names in your CSV, and that the server permissions allow uploads.',
     'copy_to_clipboard' => 'ចម្លងទៅក្ដារតម្បៀតខ្ទាស់',
     'copied' => 'បានចម្លង!',
     'status_compatibility' => 'ប្រសិនបើទ្រព្យសម្បត្តិត្រូវបានចាត់ចែងរួចហើយ ពួកវាមិនអាចប្តូរទៅជាប្រភេទស្ថានភាពដែលមិនអាចប្រើប្រាស់បានឡើយ ហើយការផ្លាស់ប្តូរតម្លៃនេះនឹងត្រូវបានរំលង។',

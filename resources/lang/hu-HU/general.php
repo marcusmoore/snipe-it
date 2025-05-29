@@ -522,7 +522,7 @@ return [
     'checked_out_to_fields' => 'Checked Out To Fields',
     'percent_complete' => '% elkészült',
     'uploading' => 'Feltöltés...',
-    'upload_error' => 'Hiba a fájl feltöltése során. Kérem, ellenőrizze, hogy nincsenek üres sorok és nincsenek oszlop fejléc nevek duplikálva.',
+    'upload_error' => 'Error uploading file. Please check that you have no empty rows or duplicated column names in your CSV, and that the server permissions allow uploads.',
     'copy_to_clipboard' => 'Másolás a vágólapra',
     'copied' => 'Másolva!',
     'status_compatibility' => 'If assets are already assigned, they cannot be changed to a non-deployable status type and this value change will be skipped.',

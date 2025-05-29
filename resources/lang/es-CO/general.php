@@ -522,7 +522,7 @@ return [
     'checked_out_to_fields' => 'Campos de la persona que tiene asignado el elemento',
     'percent_complete' => '% completo',
     'uploading' => 'Subiendo... ',
-    'upload_error' => 'Error al cargar el archivo. Por favor, compruebe que no hay filas vacías y que no hay nombres de columna duplicados.',
+    'upload_error' => 'Error uploading file. Please check that you have no empty rows or duplicated column names in your CSV, and that the server permissions allow uploads.',
     'copy_to_clipboard' => 'Copiar al portapapeles',
     'copied' => '¡Copiado!',
     'status_compatibility' => 'Si los activos ya están asignados, no se pueden cambiar a un tipo de estado no utilizable y este cambio de valor se omitirá.',
