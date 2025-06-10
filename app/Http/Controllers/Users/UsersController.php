@@ -332,7 +332,6 @@ class UsersController extends Controller
             $this->authorize('delete', $user);
 
             if ($user->delete()) {
-                $user->pendingCheckoutAcceptances()->delete();
                 return redirect()->route('users.index')->with('success', trans('admin/users/message.success.delete'));
             }
         }

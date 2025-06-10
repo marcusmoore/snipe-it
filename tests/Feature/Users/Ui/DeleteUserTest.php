@@ -215,19 +215,4 @@ class DeleteUserTest extends TestCase
 
         $this->assertSoftDeleted($user);
     }
-
-    public function testUsersUnacceptedCheckoutAcceptancesAreSoftDeletedWhenUserIsDeleted()
-    {
-        $user = User::factory()->create();
-
-        $checkoutAcceptance = CheckoutAcceptance::factory()
-            ->pending()
-            ->for($user, 'assignedTo')
-            ->create();
-
-        $this->actingAs(User::factory()->deleteUsers()->viewUsers()->create())
-            ->delete(route('users.destroy', $user->id));
-
-        $this->assertSoftDeleted($checkoutAcceptance);
-    }
 }

@@ -139,6 +139,13 @@ class User extends SnipeModel implements AuthenticatableContract, AuthorizableCo
         'manager'    => ['first_name', 'last_name', 'username'],
     ];
 
+    protected static function booted(): void
+    {
+        static::deleted(function (User $user) {
+            $user->pendingCheckoutAcceptances()->delete();
+        });
+    }
+
     /**
      * Internally check the user permission for the given section
      *

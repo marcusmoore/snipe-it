@@ -122,4 +122,18 @@ class UserTest extends TestCase
         $this->assertFalse($user->pendingCheckoutAcceptances->contains($acceptedAcceptance));
         $this->assertTrue($user->pendingCheckoutAcceptances->contains($pendingAcceptance));
     }
+
+    public function test_users_unaccepted_checkout_acceptances_are_soft_deleted_when_user_is_deleted()
+    {
+        $user = User::factory()->create();
+
+        $checkoutAcceptance = CheckoutAcceptance::factory()
+            ->pending()
+            ->for($user, 'assignedTo')
+            ->create();
+
+        $user->delete();
+
+        $this->assertTrue($checkoutAcceptance->fresh()->trashed());
+    }
 }
