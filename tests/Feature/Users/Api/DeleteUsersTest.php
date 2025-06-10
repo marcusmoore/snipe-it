@@ -153,7 +153,7 @@ class DeleteUsersTest extends TestCase implements TestsFullMultipleCompaniesSupp
         $this->assertSoftDeleted($user);
     }
 
-    public function testUsersUnacceptedCheckoutAcceptancesAreSoftDeletedWhenUserIsDeleted
+    public function testUsersUnacceptedCheckoutAcceptancesAreSoftDeletedWhenUserIsDeleted()
     {
         $this->markTestIncomplete();
     }
