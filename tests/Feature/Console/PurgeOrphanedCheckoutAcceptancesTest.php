@@ -3,6 +3,7 @@
 namespace Tests\Feature\Console;
 
 use App\Models\CheckoutAcceptance;
+use Illuminate\Database\Eloquent\Model;
 use Tests\TestCase;
 
 class PurgeOrphanedCheckoutAcceptancesTest extends TestCase
@@ -21,15 +22,15 @@ class PurgeOrphanedCheckoutAcceptancesTest extends TestCase
 
         $this->assertDatabaseCount('checkout_acceptances', 16);
 
-        $pendingForAccessoryWithDeletedUser->assignedTo->delete();
-        $pendingForAssetWithDeletedUser->assignedTo->delete();
-        $pendingForConsumableWithDeletedUser->assignedTo->forceDelete();
-        $pendingForLicenseSeatWithDeletedUser->assignedTo->forceDelete();
+        $this->deleteAssignedUser($pendingForAccessoryWithDeletedUser);
+        $this->deleteAssignedUser($pendingForAssetWithDeletedUser);
+        $this->forceDeleteAssignedUser($pendingForConsumableWithDeletedUser);
+        $this->forceDeleteAssignedUser($pendingForLicenseSeatWithDeletedUser);
 
-        $acceptedForAccessoryWithDeletedUser->assignedTo->delete();
-        $acceptedForAssetWithDeletedUser->assignedTo->delete();
-        $acceptedForConsumableWithDeletedUser->assignedTo->forceDelete();
-        $acceptedForLicenseSeatWithDeletedUser->assignedTo->forceDelete();
+        $this->deleteAssignedUser($acceptedForAccessoryWithDeletedUser);
+        $this->deleteAssignedUser($acceptedForAssetWithDeletedUser);
+        $this->forceDeleteAssignedUser($acceptedForConsumableWithDeletedUser);
+        $this->forceDeleteAssignedUser($acceptedForLicenseSeatWithDeletedUser);
 
         $this->assertDatabaseCount('checkout_acceptances', 16);
 
@@ -58,5 +59,17 @@ class PurgeOrphanedCheckoutAcceptancesTest extends TestCase
         $this->assertDatabaseMissing('checkout_acceptances', ['id' => $pendingForLicenseSeatWithDeletedUser->id]);
 
         $this->assertDatabaseCount('checkout_acceptances', 12);
+    }
+
+    private function deleteAssignedUser(CheckoutAcceptance $checkoutAcceptance): void
+    {
+        // avoid triggering User::deleted handler
+        Model::withoutEvents(fn() => $checkoutAcceptance->assignedTo->delete());
+    }
+
+    private function forceDeleteAssignedUser(CheckoutAcceptance $checkoutAcceptance): void
+    {
+        // avoid triggering User::deleted handler
+        Model::withoutEvents(fn() => $checkoutAcceptance->assignedTo->forceDelete());
     }
 }
