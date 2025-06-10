@@ -6,17 +6,23 @@ use Tests\TestCase;
 
 class RestoreUserTest extends TestCase
 {
-    public function testPermissionNeededToRestoreUser()
+    public function test_permission_needed_to_restore_user()
+    {
+        $this->markTestIncomplete();
+
+    }
+
+    public function test_cannot_restore_non_deleted_user()
     {
         $this->markTestIncomplete();
     }
 
-    public function testCanRestoreUser()
+    public function test_can_restore_user()
     {
         $this->markTestIncomplete();
     }
 
-    public function testRestoringUserDoesNotRestorePendingCheckoutAcceptances()
+    public function test_restoring_user_does_not_restore_pending_checkout_acceptances()
     {
         $this->markTestIncomplete();
     }
