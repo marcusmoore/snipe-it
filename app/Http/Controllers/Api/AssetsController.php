@@ -9,7 +9,7 @@ use App\Http\Traits\MigratesLegacyAssetLocations;
 use App\Models\AccessoryCheckout;
 use App\Models\CheckoutAcceptance;
 use App\Models\LicenseSeat;
-use Closure;
+use App\Rules\FlatArray;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Crypt;
@@ -35,8 +35,6 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
 use App\View\Label;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\Validator;
-
 
 /**
  * This class controls all actions related to assets for
@@ -58,20 +56,10 @@ class AssetsController extends Controller
      */
     public function index(Request $request, $action = null, $upcoming_status = null) : JsonResponse | array
     {
-        $this->validate($request, [
+        $request->validate([
             'filter' => [
                 'json',
-                function (string $attribute, mixed $value, Closure $fail) {
-                    if (is_string($value)) {
-                        $value = json_decode($value, true);
-                    }
-
-                    foreach ($value as $arrayValue) {
-                        if (is_array($arrayValue)) {
-                            $fail("{$attribute} cannot contain a nested data.");
-                        }
-                    }
-                },
+                new FlatArray,
             ],
         ]);
 
