@@ -132,7 +132,8 @@ class AssetIndexTest extends TestCase
         return [
             ['filter%5Bassigned_to%5D'],
             ['filter[assigned_to][not]=null'],
-            ['filter={%22assigned_to%22:{%22$ne%22:null}}']
+            ['filter={%22assigned_to%22:{%22$ne%22:null}}'],
+            ['filter=%5B%22a%22%20%3D%3E%20%22b%22%5D'],
         ];
     }
 
