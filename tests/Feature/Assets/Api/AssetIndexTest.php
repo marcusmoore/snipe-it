@@ -127,6 +127,7 @@ class AssetIndexTest extends TestCase
     }
 
     /**
+     * [RB-17904]
      * [RB-19910]
      */
     public function test_handles_non_string_filter()
