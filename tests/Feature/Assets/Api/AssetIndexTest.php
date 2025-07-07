@@ -126,6 +126,36 @@ class AssetIndexTest extends TestCase
             ->assertJson(fn(AssertableJson $json) => $json->has('rows', 5)->etc());
     }
 
+    /**
+     * [RB-19910]
+     */
+    public function test_handles_non_string_filter()
+    {
+        $this->actingAsForApi(User::factory()->superuser()->create())
+            // url encode an array: filter=[assigned_to]
+            ->getJson(route('api.assets.index') . '?filter%5Bassigned_to%5D')
+            ->assertOk()
+            ->assertStatusMessageIs('error')
+            ->assertMessagesContains('filter');
+    }
+
+    public function test_can_filter_results()
+    {
+        Asset::factory()->create(['purchase_date' => '2025-07-01', 'order_number' => '123']);
+        Asset::factory()->create(['purchase_date' => '2025-07-01', 'order_number' => '123']);
+        Asset::factory()->create(['purchase_date' => '2025-07-01', 'order_number' => '456']);
+
+        $this->actingAsForApi(User::factory()->superuser()->create())
+            ->getJson(route('api.assets.index', [
+                'filter' => json_encode([
+                    'order_number' => '123',
+                    'purchase_date' => '2025-07-01',
+                ]),
+            ]))
+            ->assertOk()
+            ->assertJson(fn(AssertableJson $json) => $json->has('rows', 2)->etc());
+    }
+
     public function testAssetApiIndexAdheresToCompanyScoping()
     {
         [$companyA, $companyB] = Company::factory()->count(2)->create();

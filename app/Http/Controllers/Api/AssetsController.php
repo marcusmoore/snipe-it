@@ -57,7 +57,9 @@ class AssetsController extends Controller
      */
     public function index(Request $request, $action = null, $upcoming_status = null) : JsonResponse | array
     {
-
+        $this->validate($request, [
+            'filter' => 'string',
+        ]);
 
         // This handles the legacy audit endpoints :(
         if ($action == 'audit') {
