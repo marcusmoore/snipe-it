@@ -9,6 +9,7 @@ use App\Http\Traits\MigratesLegacyAssetLocations;
 use App\Models\AccessoryCheckout;
 use App\Models\CheckoutAcceptance;
 use App\Models\LicenseSeat;
+use Closure;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Crypt;
@@ -58,7 +59,20 @@ class AssetsController extends Controller
     public function index(Request $request, $action = null, $upcoming_status = null) : JsonResponse | array
     {
         $this->validate($request, [
-            'filter' => 'json',
+            'filter' => [
+                'json',
+                function (string $attribute, mixed $value, Closure $fail) {
+                    if (is_string($value)) {
+                        $value = json_decode($value, true);
+                    }
+
+                    foreach ($value as $arrayValue) {
+                        if (is_array($arrayValue)) {
+                            $fail("{$attribute} cannot contain a nested data.");
+                        }
+                    }
+                },
+            ],
         ]);
 
         // This handles the legacy audit endpoints :(

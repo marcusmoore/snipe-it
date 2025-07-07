@@ -7,6 +7,7 @@ use App\Models\Company;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Testing\Fluent\AssertableJson;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 class AssetIndexTest extends TestCase
@@ -126,15 +127,25 @@ class AssetIndexTest extends TestCase
             ->assertJson(fn(AssertableJson $json) => $json->has('rows', 5)->etc());
     }
 
+    public static function filterValues()
+    {
+        return [
+            ['filter%5Bassigned_to%5D'],
+            ['filter[assigned_to][not]=null'],
+            ['filter={%22assigned_to%22:{%22$ne%22:null}}']
+        ];
+    }
+
     /**
      * [RB-17904]
      * [RB-19910]
      */
-    public function test_handles_non_string_filter()
+    #[DataProvider('filterValues')]
+    public function test_handles_non_string_filter($filterString)
     {
         $this->actingAsForApi(User::factory()->superuser()->create())
             // url encode an array: filter=[assigned_to]
-            ->getJson(route('api.assets.index') . '?filter%5Bassigned_to%5D')
+            ->getJson(route('api.assets.index') . '?' . $filterString)
             ->assertOk()
             ->assertStatusMessageIs('error')
             ->assertMessagesContains('filter');
