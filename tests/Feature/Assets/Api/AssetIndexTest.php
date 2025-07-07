@@ -144,7 +144,6 @@ class AssetIndexTest extends TestCase
     public function test_handles_non_string_filter($filterString)
     {
         $this->actingAsForApi(User::factory()->superuser()->create())
-            // url encode an array: filter=[assigned_to]
             ->getJson(route('api.assets.index') . '?' . $filterString)
             ->assertOk()
             ->assertStatusMessageIs('error')
