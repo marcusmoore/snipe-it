@@ -32,7 +32,7 @@ class ThrowawayCommand extends Command
         $testingAcceptance = $acceptances->where('id', 439)->first();
 
         $foundAcceptance = $logs->filter(function ($log) use ($testingAcceptance) {
-            return $log->item_id === $testingAcceptance->checkoutable_id && $log->item_type === $testingAcceptance->checkoutable_type;
+            return $log->item()->is($testingAcceptance->checkoutable) && $log->created_at->is($testingAcceptance->created_at);
         });
 
         dd($foundAcceptance);
