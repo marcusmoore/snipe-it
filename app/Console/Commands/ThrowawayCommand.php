@@ -36,5 +36,7 @@ class ThrowawayCommand extends Command
         });
 
         dd($foundAcceptance);
+
+        // @todo: now loop through all $acceptances and match them to a $log
     }
 }
