@@ -29,7 +29,7 @@ class ThrowawayCommand extends Command
             ->get();
 
         /** @var CheckoutAcceptance $testingAcceptance */
-        $testingAcceptance = $acceptances->where('id', 439)->first();
+        $testingAcceptance = $acceptances->firstWhere('id', 439);
 
         $foundAcceptance = $logs->filter(function ($log) use ($testingAcceptance) {
             return $log->item()->is($testingAcceptance->checkoutable) && $log->created_at->is($testingAcceptance->created_at);
