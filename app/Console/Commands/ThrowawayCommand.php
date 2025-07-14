@@ -32,32 +32,33 @@ class ThrowawayCommand extends Command
 
         $this->info("{$logs->count()} ActionLogs found");
 
-        // /** @var CheckoutAcceptance $testingAcceptance */
-        // $testingAcceptance = $acceptances->firstWhere('id', 439);
-        //
-        // $foundLog = $logs->filter(function ($log) use ($testingAcceptance) {
-        //     return $log->item_type === $testingAcceptance->checkoutable_type
-        //         && $log->item_id === $testingAcceptance->checkoutable_id
-        //         && $log->created_at->timestamp === $testingAcceptance->created_at->timestamp;
-        // });
-        //
-        // dd($foundLog);
+        $mapped = $acceptances
+            // @todo: remove this
+            ->take(20)
+            ->map(function (CheckoutAcceptance $acceptance) use ($logs) {
+                $this->line("Processing CheckoutAcceptance:{$acceptance->id}");
 
-        // @todo: now loop through all $acceptances and match them to a $log
-        $acceptances->map(function (CheckoutAcceptance $acceptance) use ($logs) {
-            $this->line("Processing CheckoutAcceptance:{$acceptance->id}");
+                $log = $logs->first(function (Actionlog $log) use ($acceptance) {
+                    return $log->item_type === $acceptance->checkoutable_type
+                        && $log->item_id === $acceptance->checkoutable_id
+                        && $log->created_at->timestamp === $acceptance->created_at->timestamp;
+                });
 
-            $log = $logs->first(function (Actionlog $log) use ($acceptance) {
-                return $log->item_type === $acceptance->checkoutable_type
-                    && $log->item_id === $acceptance->checkoutable_id
-                    && $log->created_at->timestamp === $acceptance->created_at->timestamp;
+                if ($log) {
+                    // attach log to acceptance
+                    $acceptance->setRelation('checkoutActionLog', $log);
+                } else {
+                    $this->error("No matching log found for CheckoutAcceptance:{$acceptance->id}");
+                }
+
+                return $acceptance;
             });
 
-            if ($log) {
-
-            } else {
-                $this->error("No matching log found for CheckoutAcceptance:{$acceptance->id}");
-            }
+        [$acceptancesWithLogs, $acceptancesWithoutLogs] = $mapped->partition(function (CheckoutAcceptance $acceptance) {
+            return $acceptance->checkoutActionLog;
         });
+
+        $this->info("{$acceptancesWithLogs->count()} acceptances with logs");
+        $this->error("{$acceptancesWithoutLogs->count()} acceptances WITHOUT logs");
     }
 }
