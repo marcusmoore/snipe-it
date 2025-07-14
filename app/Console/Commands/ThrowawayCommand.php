@@ -31,11 +31,11 @@ class ThrowawayCommand extends Command
         /** @var CheckoutAcceptance $testingAcceptance */
         $testingAcceptance = $acceptances->firstWhere('id', 439);
 
-        $foundAcceptance = $logs->filter(function ($log) use ($testingAcceptance) {
+        $foundLog = $logs->filter(function ($log) use ($testingAcceptance) {
             return $log->item()->is($testingAcceptance->checkoutable) && $log->created_at->is($testingAcceptance->created_at);
         });
 
-        dd($foundAcceptance);
+        dd($foundLog);
 
         // @todo: now loop through all $acceptances and match them to a $log
     }
