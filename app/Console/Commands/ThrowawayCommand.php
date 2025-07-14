@@ -36,15 +36,28 @@ class ThrowawayCommand extends Command
         // $testingAcceptance = $acceptances->firstWhere('id', 439);
         //
         // $foundLog = $logs->filter(function ($log) use ($testingAcceptance) {
-        //     return $log->item()->is($testingAcceptance->checkoutable) && $log->created_at->is($testingAcceptance->created_at);
+        //     return $log->item_type === $testingAcceptance->checkoutable_type
+        //         && $log->item_id === $testingAcceptance->checkoutable_id
+        //         && $log->created_at->timestamp === $testingAcceptance->created_at->timestamp;
         // });
         //
         // dd($foundLog);
 
         // @todo: now loop through all $acceptances and match them to a $log
+        $acceptances->map(function (CheckoutAcceptance $acceptance) use ($logs) {
+            $this->line("Processing CheckoutAcceptance:{$acceptance->id}");
 
-        // $acceptances->map(function (CheckoutAcceptance $acceptance) {
-        //
-        // });
+            $log = $logs->first(function (Actionlog $log) use ($acceptance) {
+                return $log->item_type === $acceptance->checkoutable_type
+                    && $log->item_id === $acceptance->checkoutable_id
+                    && $log->created_at->timestamp === $acceptance->created_at->timestamp;
+            });
+
+            if ($log) {
+
+            } else {
+                $this->error("No matching log found for CheckoutAcceptance:{$acceptance->id}");
+            }
+        });
     }
 }
