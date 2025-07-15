@@ -32,10 +32,11 @@ class ThrowawayCommand extends Command
 
         $this->info("{$logs->count()} ActionLogs found");
 
+        $progress = $this->output->createProgressBar($acceptances->count());
+        $progress->start();
+
         $mapped = $acceptances
-            // @todo: remove this
-            ->take(20)
-            ->map(function (CheckoutAcceptance $acceptance) use ($logs) {
+            ->map(function (CheckoutAcceptance $acceptance) use ($progress, $logs) {
                 $this->line("Processing CheckoutAcceptance:{$acceptance->id}");
 
                 $log = $logs->first(function (Actionlog $log) use ($acceptance) {
@@ -48,11 +49,15 @@ class ThrowawayCommand extends Command
                     // attach log to acceptance
                     $acceptance->setRelation('checkoutActionLog', $log);
                 } else {
-                    $this->error("No matching log found for CheckoutAcceptance:{$acceptance->id}");
+                    $this->line("No matching log found for CheckoutAcceptance:{$acceptance->id}");
                 }
+
+                $progress->advance();
 
                 return $acceptance;
             });
+
+        $progress->finish();
 
         [$acceptancesWithLogs, $acceptancesWithoutLogs] = $mapped->partition(function (CheckoutAcceptance $acceptance) {
             return $acceptance->checkoutActionLog;
