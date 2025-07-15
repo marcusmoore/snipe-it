@@ -16,6 +16,10 @@ class ThrowawayCommand extends Command
 
     public function handle(): void
     {
+        $this->info('Current date and time: ' . now());
+
+        $startTime = microtime(true);
+        
         // fetch all pending checkout acceptances.
         // scoping pending works here because locations and assets cannot accept checkouts.
         $acceptances = CheckoutAcceptance::pending()->get();
@@ -67,5 +71,9 @@ class ThrowawayCommand extends Command
         $this->newLine();
         $this->info("{$acceptancesWithLogs->count()} acceptances with matching log");
         $this->error("{$acceptancesWithoutLogs->count()} acceptances WITHOUT matching log");
+
+        $this->newLine();
+
+        $this->info('Total time: ' . number_format(microtime(true) - $startTime, 2) . ' seconds');
     }
 }
