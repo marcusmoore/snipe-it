@@ -60,8 +60,7 @@ class CheckoutAcceptanceCleanup extends Command
 
         $this->newLine();
         $this->info("{$acceptancesWithLogs->count()} acceptances with matching log.");
-        $this->error("{$acceptancesWithoutLogs->count()} acceptances WITHOUT matching log.");
-        $this->newLine();
+        $this->info("{$acceptancesWithoutLogs->count()} acceptances WITHOUT matching log.");
 
         if ($acceptancesWithoutLogs->isEmpty()) {
             $this->info('No orphaned checkout acceptances that can be matched with action logs found. Exiting.');
@@ -86,7 +85,6 @@ class CheckoutAcceptanceCleanup extends Command
             return 0;
         }
 
-        // @todo: delete checkout acceptances without logs
         $orphanedCheckoutAcceptanceIds = $acceptancesWithoutLogs->pluck('id');
 
         $this->line("Deleting {$orphanedCheckoutAcceptanceIds->count()} orphaned checkout acceptances...");
