@@ -42,23 +42,11 @@ class ThrowawayCommand extends Command
 
         $mapped = $acceptances
             ->map(function (CheckoutAcceptance $acceptance) use ($progress, $logs) {
-                $this->newLine();
-                $this->line("Processing CheckoutAcceptance:{$acceptance->id}");
-
-                $log = $this->findExactlyMatchingLog($acceptance, $logs);
+                $log = $this->findLog($acceptance, $logs);
 
                 if ($log) {
                     // attach log to acceptance
                     $acceptance->setRelation('checkoutActionLog', $log);
-                } else {
-                    $log = $this->findRoughlyMatchedLog($acceptance, $logs);
-
-                    if ($log) {
-                        // attach log to acceptance
-                        $acceptance->setRelation('checkoutActionLog', $log);
-                    } else {
-                        $this->line("No matching log found for CheckoutAcceptance:{$acceptance->id}");
-                    }
                 }
 
                 $progress->advance();
@@ -91,21 +79,29 @@ class ThrowawayCommand extends Command
         $this->info('Total time: ' . number_format(microtime(true) - $startTime, 2) . ' seconds');
     }
 
-    private function findExactlyMatchingLog(CheckoutAcceptance $acceptance, Collection $logs): Actionlog|null
+    private function findLog(CheckoutAcceptance $acceptance, Collection $logs)
     {
-        return $logs->first(function (Actionlog $log) use ($acceptance) {
-            return $log->item_type === $acceptance->checkoutable_type
-                && $log->item_id === $acceptance->checkoutable_id
-                && $log->created_at->timestamp === $acceptance->created_at->timestamp;
-        });
-    }
-
-    private function findRoughlyMatchedLog(CheckoutAcceptance $acceptance, Collection $logs): Actionlog|null
-    {
-        return $logs->where(function (Actionlog $log) use ($acceptance) {
+        $logsForCheckoutable = $logs->where(function (Actionlog $log) use ($acceptance) {
             return $log->item_type === $acceptance->checkoutable_type
                 && $log->item_id === $acceptance->checkoutable_id;
-        })->first(function (Actionlog $log) use ($acceptance) {
+        });
+
+        if ($logsForCheckoutable->isEmpty()) {
+            return null;
+        }
+
+        // check if there is an exact timestamp match
+        $exactTimestampMatch = $logsForCheckoutable->where(function (Actionlog $log) use ($acceptance) {
+            return $log->created_at->timestamp === $acceptance->created_at->timestamp;
+        });
+
+        // exact match found. return it.
+        if ($exactTimestampMatch->count() === 1) {
+            return $exactTimestampMatch->first();
+        }
+
+        // if there is not an exact match, return a roughly matched log
+        return $logsForCheckoutable->first(function (Actionlog $log) use ($acceptance) {
             // check if the log's created_at is within 2 seconds of the acceptance's created_at
             return abs($log->created_at->timestamp - $acceptance->created_at->timestamp) <= 2;
         });
