@@ -17,7 +17,7 @@ class ThrowawayCommand extends Command
 
     public function handle(): void
     {
-        $this->info('Current date and time: ' . now());
+        $this->info('Starting: ' . now());
 
         $startTime = microtime(true);
 
