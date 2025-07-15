@@ -15,7 +15,7 @@ class CheckoutAcceptanceCleanup extends Command
 
     protected $description = 'Cleans up CheckoutAcceptances that were incorrectly created.';
 
-    public function handle(): void
+    public function handle()
     {
         // fetch all pending checkout acceptances.
         // scoping "pending" works here because locations and assets cannot accept checkouts.
@@ -23,7 +23,7 @@ class CheckoutAcceptanceCleanup extends Command
             ->whereNull(['accepted_at', 'declined_at', 'deleted_at'])
             ->get();
 
-        $this->info("{$acceptances->count()} checkout acceptances retrieved for processing");
+        $this->line("{$acceptances->count()} checkout acceptances retrieved for processing.");
 
         // get action logs where the action is "checkout" and the target is Asset or Location.
         $logs = DB::table('action_logs')
@@ -32,7 +32,7 @@ class CheckoutAcceptanceCleanup extends Command
             ->whereNull('deleted_at')
             ->get();
 
-        $this->info("{$logs->count()} action logs retrieved for processing");
+        $this->line("{$logs->count()} action logs retrieved for processing.");
 
         $this->line('Matching checkout acceptances with action logs...');
 
@@ -59,8 +59,8 @@ class CheckoutAcceptanceCleanup extends Command
         });
 
         $this->newLine();
-        $this->info("{$acceptancesWithLogs->count()} acceptances with matching log");
-        $this->error("{$acceptancesWithoutLogs->count()} acceptances WITHOUT matching log");
+        $this->info("{$acceptancesWithLogs->count()} acceptances with matching log.");
+        $this->error("{$acceptancesWithoutLogs->count()} acceptances WITHOUT matching log.");
         $this->newLine();
 
         $this->info('CheckoutAcceptances without matching log:');
@@ -73,6 +73,23 @@ class CheckoutAcceptanceCleanup extends Command
                     'assigned_to_id' => $acceptance->assigned_to_id,
                 ];
             }));
+
+        if (!$this->confirm("Do you wish to permanently delete {$acceptancesWithoutLogs->count()} orphaned checkout acceptances?")) {
+            $this->line('Aborting.');
+
+            return 0;
+        }
+
+        // @todo: delete checkout acceptances without logs
+        $orphanedCheckoutAcceptanceIds = $acceptancesWithoutLogs->pluck('id');
+
+        $this->line("Deleting {$orphanedCheckoutAcceptanceIds->count()} orphaned checkout acceptances...");
+
+        DB::table('checkout_acceptances')->whereIn('id', $orphanedCheckoutAcceptanceIds)->delete();
+
+        $this->info('Orphaned checkout acceptances deleted successfully.');
+
+        return 0;
     }
 
     private function findLog($acceptance, Collection $logs)
