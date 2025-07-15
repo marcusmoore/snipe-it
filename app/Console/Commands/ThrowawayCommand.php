@@ -51,7 +51,14 @@ class ThrowawayCommand extends Command
                     // attach log to acceptance
                     $acceptance->setRelation('checkoutActionLog', $log);
                 } else {
-                    $this->line("No matching log found for CheckoutAcceptance:{$acceptance->id}");
+                    $log = $this->findRoughlyMatchedLog($acceptance, $logs);
+
+                    if ($log) {
+                        // attach log to acceptance
+                        $acceptance->setRelation('checkoutActionLog', $log);
+                    } else {
+                        $this->line("No matching log found for CheckoutAcceptance:{$acceptance->id}");
+                    }
                 }
 
                 $progress->advance();
@@ -90,6 +97,17 @@ class ThrowawayCommand extends Command
             return $log->item_type === $acceptance->checkoutable_type
                 && $log->item_id === $acceptance->checkoutable_id
                 && $log->created_at->timestamp === $acceptance->created_at->timestamp;
+        });
+    }
+
+    private function findRoughlyMatchedLog(CheckoutAcceptance $acceptance, Collection $logs): Actionlog|null
+    {
+        return $logs->where(function (Actionlog $log) use ($acceptance) {
+            return $log->item_type === $acceptance->checkoutable_type
+                && $log->item_id === $acceptance->checkoutable_id;
+        })->first(function (Actionlog $log) use ($acceptance) {
+            // check if the log's created_at is within 2 seconds of the acceptance's created_at
+            return abs($log->created_at->timestamp - $acceptance->created_at->timestamp) <= 2;
         });
     }
 }
