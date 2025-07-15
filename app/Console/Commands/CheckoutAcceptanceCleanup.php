@@ -32,7 +32,9 @@ class CheckoutAcceptanceCleanup extends Command
             ->whereNull('deleted_at')
             ->get();
 
-        $this->info("{$logs->count()} ActionLogs found");
+        $this->info("{$logs->count()} action logs retrieved for processing");
+
+        $this->line('Matching checkout acceptances with action logs...');
 
         $progress = $this->output->createProgressBar($acceptances->count());
         $progress->start();
