@@ -37,6 +37,7 @@ class ThrowawayCommand extends Command
 
         $mapped = $acceptances
             ->map(function (CheckoutAcceptance $acceptance) use ($progress, $logs) {
+                $this->newLine();
                 $this->line("Processing CheckoutAcceptance:{$acceptance->id}");
 
                 $log = $logs->first(function (Actionlog $log) use ($acceptance) {
