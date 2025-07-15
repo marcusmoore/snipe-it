@@ -7,6 +7,7 @@ use App\Models\Asset;
 use App\Models\CheckoutAcceptance;
 use App\Models\Location;
 use Illuminate\Console\Command;
+use Illuminate\Support\Collection;
 
 class ThrowawayCommand extends Command
 {
@@ -44,11 +45,7 @@ class ThrowawayCommand extends Command
                 $this->newLine();
                 $this->line("Processing CheckoutAcceptance:{$acceptance->id}");
 
-                $log = $logs->first(function (Actionlog $log) use ($acceptance) {
-                    return $log->item_type === $acceptance->checkoutable_type
-                        && $log->item_id === $acceptance->checkoutable_id
-                        && $log->created_at->timestamp === $acceptance->created_at->timestamp;
-                });
+                $log = $this->findExactlyMatchingLog($acceptance, $logs);
 
                 if ($log) {
                     // attach log to acceptance
@@ -85,5 +82,14 @@ class ThrowawayCommand extends Command
             }));
 
         $this->info('Total time: ' . number_format(microtime(true) - $startTime, 2) . ' seconds');
+    }
+
+    private function findExactlyMatchingLog(CheckoutAcceptance $acceptance, Collection $logs): Actionlog|null
+    {
+        return $logs->first(function (Actionlog $log) use ($acceptance) {
+            return $log->item_type === $acceptance->checkoutable_type
+                && $log->item_id === $acceptance->checkoutable_id
+                && $log->created_at->timestamp === $acceptance->created_at->timestamp;
+        });
     }
 }
