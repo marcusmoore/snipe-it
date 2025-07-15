@@ -17,10 +17,6 @@ class CheckoutAcceptanceCleanup extends Command
 
     public function handle(): void
     {
-        $this->info('Starting: ' . now());
-
-        $startTime = microtime(true);
-
         // fetch all pending checkout acceptances.
         // scoping "pending" works here because locations and assets cannot accept checkouts.
         $acceptances = DB::table('checkout_acceptances')
@@ -77,8 +73,6 @@ class CheckoutAcceptanceCleanup extends Command
                     'assigned_to_id' => $acceptance->assigned_to_id,
                 ];
             }));
-
-        $this->info('Total time: ' . number_format(microtime(true) - $startTime, 2) . ' seconds');
     }
 
     private function findLog($acceptance, Collection $logs)
