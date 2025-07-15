@@ -2,12 +2,12 @@
 
 namespace App\Console\Commands;
 
-use App\Models\Actionlog;
 use App\Models\Asset;
-use App\Models\CheckoutAcceptance;
 use App\Models\Location;
 use Illuminate\Console\Command;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 class CheckoutAcceptanceCleanup extends Command
 {
@@ -22,17 +22,18 @@ class CheckoutAcceptanceCleanup extends Command
         $startTime = microtime(true);
 
         // fetch all pending checkout acceptances.
-        // scoping pending works here because locations and assets cannot accept checkouts.
-        $acceptances = CheckoutAcceptance::pending()->get();
+        // scoping "pending" works here because locations and assets cannot accept checkouts.
+        $acceptances = DB::table('checkout_acceptances')
+            ->whereNull(['accepted_at', 'declined_at', 'deleted_at'])
+            ->get();
 
-        $this->info("{$acceptances->count()} CheckoutAcceptances retrieved");
+        $this->info("{$acceptances->count()} checkout acceptances retrieved for processing");
 
-        // get action log where the action is "checkout" and the target is Asset or Location.
-        $logs = Actionlog::query()
-            ->where([
-                'action_type' => 'checkout',
-            ])
+        // get action logs where the action is "checkout" and the target is Asset or Location.
+        $logs = DB::table('action_logs')
+            ->where('action_type', 'checkout')
             ->whereIn('target_type', [Asset::class, Location::class])
+            ->whereNull('deleted_at')
             ->get();
 
         $this->info("{$logs->count()} ActionLogs found");
@@ -41,12 +42,13 @@ class CheckoutAcceptanceCleanup extends Command
         $progress->start();
 
         $mapped = $acceptances
-            ->map(function (CheckoutAcceptance $acceptance) use ($progress, $logs) {
+            ->map(function ($acceptance) use ($progress, $logs) {
                 $log = $this->findLog($acceptance, $logs);
 
                 if ($log) {
                     // attach log to acceptance
-                    $acceptance->setRelation('checkoutActionLog', $log);
+                    // $acceptance->setRelation('checkoutActionLog', $log);
+                    $acceptance->checkoutActionLog = $log;
                 }
 
                 $progress->advance();
@@ -56,8 +58,8 @@ class CheckoutAcceptanceCleanup extends Command
 
         $progress->finish();
 
-        [$acceptancesWithLogs, $acceptancesWithoutLogs] = $mapped->partition(function (CheckoutAcceptance $acceptance) {
-            return $acceptance->checkoutActionLog;
+        [$acceptancesWithLogs, $acceptancesWithoutLogs] = $mapped->partition(function ($acceptance) {
+            return isset($acceptance->checkoutActionLog);
         });
 
         $this->newLine();
@@ -67,7 +69,7 @@ class CheckoutAcceptanceCleanup extends Command
 
         $this->info('CheckoutAcceptances without matching log:');
         $this->table(['id', 'checkoutable_type', 'checkoutable_id', 'assigned_to_id'],
-            $acceptancesWithoutLogs->map(function (CheckoutAcceptance $acceptance) {
+            $acceptancesWithoutLogs->map(function ($acceptance) {
                 return [
                     'id' => $acceptance->id,
                     'checkoutable_type' => $acceptance->checkoutable_type,
@@ -79,9 +81,9 @@ class CheckoutAcceptanceCleanup extends Command
         $this->info('Total time: ' . number_format(microtime(true) - $startTime, 2) . ' seconds');
     }
 
-    private function findLog(CheckoutAcceptance $acceptance, Collection $logs)
+    private function findLog($acceptance, Collection $logs)
     {
-        $logsForCheckoutable = $logs->where(function (Actionlog $log) use ($acceptance) {
+        $logsForCheckoutable = $logs->where(function ($log) use ($acceptance) {
             return $log->item_type === $acceptance->checkoutable_type
                 && $log->item_id === $acceptance->checkoutable_id;
         });
@@ -91,8 +93,8 @@ class CheckoutAcceptanceCleanup extends Command
         }
 
         // check if there is an exact timestamp match
-        $exactTimestampMatch = $logsForCheckoutable->where(function (Actionlog $log) use ($acceptance) {
-            return $log->created_at->timestamp === $acceptance->created_at->timestamp;
+        $exactTimestampMatch = $logsForCheckoutable->where(function ($log) use ($acceptance) {
+            return $log->created_at === $acceptance->created_at;
         });
 
         // exact match found. return it.
@@ -101,9 +103,12 @@ class CheckoutAcceptanceCleanup extends Command
         }
 
         // if there is not an exact match, return a roughly matched log
-        return $logsForCheckoutable->first(function (Actionlog $log) use ($acceptance) {
+        return $logsForCheckoutable->first(function ($log) use ($acceptance) {
+            $logCreatedAt = Carbon::parse($log->created_at);
+            $acceptanceCreatedAt = Carbon::parse($acceptance->created_at);
+
             // check if the log's created_at is within 2 seconds of the acceptance's created_at
-            return abs($log->created_at->timestamp - $acceptance->created_at->timestamp) <= 2;
+            return abs($logCreatedAt->timestamp - $acceptanceCreatedAt->timestamp) <= 2;
         });
     }
 }
