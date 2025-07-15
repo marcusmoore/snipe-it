@@ -9,11 +9,11 @@ use App\Models\Location;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
 
-class ThrowawayCommand extends Command
+class CheckoutAcceptanceCleanup extends Command
 {
-    protected $signature = 'throwaway';
+    protected $signature = 'snipeit:checkout-acceptance-cleanup';
 
-    protected $description = 'Command description';
+    protected $description = 'Cleans up CheckoutAcceptances that were incorrectly created.';
 
     public function handle(): void
     {
