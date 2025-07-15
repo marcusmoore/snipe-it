@@ -44,8 +44,6 @@ class CheckoutAcceptanceCleanup extends Command
                 $log = $this->findLog($acceptance, $logs);
 
                 if ($log) {
-                    // attach log to acceptance
-                    // $acceptance->setRelation('checkoutActionLog', $log);
                     $acceptance->checkoutActionLog = $log;
                 }
 
