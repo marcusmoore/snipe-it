@@ -64,6 +64,7 @@ class ThrowawayCommand extends Command
             return $acceptance->checkoutActionLog;
         });
 
+        $this->newLine();
         $this->info("{$acceptancesWithLogs->count()} acceptances with logs");
         $this->error("{$acceptancesWithoutLogs->count()} acceptances WITHOUT logs");
     }
