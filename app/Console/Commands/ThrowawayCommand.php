@@ -65,7 +65,7 @@ class ThrowawayCommand extends Command
         });
 
         $this->newLine();
-        $this->info("{$acceptancesWithLogs->count()} acceptances with logs");
-        $this->error("{$acceptancesWithoutLogs->count()} acceptances WITHOUT logs");
+        $this->info("{$acceptancesWithLogs->count()} acceptances with matching log");
+        $this->error("{$acceptancesWithoutLogs->count()} acceptances WITHOUT matching log");
     }
 }
