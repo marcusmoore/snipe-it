@@ -47,21 +47,17 @@ test('adheres to full multiple companies support scoping', function () {
     $this->assertSoftDeleted($accessoryC);
 });
 
-dataset('checkedOutAccessories', function () {
-    yield 'checked out to user' => [fn() => Accessory::factory()->checkedOutToUser()->create()];
-    yield 'checked out to asset' => [fn() => Accessory::factory()->checkedOutToAsset()->create()];
-    yield 'checked out to location' => [fn() => Accessory::factory()->checkedOutToLocation()->create()];
-});
-
-test('cannot delete accessory that has checkouts', function ($data) {
-    $accessory = $data();
-
+test('cannot delete accessory that has checkouts', function ($accessory) {
     $this->actingAsForApi(User::factory()->deleteAccessories()->create())
         ->deleteJson(route('api.accessories.destroy', $accessory))
         ->assertStatusMessageIs('error');
 
     $this->assertNotSoftDeleted($accessory);
-})->with('checkedOutAccessories');
+})->with([
+    'checked out to user' => [fn() => Accessory::factory()->checkedOutToUser()->create()],
+    'checked out to asset' => [fn() => Accessory::factory()->checkedOutToAsset()->create()],
+    'checked out to location' => [fn() => Accessory::factory()->checkedOutToLocation()->create()],
+]);
 
 test('can delete accessory', function () {
     $accessory = Accessory::factory()->create();
