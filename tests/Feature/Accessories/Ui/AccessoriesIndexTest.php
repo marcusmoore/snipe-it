@@ -1,7 +1,6 @@
 <?php
 
 use App\Models\User;
-use Tests\Concerns\TestsPermissionsRequirement;
 
 test('requires permission', function () {
     $this->actingAs(User::factory()->create())
