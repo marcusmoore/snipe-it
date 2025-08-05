@@ -2,13 +2,8 @@
 
 use App\Models\Accessory;
 use App\Models\Category;
-use PHPUnit\Framework\Attributes\DataProvider;
 
-uses(\Tests\Support\ProvidesDataForFullMultipleCompanySupportTesting::class);
-
-test('adheres to full multiple companies support scoping', function ($data) {
-    ['actor' => $actor, 'company_attempting_to_associate' => $company, 'assertions' => $assertions] = $data();
-
+test('adheres to full multiple companies support scoping', function ($actor, $company, $assertions) {
     $this->settings->enableMultipleFullCompanySupport();
 
     $this->actingAs($actor)
@@ -25,4 +20,4 @@ test('adheres to full multiple companies support scoping', function ($data) {
     ])->sole();
 
     $assertions($accessory);
-})->with('dataForFullMultipleCompanySupportTesting');
+})->with('data for full multiple company support testing');
