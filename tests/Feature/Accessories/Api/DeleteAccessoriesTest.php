@@ -1,86 +1,74 @@
 <?php
 
-namespace Tests\Feature\Accessories\Api;
-
 use App\Models\Accessory;
 use App\Models\Company;
 use App\Models\User;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\Concerns\TestsFullMultipleCompaniesSupport;
 use Tests\Concerns\TestsPermissionsRequirement;
-use Tests\TestCase;
 
-class DeleteAccessoriesTest extends TestCase implements TestsFullMultipleCompaniesSupport, TestsPermissionsRequirement
-{
-    public function testRequiresPermission()
-    {
-        $accessory = Accessory::factory()->create();
+test('requires permission', function () {
+    $accessory = Accessory::factory()->create();
 
-        $this->actingAsForApi(User::factory()->create())
-            ->deleteJson(route('api.accessories.destroy', $accessory))
-            ->assertForbidden();
+    $this->actingAsForApi(User::factory()->create())
+        ->deleteJson(route('api.accessories.destroy', $accessory))
+        ->assertForbidden();
 
-        $this->assertNotSoftDeleted($accessory);
-    }
+    $this->assertNotSoftDeleted($accessory);
+});
 
-    public function testAdheresToFullMultipleCompaniesSupportScoping()
-    {
-        [$companyA, $companyB] = Company::factory()->count(2)->create();
+test('adheres to full multiple companies support scoping', function () {
+    [$companyA, $companyB] = Company::factory()->count(2)->create();
 
-        $accessoryA = Accessory::factory()->for($companyA)->create();
-        $accessoryB = Accessory::factory()->for($companyB)->create();
-        $accessoryC = Accessory::factory()->for($companyB)->create();
+    $accessoryA = Accessory::factory()->for($companyA)->create();
+    $accessoryB = Accessory::factory()->for($companyB)->create();
+    $accessoryC = Accessory::factory()->for($companyB)->create();
 
-        $superUser = $companyA->users()->save(User::factory()->superuser()->make());
-        $userInCompanyA = $companyA->users()->save(User::factory()->deleteAccessories()->make());
-        $userInCompanyB = $companyB->users()->save(User::factory()->deleteAccessories()->make());
+    $superUser = $companyA->users()->save(User::factory()->superuser()->make());
+    $userInCompanyA = $companyA->users()->save(User::factory()->deleteAccessories()->make());
+    $userInCompanyB = $companyB->users()->save(User::factory()->deleteAccessories()->make());
 
-        $this->settings->enableMultipleFullCompanySupport();
+    $this->settings->enableMultipleFullCompanySupport();
 
-        $this->actingAsForApi($userInCompanyA)
-            ->deleteJson(route('api.accessories.destroy', $accessoryB))
-            ->assertStatusMessageIs('error');
+    $this->actingAsForApi($userInCompanyA)
+        ->deleteJson(route('api.accessories.destroy', $accessoryB))
+        ->assertStatusMessageIs('error');
 
-        $this->actingAsForApi($userInCompanyB)
-            ->deleteJson(route('api.accessories.destroy', $accessoryA))
-            ->assertStatusMessageIs('error');
+    $this->actingAsForApi($userInCompanyB)
+        ->deleteJson(route('api.accessories.destroy', $accessoryA))
+        ->assertStatusMessageIs('error');
 
-        $this->actingAsForApi($superUser)
-            ->deleteJson(route('api.accessories.destroy', $accessoryC))
-            ->assertStatusMessageIs('success');
+    $this->actingAsForApi($superUser)
+        ->deleteJson(route('api.accessories.destroy', $accessoryC))
+        ->assertStatusMessageIs('success');
 
-        $this->assertNotSoftDeleted($accessoryA);
-        $this->assertNotSoftDeleted($accessoryB);
-        $this->assertSoftDeleted($accessoryC);
-    }
+    $this->assertNotSoftDeleted($accessoryA);
+    $this->assertNotSoftDeleted($accessoryB);
+    $this->assertSoftDeleted($accessoryC);
+});
 
-    public static function checkedOutAccessories()
-    {
-        yield 'checked out to user' => [fn() => Accessory::factory()->checkedOutToUser()->create()];
-        yield 'checked out to asset' => [fn() => Accessory::factory()->checkedOutToAsset()->create()];
-        yield 'checked out to location' => [fn() => Accessory::factory()->checkedOutToLocation()->create()];
-    }
+dataset('checkedOutAccessories', function () {
+    yield 'checked out to user' => [fn() => Accessory::factory()->checkedOutToUser()->create()];
+    yield 'checked out to asset' => [fn() => Accessory::factory()->checkedOutToAsset()->create()];
+    yield 'checked out to location' => [fn() => Accessory::factory()->checkedOutToLocation()->create()];
+});
 
-    #[DataProvider('checkedOutAccessories')]
-    public function testCannotDeleteAccessoryThatHasCheckouts($data)
-    {
-        $accessory = $data();
+test('cannot delete accessory that has checkouts', function ($data) {
+    $accessory = $data();
 
-        $this->actingAsForApi(User::factory()->deleteAccessories()->create())
-            ->deleteJson(route('api.accessories.destroy', $accessory))
-            ->assertStatusMessageIs('error');
+    $this->actingAsForApi(User::factory()->deleteAccessories()->create())
+        ->deleteJson(route('api.accessories.destroy', $accessory))
+        ->assertStatusMessageIs('error');
 
-        $this->assertNotSoftDeleted($accessory);
-    }
+    $this->assertNotSoftDeleted($accessory);
+})->with('checkedOutAccessories');
 
-    public function testCanDeleteAccessory()
-    {
-        $accessory = Accessory::factory()->create();
+test('can delete accessory', function () {
+    $accessory = Accessory::factory()->create();
 
-        $this->actingAsForApi(User::factory()->deleteAccessories()->create())
-            ->deleteJson(route('api.accessories.destroy', $accessory))
-            ->assertStatusMessageIs('success');
+    $this->actingAsForApi(User::factory()->deleteAccessories()->create())
+        ->deleteJson(route('api.accessories.destroy', $accessory))
+        ->assertStatusMessageIs('success');
 
-        $this->assertSoftDeleted($accessory);
-    }
-}
+    $this->assertSoftDeleted($accessory);
+});
