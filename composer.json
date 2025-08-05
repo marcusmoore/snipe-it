@@ -86,6 +86,7 @@
     "larastan/larastan": "^2.9",
     "mockery/mockery": "^1.4",
     "nunomaduro/phpinsights": "^2.11",
+    "pestphp/pest": "^3.8",
     "php-mock/php-mock-phpunit": "^2.10",
     "squizlabs/php_codesniffer": "^3.5",
     "symfony/css-selector": "^4.4",
@@ -136,7 +137,8 @@
     "discard-changes": true,
     "process-timeout": 3000,
     "allow-plugins": {
-      "dealerdirect/phpcodesniffer-composer-installer": true
+      "dealerdirect/phpcodesniffer-composer-installer": true,
+      "pestphp/pest-plugin": true
     }
   }
 }
