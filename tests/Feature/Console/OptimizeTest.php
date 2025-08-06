@@ -1,18 +1,10 @@
 <?php
 
-namespace Tests\Feature\Console;
+test('optimize succeeds', function () {
+    $this->beforeApplicationDestroyed(function () {
+        $this->artisan('config:clear');
+        $this->artisan('route:clear');
+    });
 
-use Tests\TestCase;
-
-class OptimizeTest extends TestCase
-{
-    public function testOptimizeSucceeds()
-    {
-        $this->beforeApplicationDestroyed(function () {
-            $this->artisan('config:clear');
-            $this->artisan('route:clear');
-        });
-
-        $this->artisan('optimize')->assertSuccessful();
-    }
-}
+    $this->artisan('optimize')->assertSuccessful();
+});
