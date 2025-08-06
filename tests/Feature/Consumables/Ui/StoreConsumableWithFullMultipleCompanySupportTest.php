@@ -1,33 +1,24 @@
 <?php
 
-namespace Tests\Feature\Consumables\Ui;
-
 use App\Models\Category;
+use App\Models\Company;
 use App\Models\Consumable;
-use PHPUnit\Framework\Attributes\DataProvider;
+use App\Models\User;
 use Tests\Support\ProvidesDataForFullMultipleCompanySupportTesting;
-use Tests\TestCase;
 
-class StoreConsumableWithFullMultipleCompanySupportTest extends TestCase
-{
-    use ProvidesDataForFullMultipleCompanySupportTesting;
+uses(ProvidesDataForFullMultipleCompanySupportTesting::class);
 
-    #[DataProvider('dataForFullMultipleCompanySupportTesting')]
-    public function testAdheresToFullMultipleCompaniesSupportScoping($data)
-    {
-        ['actor' => $actor, 'company_attempting_to_associate' => $company, 'assertions' => $assertions] = $data();
+test('adheres to full multiple companies support scoping', function (User $actor, Company $company, Closure $assertions) {
+    $this->settings->enableMultipleFullCompanySupport();
 
-        $this->settings->enableMultipleFullCompanySupport();
+    $this->actingAs($actor)
+        ->post(route('consumables.store'), [
+            'name' => 'My Cool Consumable',
+            'category_id' => Category::factory()->forConsumables()->create()->id,
+            'company_id' => $company->id,
+        ]);
 
-        $this->actingAs($actor)
-            ->post(route('consumables.store'), [
-                'name' => 'My Cool Consumable',
-                'category_id' => Category::factory()->forConsumables()->create()->id,
-                'company_id' => $company->id,
-            ]);
+    $consumable = Consumable::where('name', 'My Cool Consumable')->sole();
 
-        $consumable = Consumable::where('name', 'My Cool Consumable')->sole();
-
-        $assertions($consumable);
-    }
-}
+    $assertions($consumable);
+})->with('data for full multiple company support testing');

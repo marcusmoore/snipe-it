@@ -1,45 +1,36 @@
 <?php
 
-namespace Tests\Feature\Consumables\Ui;
-
 use App\Models\Company;
 use App\Models\Consumable;
 use App\Models\User;
-use Tests\TestCase;
 
-class DeleteConsumableTest extends TestCase
-{
-    public function testRequiresPermissionToDeleteConsumable()
-    {
-        $this->actingAs(User::factory()->create())
-            ->delete(route('consumables.destroy', Consumable::factory()->create()->id))
-            ->assertForbidden();
-    }
+test('requires permission to delete consumable', function () {
+    $this->actingAs(User::factory()->create())
+        ->delete(route('consumables.destroy', Consumable::factory()->create()->id))
+        ->assertForbidden();
+});
 
-    public function testCannotDeleteConsumableFromAnotherCompany()
-    {
-        $this->settings->enableMultipleFullCompanySupport();
+test('cannot delete consumable from another company', function () {
+    $this->settings->enableMultipleFullCompanySupport();
 
-        [$companyA, $companyB] = Company::factory()->count(2)->create();
+    [$companyA, $companyB] = Company::factory()->count(2)->create();
 
-        $consumableForCompanyA = Consumable::factory()->for($companyA)->create();
-        $userForCompanyB = User::factory()->deleteConsumables()->for($companyB)->create();
+    $consumableForCompanyA = Consumable::factory()->for($companyA)->create();
+    $userForCompanyB = User::factory()->deleteConsumables()->for($companyB)->create();
 
-        $this->actingAs($userForCompanyB)
-            ->delete(route('consumables.destroy', $consumableForCompanyA->id))
-            ->assertRedirect(route('consumables.index'));
+    $this->actingAs($userForCompanyB)
+        ->delete(route('consumables.destroy', $consumableForCompanyA->id))
+        ->assertRedirect(route('consumables.index'));
 
-        $this->assertNotSoftDeleted($consumableForCompanyA);
-    }
+    $this->assertNotSoftDeleted($consumableForCompanyA);
+});
 
-    public function testCanDeleteConsumable()
-    {
-        $consumable = Consumable::factory()->create();
+test('can delete consumable', function () {
+    $consumable = Consumable::factory()->create();
 
-        $this->actingAs(User::factory()->deleteConsumables()->create())
-            ->delete(route('consumables.destroy', $consumable->id))
-            ->assertRedirect(route('consumables.index'));
+    $this->actingAs(User::factory()->deleteConsumables()->create())
+        ->delete(route('consumables.destroy', $consumable->id))
+        ->assertRedirect(route('consumables.index'));
 
-        $this->assertSoftDeleted($consumable);
-    }
-}
+    $this->assertSoftDeleted($consumable);
+});
