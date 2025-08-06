@@ -1,9 +1,7 @@
 <?php
 
 use Illuminate\Database\Eloquent\Model;
-use PHPUnit\Framework\Attributes\DataProvider;
 use App\Events\CheckoutableCheckedOut;
-use App\Models\Accessory;
 use App\Models\Asset;
 use App\Models\Company;
 use App\Models\LicenseSeat;

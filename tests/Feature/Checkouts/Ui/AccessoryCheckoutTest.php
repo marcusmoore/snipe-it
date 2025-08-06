@@ -6,9 +6,7 @@ use App\Models\Actionlog;
 use App\Models\Asset;
 use App\Models\Location;
 use App\Models\User;
-use App\Notifications\CheckoutAccessoryNotification;
 use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Facades\Notification;
 
 test('checking out accessory requires correct permission', function () {
     $this->actingAs(User::factory()->create())

@@ -4,10 +4,7 @@ use App\Mail\CheckoutAccessoryMail;
 use App\Models\Accessory;
 use App\Models\Actionlog;
 use App\Models\User;
-use App\Notifications\CheckoutAccessoryNotification;
 use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Facades\Notification;
-use Tests\Concerns\TestsPermissionsRequirement;
 
 test('requires permission', function () {
     $this->actingAsForApi(User::factory()->create())

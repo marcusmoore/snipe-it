@@ -4,9 +4,7 @@ use App\Mail\CheckoutConsumableMail;
 use App\Models\Actionlog;
 use App\Models\Consumable;
 use App\Models\User;
-use App\Notifications\CheckoutConsumableNotification;
 use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Facades\Notification;
 
 test('checking out consumable requires correct permission', function () {
     $this->actingAsForApi(User::factory()->create())

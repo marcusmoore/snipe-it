@@ -6,8 +6,6 @@ use App\Models\Component;
 use App\Models\Location;
 use App\Models\User;
 use Carbon\Carbon;
-use Tests\Concerns\TestsFullMultipleCompaniesSupport;
-use Tests\Concerns\TestsPermissionsRequirement;
 
 test('requires permission', function () {
     $component = Component::factory()->create();
