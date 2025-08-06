@@ -4,7 +4,6 @@ use App\Models\Asset;
 use App\Models\AssetModel;
 use App\Models\Manufacturer;
 use App\Models\User;
-use Tests\Concerns\TestsPermissionsRequirement;
 
 test('requires permission', function () {
     $manufacturer = Manufacturer::factory()->create();

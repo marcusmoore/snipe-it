@@ -1,7 +1,6 @@
 <?php
 
 use App\Models\Manufacturer;
-use App\Models\Category;
 use App\Models\User;
 
 test('permission required to store manufacturer', function () {
