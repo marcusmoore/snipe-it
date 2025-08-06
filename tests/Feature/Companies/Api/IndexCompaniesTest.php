@@ -2,7 +2,6 @@
 
 use App\Models\Company;
 use App\Models\User;
-use Illuminate\Testing\Fluent\AssertableJson;
 
 test('viewing company index requires permission', function () {
     $this->actingAsForApi(User::factory()->create())

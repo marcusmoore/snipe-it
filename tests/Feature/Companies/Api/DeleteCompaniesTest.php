@@ -2,7 +2,6 @@
 
 use App\Models\Company;
 use App\Models\User;
-use Tests\Concerns\TestsPermissionsRequirement;
 
 test('requires permission', function () {
     $company = Company::factory()->create();
