@@ -1,14 +1,7 @@
 <?php
 
 use App\Models\Asset;
-use App\Models\AssetModel;
-use App\Models\Company;
-use App\Models\Location;
-use App\Models\Statuslabel;
-use App\Models\Supplier;
 use App\Models\User;
-use App\Models\CustomField;
-use Illuminate\Support\Facades\Crypt;
 
 test('that anon existent asset id returns error', function () {
     $this->actingAsForApi(User::factory()->auditAssets()->create())

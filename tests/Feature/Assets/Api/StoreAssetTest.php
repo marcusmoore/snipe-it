@@ -10,7 +10,6 @@ use App\Models\Supplier;
 use App\Models\User;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Testing\Fluent\AssertableJson;
-use PHPUnit\Framework\Attributes\DataProvider;
 
 test('requires permission to create asset', function () {
     $this->actingAsForApi(User::factory()->create())
