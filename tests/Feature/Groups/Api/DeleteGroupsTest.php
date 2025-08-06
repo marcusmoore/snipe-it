@@ -2,7 +2,6 @@
 
 use App\Models\Group;
 use App\Models\User;
-use Tests\Concerns\TestsPermissionsRequirement;
 
 test('requires permission', function () {
     $group = Group::factory()->create();
