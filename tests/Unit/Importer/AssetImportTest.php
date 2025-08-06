@@ -1,56 +1,39 @@
 <?php
 
-namespace Tests\Unit\Importer;
-
 use App\Importer\AssetImporter;
 use App\Models\Statuslabel;
-use Tests\TestCase;
 use function Livewire\invade;
 
-class AssetImportTest extends TestCase
-{
-    public function test_uses_first_deployable_status_label_as_default_if_one_exists()
-    {
-        Statuslabel::truncate();
 
-        $pendingStatusLabel = Statuslabel::factory()->pending()->create();
-        $readyToDeployStatusLabel = Statuslabel::factory()->readyToDeploy()->create();
+test('uses first deployable status label as default if one exists', function () {
+    Statuslabel::truncate();
 
-        $importer = new AssetImporter('assets.csv');
+    $pendingStatusLabel = Statuslabel::factory()->pending()->create();
+    $readyToDeployStatusLabel = Statuslabel::factory()->readyToDeploy()->create();
 
-        $this->assertEquals(
-            $readyToDeployStatusLabel->id,
-            invade($importer)->defaultStatusLabelId
-        );
-    }
+    $importer = new AssetImporter('assets.csv');
 
-    public function test_uses_first_status_label_as_default_if_deployable_status_label_does_not_exist()
-    {
-        Statuslabel::truncate();
+    expect(invade($importer)->defaultStatusLabelId)->toEqual($readyToDeployStatusLabel->id);
+});
 
-        $statusLabel = Statuslabel::factory()->pending()->create();
+test('uses first status label as default if deployable status label does not exist', function () {
+    Statuslabel::truncate();
 
-        $importer = new AssetImporter('assets.csv');
+    $statusLabel = Statuslabel::factory()->pending()->create();
 
-        $this->assertEquals(
-            $statusLabel->id,
-            invade($importer)->defaultStatusLabelId
-        );
-    }
+    $importer = new AssetImporter('assets.csv');
 
-    public function test_creates_default_status_label_if_one_does_not_exist()
-    {
-        Statuslabel::truncate();
+    expect(invade($importer)->defaultStatusLabelId)->toEqual($statusLabel->id);
+});
 
-        $this->assertEquals(0, Statuslabel::count());
+test('creates default status label if one does not exist', function () {
+    Statuslabel::truncate();
 
-        $importer = new AssetImporter('assets.csv');
+    expect(Statuslabel::count())->toEqual(0);
 
-        $this->assertEquals(1, Statuslabel::count());
+    $importer = new AssetImporter('assets.csv');
 
-        $this->assertEquals(
-            Statuslabel::first()->id,
-            invade($importer)->defaultStatusLabelId
-        );
-    }
-}
+    expect(Statuslabel::count())->toEqual(1);
+
+    expect(invade($importer)->defaultStatusLabelId)->toEqual(Statuslabel::first()->id);
+});
