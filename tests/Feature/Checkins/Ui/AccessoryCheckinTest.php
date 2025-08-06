@@ -4,10 +4,8 @@ use App\Events\CheckoutableCheckedIn;
 use App\Mail\CheckinAccessoryMail;
 use App\Models\Accessory;
 use App\Models\User;
-use App\Notifications\CheckinAccessoryNotification;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Facades\Notification;
 
 test('checking in accessory requires correct permission', function () {
     $accessory = Accessory::factory()->checkedOutToUser()->create();

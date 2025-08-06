@@ -3,8 +3,6 @@
 use App\Models\Accessory;
 use App\Models\Company;
 use App\Models\User;
-use Tests\Concerns\TestsFullMultipleCompaniesSupport;
-use Tests\Concerns\TestsPermissionsRequirement;
 
 test('requires permission', function () {
     $accessory = Accessory::factory()->checkedOutToUser()->create();
