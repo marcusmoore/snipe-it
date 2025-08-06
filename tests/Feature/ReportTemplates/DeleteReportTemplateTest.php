@@ -2,8 +2,6 @@
 
 use App\Models\ReportTemplate;
 use App\Models\User;
-use PHPUnit\Framework\Attributes\Group;
-use Tests\Concerns\TestsPermissionsRequirement;
 
 test('requires permission', function () {
     $reportTemplate = ReportTemplate::factory()->create();
