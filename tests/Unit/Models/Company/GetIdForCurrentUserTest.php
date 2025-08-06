@@ -1,42 +1,32 @@
 <?php
 
-namespace Tests\Unit\Models\Company;
-
 use App\Models\Company;
 use App\Models\User;
-use Tests\TestCase;
 
-class GetIdForCurrentUserTest extends TestCase
-{
-    public function testReturnsProvidedValueWhenFullCompanySupportDisabled()
-    {
-        $this->settings->disableMultipleFullCompanySupport();
+test('returns provided value when full company support disabled', function () {
+    $this->settings->disableMultipleFullCompanySupport();
 
-        $this->actingAs(User::factory()->create());
-        $this->assertEquals(1000, Company::getIdForCurrentUser(1000));
-    }
+    $this->actingAs(User::factory()->create());
+    expect(Company::getIdForCurrentUser(1000))->toEqual(1000);
+});
 
-    public function testReturnsProvidedValueForSuperUsersWhenFullCompanySupportEnabled()
-    {
-        $this->settings->enableMultipleFullCompanySupport();
+test('returns provided value for super users when full company support enabled', function () {
+    $this->settings->enableMultipleFullCompanySupport();
 
-        $this->actingAs(User::factory()->superuser()->create());
-        $this->assertEquals(2000, Company::getIdForCurrentUser(2000));
-    }
+    $this->actingAs(User::factory()->superuser()->create());
+    expect(Company::getIdForCurrentUser(2000))->toEqual(2000);
+});
 
-    public function testReturnsNonSuperUsersCompanyIdWhenFullCompanySupportEnabled()
-    {
-        $this->settings->enableMultipleFullCompanySupport();
+test('returns non super users company id when full company support enabled', function () {
+    $this->settings->enableMultipleFullCompanySupport();
 
-        $this->actingAs(User::factory()->forCompany(['id' => 2000])->create());
-        $this->assertEquals(2000, Company::getIdForCurrentUser(1000));
-    }
+    $this->actingAs(User::factory()->forCompany(['id' => 2000])->create());
+    expect(Company::getIdForCurrentUser(1000))->toEqual(2000);
+});
 
-    public function testReturnsNullForNonSuperUserWithoutCompanyIdWhenFullCompanySupportEnabled()
-    {
-        $this->settings->enableMultipleFullCompanySupport();
+test('returns null for non super user without company id when full company support enabled', function () {
+    $this->settings->enableMultipleFullCompanySupport();
 
-        $this->actingAs(User::factory()->create(['company_id' => null]));
-        $this->assertNull(Company::getIdForCurrentUser(1000));
-    }
-}
+    $this->actingAs(User::factory()->create(['company_id' => null]));
+    expect(Company::getIdForCurrentUser(1000))->toBeNull();
+});
