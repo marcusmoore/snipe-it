@@ -3,7 +3,6 @@
 use App\Models\AssetModel;
 use App\Models\Category;
 use App\Models\User;
-use Illuminate\Testing\Fluent\AssertableJson;
 
 test('requires permission to create asset model', function () {
     $this->actingAsForApi(User::factory()->create())
