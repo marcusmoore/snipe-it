@@ -6,7 +6,6 @@ use App\Models\Location;
 use App\Models\Manufacturer;
 use App\Models\Supplier;
 use App\Models\User;
-use Tests\Concerns\TestsPermissionsRequirement;
 
 test('requires permission', function () {
     $this->actingAs(User::factory()->create())

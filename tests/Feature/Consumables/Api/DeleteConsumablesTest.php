@@ -3,8 +3,6 @@
 use App\Models\Company;
 use App\Models\Consumable;
 use App\Models\User;
-use Tests\Concerns\TestsFullMultipleCompaniesSupport;
-use Tests\Concerns\TestsPermissionsRequirement;
 
 test('requires permission', function () {
     $consumable = Consumable::factory()->create();
