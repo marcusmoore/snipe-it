@@ -3,8 +3,6 @@
 use App\Models\Company;
 use App\Models\License;
 use App\Models\User;
-use Tests\Concerns\TestsFullMultipleCompaniesSupport;
-use Tests\Concerns\TestsPermissionsRequirement;
 
 test('requires permission', function () {
     $license = License::factory()->create();
