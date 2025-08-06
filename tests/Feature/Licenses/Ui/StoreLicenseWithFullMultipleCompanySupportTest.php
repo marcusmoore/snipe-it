@@ -1,34 +1,25 @@
 <?php
 
-namespace Tests\Feature\Licenses\Ui;
-
 use App\Models\Category;
+use App\Models\Company;
 use App\Models\License;
-use PHPUnit\Framework\Attributes\DataProvider;
+use App\Models\User;
 use Tests\Support\ProvidesDataForFullMultipleCompanySupportTesting;
-use Tests\TestCase;
 
-class StoreLicenseWithFullMultipleCompanySupportTest extends TestCase
-{
-    use ProvidesDataForFullMultipleCompanySupportTesting;
+uses(ProvidesDataForFullMultipleCompanySupportTesting::class);
 
-    #[DataProvider('dataForFullMultipleCompanySupportTesting')]
-    public function testAdheresToFullMultipleCompaniesSupportScoping($data)
-    {
-        ['actor' => $actor, 'company_attempting_to_associate' => $company, 'assertions' => $assertions] = $data();
+test('adheres to full multiple companies support scoping', function (User $actor, Company $company, Closure $assertions) {
+    $this->settings->enableMultipleFullCompanySupport();
 
-        $this->settings->enableMultipleFullCompanySupport();
+    $this->actingAs($actor)
+        ->post(route('licenses.store'), [
+            'name' => 'My Cool License',
+            'seats' => '1',
+            'category_id' => Category::factory()->forLicenses()->create()->id,
+            'company_id' => $company->id,
+        ]);
 
-        $this->actingAs($actor)
-            ->post(route('licenses.store'), [
-                'name' => 'My Cool License',
-                'seats' => '1',
-                'category_id' => Category::factory()->forLicenses()->create()->id,
-                'company_id' => $company->id,
-            ]);
+    $license = License::where('name', 'My Cool License')->sole();
 
-        $license = License::where('name', 'My Cool License')->sole();
-
-        $assertions($license);
-    }
-}
+    $assertions($license);
+})->with('data for full multiple company support testing');
