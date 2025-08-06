@@ -1,12 +1,9 @@
 <?php
 
-use App\Events\CheckoutableCheckedIn;
 use App\Models\Asset;
 use App\Models\AssetModel;
 use App\Models\User;
 use App\Models\Category;
-use Illuminate\Support\Facades\Event;
-use Illuminate\Support\Facades\Storage;
 
 test('permission needed to delete category', function () {
     $this->actingAs(User::factory()->create())

@@ -1,6 +1,5 @@
 <?php
 
-use App\Models\AssetModel;
 use App\Models\Category;
 use App\Models\User;
 

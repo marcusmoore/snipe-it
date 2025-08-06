@@ -2,7 +2,6 @@
 
 use App\Models\Category;
 use App\Models\User;
-use Illuminate\Testing\Fluent\AssertableJson;
 
 test('viewing category index requires permission', function () {
     $this->actingAsForApi(User::factory()->create())

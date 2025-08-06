@@ -4,7 +4,6 @@ use App\Models\Asset;
 use App\Models\AssetModel;
 use App\Models\Category;
 use App\Models\User;
-use Tests\Concerns\TestsPermissionsRequirement;
 
 test('requires permission', function () {
     $category = Category::factory()->create();
