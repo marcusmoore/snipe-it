@@ -44,7 +44,7 @@ test('adheres to full multiple companies support scoping', function () {
     $this->assertSoftDeleted($accessoryC);
 });
 
-test('cannot delete accessory that has checkouts', function ($accessory) {
+test('cannot delete accessory that has checkouts', function (Accessory $accessory) {
     $this->actingAsForApi(User::factory()->deleteAccessories()->create())
         ->deleteJson(route('api.accessories.destroy', $accessory))
         ->assertStatusMessageIs('error');

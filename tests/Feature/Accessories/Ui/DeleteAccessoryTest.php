@@ -22,7 +22,7 @@ test('cannot delete accessory from another company', function () {
     expect($accessoryForCompanyA->refresh()->trashed())->toBeFalse('Accessory should not be deleted');
 });
 
-test('cannot delete accessory that has checkouts', function ($accessory) {
+test('cannot delete accessory that has checkouts', function (Accessory $accessory) {
     $this->actingAs(User::factory()->deleteAccessories()->create())
         ->delete(route('accessories.destroy', $accessory->id))
         ->assertSessionHas('error')

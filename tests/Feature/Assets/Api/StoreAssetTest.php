@@ -545,7 +545,7 @@ test('an asset can be checked out to user on store', function () {
     $this->assertHasTheseActionLogs($asset, ['create', 'checkout']);
 });
 
-test('assigned field validation cannot be array', function ($key, $value) {
+test('assigned field validation cannot be array', function (string $key, array $value) {
     $this->actingAsForApi(User::factory()->createAssets()->create())
         ->postJson(route('api.assets.store'), [
             'asset_tag' => '123456',

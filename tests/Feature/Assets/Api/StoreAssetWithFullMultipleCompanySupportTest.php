@@ -2,12 +2,14 @@
 
 use App\Models\Asset;
 use App\Models\AssetModel;
+use App\Models\Company;
 use App\Models\Statuslabel;
+use App\Models\User;
 use Tests\Support\ProvidesDataForFullMultipleCompanySupportTesting;
 
 uses(ProvidesDataForFullMultipleCompanySupportTesting::class);
 
-test('adheres to full multiple companies support scoping', function ($actor, $company, $assertions) {
+test('adheres to full multiple companies support scoping', function (User $actor, Company $company, Closure $assertions) {
     $this->settings->enableMultipleFullCompanySupport();
 
     $response = $this->actingAsForApi($actor)
@@ -23,7 +25,7 @@ test('adheres to full multiple companies support scoping', function ($actor, $co
     $assertions($asset);
 })->with('data for full multiple company support testing');
 
-test('handles company id being string', function ($actor, $company, $assertions) {
+test('handles company id being string', function (User $actor, Company $company, Closure $assertions) {
     $this->settings->enableMultipleFullCompanySupport();
 
     $response = $this->actingAsForApi($actor)

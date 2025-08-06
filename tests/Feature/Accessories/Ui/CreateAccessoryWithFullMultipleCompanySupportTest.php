@@ -2,8 +2,10 @@
 
 use App\Models\Accessory;
 use App\Models\Category;
+use App\Models\Company;
+use App\Models\User;
 
-test('adheres to full multiple companies support scoping', function ($actor, $company, $assertions) {
+test('adheres to full multiple companies support scoping', function (User $actor, Company $company, Closure $assertions) {
     $this->settings->enableMultipleFullCompanySupport();
 
     $this->actingAs($actor)
