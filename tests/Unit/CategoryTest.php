@@ -1,59 +1,50 @@
 <?php
-namespace Tests\Unit;
 
 use App\Models\Category;
 use App\Models\AssetModel;
 use App\Models\Asset;
-use Tests\TestCase;
 
-class CategoryTest extends TestCase
-{
-    public function testFailsEmptyValidation()
-    {
-        // An Asset requires a name, a qty, and a category_id.
-        $a = Category::create();
-        $this->assertFalse($a->isValid());
+test('fails empty validation', function () {
+    // An Asset requires a name, a qty, and a category_id.
+    $a = Category::create();
+    expect($a->isValid())->toBeFalse();
 
-        $fields = [
-             'name' => 'name',
-             'category_type' => 'category type',
-         ];
-        $errors = $a->getErrors();
-        foreach ($fields as $field => $fieldTitle) {
-            $this->assertEquals($errors->get($field)[0], "The $fieldTitle field is required.");
-        }
+    $fields = [
+         'name' => 'name',
+         'category_type' => 'category type',
+     ];
+    $errors = $a->getErrors();
+    foreach ($fields as $field => $fieldTitle) {
+        expect("The $fieldTitle field is required.")->toEqual($errors->get($field)[0]);
     }
+});
 
-    public function testACategoryCanHaveAssets()
-    {
-       $category = Category::factory()->assetDesktopCategory()->create();
+test('acategory can have assets', function () {
+    $category = Category::factory()->assetDesktopCategory()->create();
 
-       // Generate 5 models via factory
-       $models =  AssetModel::factory()
-            ->count(5)
-            ->create(
-                [
-                    'category_id' => $category->id
-                ]
-        );
+    // Generate 5 models via factory
+    $models =  AssetModel::factory()
+         ->count(5)
+         ->create(
+             [
+                 'category_id' => $category->id
+             ]
+     );
 
-        
+    // Loop through the models and create 2 assets in each model
+    $models->each(function ($model) {
+         //dd($model);
+         $asset = Asset::factory()
+         ->count(2)
+         ->create(
+             [
+                 'model_id' => $model->id,
+             ]
+         );
+         //dd($asset);
+     });
 
-        // Loop through the models and create 2 assets in each model
-       $models->each(function ($model) {
-            //dd($model);
-            $asset = Asset::factory()
-            ->count(2)
-            ->create(
-                [
-                    'model_id' => $model->id,
-                ]
-            );
-            //dd($asset);
-        });
-
-        $this->assertCount(5, $category->models);
-        $this->assertCount(5, $category->models);
-        $this->assertEquals(10, $category->itemCount());
-    }
-}
+    expect($category->models)->toHaveCount(5);
+    expect($category->models)->toHaveCount(5);
+    expect($category->itemCount())->toEqual(10);
+});
