@@ -3,7 +3,6 @@
 use App\Models\CustomField;
 use App\Models\CustomFieldset;
 use App\Models\User;
-use Tests\Concerns\TestsPermissionsRequirement;
 
 test('requires permission', function () {
     $this->markIncompleteIfMySQL('Custom Fields tests do not work on MySQL');
