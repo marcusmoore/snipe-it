@@ -1,163 +1,148 @@
 <?php
 
-namespace Tests\Feature\CheckoutAcceptances\Ui;
-
 use App\Events\CheckoutAccepted;
 use App\Models\Actionlog;
 use App\Models\Asset;
 use App\Models\CheckoutAcceptance;
 use App\Models\User;
 use Illuminate\Support\Facades\Event;
-use Tests\TestCase;
 
-class AssetAcceptanceTest extends TestCase
-{
-    public function testAssetCheckoutAcceptPageRenders()
-    {
-        $checkoutAcceptance = CheckoutAcceptance::factory()->pending()->create();
+test('asset checkout accept page renders', function () {
+    $checkoutAcceptance = CheckoutAcceptance::factory()->pending()->create();
 
-        $this->actingAs($checkoutAcceptance->assignedTo)
-            ->get(route('account.accept.item', $checkoutAcceptance))
-            ->assertViewIs('account.accept.create');
-    }
+    $this->actingAs($checkoutAcceptance->assignedTo)
+        ->get(route('account.accept.item', $checkoutAcceptance))
+        ->assertViewIs('account.accept.create');
+});
 
-    public function testCannotAcceptAssetAlreadyAccepted()
-    {
-        Event::fake([CheckoutAccepted::class]);
+test('cannot accept asset already accepted', function () {
+    Event::fake([CheckoutAccepted::class]);
 
-        $checkoutAcceptance = CheckoutAcceptance::factory()->accepted()->create();
+    $checkoutAcceptance = CheckoutAcceptance::factory()->accepted()->create();
 
-        $this->assertFalse($checkoutAcceptance->isPending());
+    expect($checkoutAcceptance->isPending())->toBeFalse();
 
-        $this->actingAs($checkoutAcceptance->assignedTo)
-            ->post(route('account.store-acceptance', $checkoutAcceptance), [
-                'asset_acceptance' => 'accepted',
-                'note' => 'my note',
-            ])
-            ->assertRedirectToRoute('account.accept')
-            ->assertSessionHas('error');
+    $this->actingAs($checkoutAcceptance->assignedTo)
+        ->post(route('account.store-acceptance', $checkoutAcceptance), [
+            'asset_acceptance' => 'accepted',
+            'note' => 'my note',
+        ])
+        ->assertRedirectToRoute('account.accept')
+        ->assertSessionHas('error');
 
-        Event::assertNotDispatched(CheckoutAccepted::class);
-    }
+    Event::assertNotDispatched(CheckoutAccepted::class);
+});
 
-    public function testCannotAcceptAssetForAnotherUser()
-    {
-        Event::fake([CheckoutAccepted::class]);
+test('cannot accept asset for another user', function () {
+    Event::fake([CheckoutAccepted::class]);
 
-        $checkoutAcceptance = CheckoutAcceptance::factory()->pending()->create();
+    $checkoutAcceptance = CheckoutAcceptance::factory()->pending()->create();
 
-        $this->assertTrue($checkoutAcceptance->isPending());
+    expect($checkoutAcceptance->isPending())->toBeTrue();
 
-        $anotherUser = User::factory()->create();
+    $anotherUser = User::factory()->create();
 
-        $this->actingAs($anotherUser)
-            ->post(route('account.store-acceptance', $checkoutAcceptance), [
-                'asset_acceptance' => 'accepted',
-                'note' => 'my note',
-            ])
-            ->assertRedirectToRoute('account.accept')
-            ->assertSessionHas('error');
+    $this->actingAs($anotherUser)
+        ->post(route('account.store-acceptance', $checkoutAcceptance), [
+            'asset_acceptance' => 'accepted',
+            'note' => 'my note',
+        ])
+        ->assertRedirectToRoute('account.accept')
+        ->assertSessionHas('error');
 
-        $this->assertTrue($checkoutAcceptance->fresh()->isPending());
+    expect($checkoutAcceptance->fresh()->isPending())->toBeTrue();
 
-        Event::assertNotDispatched(CheckoutAccepted::class);
-    }
+    Event::assertNotDispatched(CheckoutAccepted::class);
+});
 
-    public function testUserCanAcceptAsset()
-    {
-        Event::fake([CheckoutAccepted::class]);
+test('user can accept asset', function () {
+    Event::fake([CheckoutAccepted::class]);
 
-        $checkoutAcceptance = CheckoutAcceptance::factory()->pending()->create();
+    $checkoutAcceptance = CheckoutAcceptance::factory()->pending()->create();
 
-        $this->assertTrue($checkoutAcceptance->isPending());
+    expect($checkoutAcceptance->isPending())->toBeTrue();
 
-        $this->actingAs($checkoutAcceptance->assignedTo)
-            ->post(route('account.store-acceptance', $checkoutAcceptance), [
-                'asset_acceptance' => 'accepted',
-                'note' => 'my note',
-            ])
-            ->assertRedirectToRoute('account.accept')
-            ->assertSessionHas('success');
+    $this->actingAs($checkoutAcceptance->assignedTo)
+        ->post(route('account.store-acceptance', $checkoutAcceptance), [
+            'asset_acceptance' => 'accepted',
+            'note' => 'my note',
+        ])
+        ->assertRedirectToRoute('account.accept')
+        ->assertSessionHas('success');
 
-        $checkoutAcceptance->refresh();
+    $checkoutAcceptance->refresh();
 
-        $this->assertFalse($checkoutAcceptance->isPending());
-        $this->assertNotNull($checkoutAcceptance->accepted_at);
-        $this->assertNull($checkoutAcceptance->declined_at);
+    expect($checkoutAcceptance->isPending())->toBeFalse();
+    expect($checkoutAcceptance->accepted_at)->not->toBeNull();
+    expect($checkoutAcceptance->declined_at)->toBeNull();
 
-        Event::assertDispatched(CheckoutAccepted::class);
-    }
+    Event::assertDispatched(CheckoutAccepted::class);
+});
 
-    public function testUserCanDeclineAsset()
-    {
-        Event::fake([CheckoutAccepted::class]);
+test('user can decline asset', function () {
+    Event::fake([CheckoutAccepted::class]);
 
-        $checkoutAcceptance = CheckoutAcceptance::factory()->pending()->create();
+    $checkoutAcceptance = CheckoutAcceptance::factory()->pending()->create();
 
-        $this->assertTrue($checkoutAcceptance->isPending());
+    expect($checkoutAcceptance->isPending())->toBeTrue();
 
-        $this->actingAs($checkoutAcceptance->assignedTo)
-            ->post(route('account.store-acceptance', $checkoutAcceptance), [
-                'asset_acceptance' => 'declined',
-                'note' => 'my note',
-            ])
-            ->assertRedirectToRoute('account.accept')
-            ->assertSessionHas('success');
+    $this->actingAs($checkoutAcceptance->assignedTo)
+        ->post(route('account.store-acceptance', $checkoutAcceptance), [
+            'asset_acceptance' => 'declined',
+            'note' => 'my note',
+        ])
+        ->assertRedirectToRoute('account.accept')
+        ->assertSessionHas('success');
 
-        $checkoutAcceptance->refresh();
+    $checkoutAcceptance->refresh();
 
-        $this->assertFalse($checkoutAcceptance->isPending());
-        $this->assertNull($checkoutAcceptance->accepted_at);
-        $this->assertNotNull($checkoutAcceptance->declined_at);
+    expect($checkoutAcceptance->isPending())->toBeFalse();
+    expect($checkoutAcceptance->accepted_at)->toBeNull();
+    expect($checkoutAcceptance->declined_at)->not->toBeNull();
 
-        Event::assertNotDispatched(CheckoutAccepted::class);
-    }
+    Event::assertNotDispatched(CheckoutAccepted::class);
+});
 
-    public function testActionLoggedWhenAcceptingAsset()
-    {
-        $checkoutAcceptance = CheckoutAcceptance::factory()->pending()->create();
+test('action logged when accepting asset', function () {
+    $checkoutAcceptance = CheckoutAcceptance::factory()->pending()->create();
 
-        $this->actingAs($checkoutAcceptance->assignedTo)
-            ->post(route('account.store-acceptance', $checkoutAcceptance), [
-                'asset_acceptance' => 'accepted',
-                'note' => 'my note',
-            ]);
+    $this->actingAs($checkoutAcceptance->assignedTo)
+        ->post(route('account.store-acceptance', $checkoutAcceptance), [
+            'asset_acceptance' => 'accepted',
+            'note' => 'my note',
+        ]);
 
-        $this->assertTrue(Actionlog::query()
-            ->where([
-                'action_type' => 'accepted',
-                'target_id' => $checkoutAcceptance->assignedTo->id,
-                'target_type' => User::class,
-                'note' => 'my note',
-                'item_type' => Asset::class,
-                'item_id' => $checkoutAcceptance->checkoutable->id,
-            ])
-            ->whereNotNull('action_date')
-            ->exists()
-        );
-    }
+    expect(Actionlog::query()
+        ->where([
+            'action_type' => 'accepted',
+            'target_id' => $checkoutAcceptance->assignedTo->id,
+            'target_type' => User::class,
+            'note' => 'my note',
+            'item_type' => Asset::class,
+            'item_id' => $checkoutAcceptance->checkoutable->id,
+        ])
+        ->whereNotNull('action_date')
+        ->exists())->toBeTrue();
+});
 
-    public function testActionLoggedWhenDecliningAsset()
-    {
-        $checkoutAcceptance = CheckoutAcceptance::factory()->pending()->create();
+test('action logged when declining asset', function () {
+    $checkoutAcceptance = CheckoutAcceptance::factory()->pending()->create();
 
-        $this->actingAs($checkoutAcceptance->assignedTo)
-            ->post(route('account.store-acceptance', $checkoutAcceptance), [
-                'asset_acceptance' => 'declined',
-                'note' => 'my note',
-            ]);
+    $this->actingAs($checkoutAcceptance->assignedTo)
+        ->post(route('account.store-acceptance', $checkoutAcceptance), [
+            'asset_acceptance' => 'declined',
+            'note' => 'my note',
+        ]);
 
-        $this->assertTrue(Actionlog::query()
-            ->where([
-                'action_type' => 'declined',
-                'target_id' => $checkoutAcceptance->assignedTo->id,
-                'target_type' => User::class,
-                'note' => 'my note',
-                'item_type' => Asset::class,
-                'item_id' => $checkoutAcceptance->checkoutable->id,
-            ])
-            ->whereNotNull('action_date')
-            ->exists()
-        );
-    }
-}
+    expect(Actionlog::query()
+        ->where([
+            'action_type' => 'declined',
+            'target_id' => $checkoutAcceptance->assignedTo->id,
+            'target_type' => User::class,
+            'note' => 'my note',
+            'item_type' => Asset::class,
+            'item_id' => $checkoutAcceptance->checkoutable->id,
+        ])
+        ->whereNotNull('action_date')
+        ->exists())->toBeTrue();
+});
