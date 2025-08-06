@@ -4,8 +4,6 @@ use App\Models\Company;
 use App\Models\Component;
 use App\Models\User;
 use Illuminate\Support\Facades\Storage;
-use Tests\Concerns\TestsFullMultipleCompaniesSupport;
-use Tests\Concerns\TestsPermissionsRequirement;
 
 test('requires permission', function () {
     $component = Component::factory()->create();
