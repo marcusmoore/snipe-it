@@ -1,6 +1,5 @@
 <?php
 
-use App\Models\Component;
 use App\Models\User;
 
 test('permission required to view departments list', function () {

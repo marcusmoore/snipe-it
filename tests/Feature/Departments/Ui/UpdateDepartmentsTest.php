@@ -1,7 +1,6 @@
 <?php
 
 use App\Models\Department;
-use App\Models\Category;
 use App\Models\User;
 
 test('permission required to store department', function () {

@@ -1,7 +1,6 @@
 <?php
 
 use App\Models\Department;
-use App\Models\Category;
 use App\Models\User;
 
 test('requires permission to edit department', function () {
