@@ -3,7 +3,6 @@
 use App\Models\PredefinedKit;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
-use Tests\Concerns\TestsPermissionsRequirement;
 
 test('requires permission', function () {
     $predefinedKit = PredefinedKit::factory()->create();
