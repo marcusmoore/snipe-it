@@ -2,7 +2,6 @@
 
 use App\Models\Depreciation;
 use App\Models\User;
-use Tests\Concerns\TestsPermissionsRequirement;
 
 test('requires permission', function () {
     $depreciation = Depreciation::factory()->create();
