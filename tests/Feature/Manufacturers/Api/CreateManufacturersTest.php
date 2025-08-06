@@ -1,39 +1,28 @@
 <?php
 
-namespace Tests\Feature\Manufacturers\Api;
-
 use App\Models\Manufacturer;
 use App\Models\User;
-use Tests\TestCase;
 
-class CreateManufacturersTest extends TestCase
-{
+test('requires permission to create department', function () {
+    $this->actingAsForApi(User::factory()->create())
+        ->postJson(route('api.departments.store'))
+        ->assertForbidden();
+});
 
+test('can create manufacturer', function () {
+    $response = $this->actingAsForApi(User::factory()->superuser()->create())
+        ->postJson(route('api.manufacturers.store'), [
+            'name' => 'Test Manufacturer',
+            'notes' => 'Test Note',
+        ])
+        ->assertOk()
+        ->assertStatusMessageIs('success')
+        ->assertStatus(200)
+        ->json();
 
-    public function testRequiresPermissionToCreateDepartment()
-    {
-        $this->actingAsForApi(User::factory()->create())
-            ->postJson(route('api.departments.store'))
-            ->assertForbidden();
-    }
+    expect(Manufacturer::where('name', 'Test Manufacturer')->where('notes', 'Test Note')->exists())->toBeTrue();
 
-    public function testCanCreateManufacturer()
-    {
-        $response = $this->actingAsForApi(User::factory()->superuser()->create())
-            ->postJson(route('api.manufacturers.store'), [
-                'name' => 'Test Manufacturer',
-                'notes' => 'Test Note',
-            ])
-            ->assertOk()
-            ->assertStatusMessageIs('success')
-            ->assertStatus(200)
-            ->json();
-
-        $this->assertTrue(Manufacturer::where('name', 'Test Manufacturer')->where('notes', 'Test Note')->exists());
-
-        $manufacturer = Manufacturer::find($response['payload']['id']);
-        $this->assertEquals('Test Manufacturer', $manufacturer->name);
-        $this->assertEquals('Test Note', $manufacturer->notes);
-    }
-
-}
+    $manufacturer = Manufacturer::find($response['payload']['id']);
+    expect($manufacturer->name)->toEqual('Test Manufacturer');
+    expect($manufacturer->notes)->toEqual('Test Note');
+});
