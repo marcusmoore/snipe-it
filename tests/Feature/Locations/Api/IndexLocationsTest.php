@@ -1,6 +1,5 @@
 <?php
 
-use App\Models\Company;
 use App\Models\Location;
 use App\Models\User;
 use Illuminate\Testing\Fluent\AssertableJson;

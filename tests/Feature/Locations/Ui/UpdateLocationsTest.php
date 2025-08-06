@@ -6,7 +6,6 @@ use App\Models\Actionlog;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 
-
 test('permission required to store location', function () {
     $this->actingAs(User::factory()->create())
         ->post(route('locations.store'), [

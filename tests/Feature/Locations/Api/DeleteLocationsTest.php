@@ -3,7 +3,6 @@
 use App\Models\Asset;
 use App\Models\Location;
 use App\Models\User;
-use Tests\Concerns\TestsPermissionsRequirement;
 
 test('requires permission', function () {
     $location = Location::factory()->create();
