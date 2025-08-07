@@ -4,6 +4,8 @@ use App\Models\Asset;
 use App\Models\Company;
 use App\Models\User;
 
+pest()->group('assets', 'api');
+
 test('assets can be searched for by asset tag', function () {
     Asset::factory()->create(['asset_tag' => '0001']);
     Asset::factory()->create(['asset_tag' => '0002']);

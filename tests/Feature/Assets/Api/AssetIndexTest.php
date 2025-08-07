@@ -6,6 +6,8 @@ use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Testing\Fluent\AssertableJson;
 
+pest()->group('assets', 'api');
+
 test('asset api index returns expected assets', function () {
     Asset::factory()->count(3)->create();
 

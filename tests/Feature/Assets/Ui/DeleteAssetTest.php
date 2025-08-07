@@ -6,6 +6,8 @@ use App\Models\User;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Storage;
 
+pest()->group('assets', 'ui');
+
 test('permission needed to delete asset', function () {
     $this->actingAs(User::factory()->create())
         ->delete(route('hardware.destroy', Asset::factory()->create()))

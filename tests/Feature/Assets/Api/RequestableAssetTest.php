@@ -4,6 +4,8 @@ use App\Models\Asset;
 use App\Models\Company;
 use App\Models\User;
 
+pest()->group('assets', 'api');
+
 test('viewing requestable assets requires correct permission', function () {
     $this->actingAsForApi(User::factory()->create())
         ->getJson(route('api.assets.requestable'))

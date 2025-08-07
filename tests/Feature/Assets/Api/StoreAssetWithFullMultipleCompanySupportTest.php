@@ -9,6 +9,8 @@ use Tests\Support\ProvidesDataForFullMultipleCompanySupportTesting;
 
 uses(ProvidesDataForFullMultipleCompanySupportTesting::class);
 
+pest()->group('assets', 'api');
+
 test('adheres to full multiple companies support scoping', function (User $actor, Company $company, Closure $assertions) {
     $this->settings->enableMultipleFullCompanySupport();
 

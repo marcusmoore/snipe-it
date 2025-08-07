@@ -11,6 +11,8 @@ use App\Models\User;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Testing\Fluent\AssertableJson;
 
+pest()->group('assets', 'api');
+
 test('requires permission to create asset', function () {
     $this->actingAsForApi(User::factory()->create())
         ->postJson(route('api.assets.store'))

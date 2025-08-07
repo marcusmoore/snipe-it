@@ -9,6 +9,8 @@ use App\Models\Supplier;
 use App\Models\User;
 use Illuminate\Support\Facades\Crypt;
 
+pest()->group('assets', 'ui');
+
 test('user with permissions can access page', function () {
     $user = User::factory()->viewAssets()->editAssets()->create();
     $assets = Asset::factory()->count(2)->create();

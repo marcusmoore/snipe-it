@@ -9,6 +9,8 @@ use App\Models\User;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Event;
 
+pest()->group('assets', 'ui');
+
 test('permission required to view asset', function () {
     $asset = Asset::factory()->create();
     $this->actingAs(User::factory()->create())

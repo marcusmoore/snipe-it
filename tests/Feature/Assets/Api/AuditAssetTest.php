@@ -3,6 +3,8 @@
 use App\Models\Asset;
 use App\Models\User;
 
+pest()->group('assets', 'api');
+
 test('that anon existent asset id returns error', function () {
     $this->actingAsForApi(User::factory()->auditAssets()->create())
         ->postJson(route('api.asset.audit', 123456789))

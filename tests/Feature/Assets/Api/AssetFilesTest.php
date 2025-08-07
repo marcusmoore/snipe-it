@@ -4,6 +4,8 @@ use App\Models\Asset;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
 
+pest()->group('assets', 'api');
+
 test('asset api accepts file upload', function () {
     // Upload a file to an asset
     // Create an asset to work with

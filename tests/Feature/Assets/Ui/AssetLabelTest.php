@@ -3,6 +3,8 @@
 use App\Models\Asset;
 use App\Models\User;
 
+pest()->group('assets', 'ui');
+
 test('user with permissions can access page', function () {
     $assets = Asset::factory()->count(20)->create();
     $id_array = $assets->pluck('id')->toArray();

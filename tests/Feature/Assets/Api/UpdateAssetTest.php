@@ -10,6 +10,8 @@ use App\Models\User;
 use App\Models\CustomField;
 use Illuminate\Support\Facades\Crypt;
 
+pest()->group('assets', 'api');
+
 test('that anon existent asset id returns error', function () {
     $this->actingAsForApi(User::factory()->editAssets()->createAssets()->create())
         ->patchJson(route('api.assets.update', 123456789))

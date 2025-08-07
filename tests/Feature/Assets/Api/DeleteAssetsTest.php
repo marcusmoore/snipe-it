@@ -4,6 +4,8 @@ use App\Models\Asset;
 use App\Models\Company;
 use App\Models\User;
 
+pest()->group('assets', 'api');
+
 test('requires permission', function () {
     $asset = Asset::factory()->create();
 

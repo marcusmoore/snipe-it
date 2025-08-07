@@ -3,6 +3,8 @@
 use App\Models\Asset;
 use App\Models\User;
 
+pest()->group('assets', 'ui');
+
 test('page for asset with missing model still renders', function () {
     $asset = Asset::factory()->create();
 

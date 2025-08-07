@@ -3,6 +3,8 @@
 use App\Models\Asset;
 use App\Models\User;
 
+pest()->group('assets', 'ui');
+
 test('permission required to create asset model', function () {
     $asset = Asset::factory()->create();
     $this->actingAs(User::factory()->create())
