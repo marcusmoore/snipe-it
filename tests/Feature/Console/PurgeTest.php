@@ -16,6 +16,11 @@ class PurgeTest extends TestCase
         $this->markTestIncomplete();
     }
 
+    public function test_deletes_asset_model_images()
+    {
+        $this->markTestIncomplete();
+    }
+
     public function test_deletes_category_images()
     {
         $this->markTestIncomplete();

@@ -127,6 +127,7 @@ class Purge extends Command
             foreach ($models as $model) {
                 $this->info('- Asset Model "'.$model->name.'" deleted.');
                 $model->forceDelete();
+                DeleteFile::run('models/' . $model->image);
             }
 
             $categories = Category::whereNotNull('deleted_at')->withTrashed()->get();
