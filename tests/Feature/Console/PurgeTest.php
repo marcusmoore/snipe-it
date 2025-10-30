@@ -4,6 +4,7 @@ namespace Tests\Feature\Console;
 
 use App\Models\Accessory;
 use App\Models\Asset;
+use App\Models\Category;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
@@ -53,7 +54,18 @@ class PurgeTest extends TestCase
 
     public function test_deletes_category_images()
     {
-        $this->markTestIncomplete();
+        $category = Category::factory()->create(['image' => 'category-image.jpg']);
+
+        $filepath = 'categories/category-image.jpg';
+
+        Storage::disk('public')->put($filepath, 'contents');
+
+        $category->delete();
+        Storage::disk('public')->assertExists($filepath);
+
+        $this->firePurgeCommand()->assertSuccessful();
+
+        Storage::disk('public')->assertMissing($filepath);
     }
 
     public function test_deletes_manufacturer_images()
