@@ -143,6 +143,7 @@ class Purge extends Command
             foreach ($suppliers as $supplier) {
                 $this->info('- Supplier "'.$supplier->name.'" deleted.');
                 $supplier->forceDelete();
+                DeleteFile::run('suppliers/' . $supplier->image);
             }
 
             $users = User::whereNotNull('deleted_at')->where('show_in_list', '!=', '0')->withTrashed()->get();

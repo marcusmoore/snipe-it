@@ -7,6 +7,7 @@ use App\Models\Asset;
 use App\Models\AssetModel;
 use App\Models\Category;
 use App\Models\Manufacturer;
+use App\Models\Supplier;
 use Illuminate\Support\Facades\Storage;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
@@ -28,6 +29,7 @@ class PurgeTest extends TestCase
             [AssetModel::class, 'models'],
             [Category::class, 'categories'],
             [Manufacturer::class, 'manufacturers'],
+            [Supplier::class, 'suppliers'],
         ];
     }
 

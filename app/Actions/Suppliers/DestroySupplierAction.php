@@ -57,14 +57,6 @@ class DestroySupplierAction
             throw new ItemStillHasComponents($supplier);
         }
 
-        if ($supplier->image) {
-            try {
-                Storage::disk('public')->delete('suppliers/'.$supplier->image);
-            } catch (\Exception $e) {
-                Log::info($e->getMessage());
-            }
-        }
-
         $supplier->delete();
 
         return true;
