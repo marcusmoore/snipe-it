@@ -188,7 +188,7 @@ class DeleteLocationsTest extends TestCase implements TestsPermissionsRequiremen
         $this->assertSoftDeleted($location);
     }
 
-    public function test_preserves_image_in_case_model_restored()
+    public function test_preserves_image_in_case_location_restored()
     {
         Storage::fake('public');
 
