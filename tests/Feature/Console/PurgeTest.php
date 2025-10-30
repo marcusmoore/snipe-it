@@ -4,6 +4,7 @@ namespace Tests\Feature\Console;
 
 use App\Models\Accessory;
 use App\Models\Asset;
+use App\Models\AssetModel;
 use App\Models\Category;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
@@ -49,7 +50,18 @@ class PurgeTest extends TestCase
 
     public function test_deletes_asset_model_images()
     {
-        $this->markTestIncomplete();
+        $assetModel = AssetModel::factory()->create(['image' => 'asset-model-image.jpg']);
+
+        $filepath = 'models/asset-model-image.jpg';
+
+        Storage::disk('public')->put($filepath, 'contents');
+
+        $assetModel->delete();
+        Storage::disk('public')->assertExists($filepath);
+
+        $this->firePurgeCommand()->assertSuccessful();
+
+        Storage::disk('public')->assertMissing($filepath);
     }
 
     public function test_deletes_category_images()
