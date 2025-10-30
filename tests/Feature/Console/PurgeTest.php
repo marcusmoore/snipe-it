@@ -6,7 +6,9 @@ use App\Models\Accessory;
 use App\Models\Asset;
 use App\Models\AssetModel;
 use App\Models\Category;
+use App\Models\Manufacturer;
 use Illuminate\Support\Facades\Storage;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 class PurgeTest extends TestCase
@@ -18,71 +20,35 @@ class PurgeTest extends TestCase
         Storage::fake('public');
     }
 
-    public function test_deletes_accessory_images()
+    public static function models()
     {
-        $accessory = Accessory::factory()->create(['image' => 'accessory-image.jpg']);
-        $filepath = 'accessories/accessory-image.jpg';
+        return [
+            [Accessory::class, 'accessories'],
+            [Asset::class, 'assets'],
+            [AssetModel::class, 'models'],
+            [Category::class, 'categories'],
+            [Manufacturer::class, 'manufacturers'],
+        ];
+    }
+
+    #[DataProvider('models')]
+    public function test_deletes_model_images($modelClass, $pathPrefix)
+    {
+        $filename = str_random() . '.jpg';
+
+        $model = $modelClass::factory()->create(['image' => $filename]);
+
+        $filepath = "{$pathPrefix}/{$filename}";
 
         Storage::disk('public')->put($filepath, 'contents');
 
-        $accessory->delete();
+        $model->delete();
+
         Storage::disk('public')->assertExists($filepath);
 
         $this->firePurgeCommand()->assertSuccessful();
 
         Storage::disk('public')->assertMissing($filepath);
-    }
-
-    public function test_deletes_asset_images()
-    {
-        $asset = Asset::factory()->create(['image' => 'asset-image.jpg']);
-        $filepath = 'assets/asset-image.jpg';
-
-        Storage::disk('public')->put($filepath, 'contents');
-
-        $asset->delete();
-        Storage::disk('public')->assertExists($filepath);
-
-        $this->firePurgeCommand()->assertSuccessful();
-
-        Storage::disk('public')->assertMissing($filepath);
-    }
-
-    public function test_deletes_asset_model_images()
-    {
-        $assetModel = AssetModel::factory()->create(['image' => 'asset-model-image.jpg']);
-
-        $filepath = 'models/asset-model-image.jpg';
-
-        Storage::disk('public')->put($filepath, 'contents');
-
-        $assetModel->delete();
-        Storage::disk('public')->assertExists($filepath);
-
-        $this->firePurgeCommand()->assertSuccessful();
-
-        Storage::disk('public')->assertMissing($filepath);
-    }
-
-    public function test_deletes_category_images()
-    {
-        $category = Category::factory()->create(['image' => 'category-image.jpg']);
-
-        $filepath = 'categories/category-image.jpg';
-
-        Storage::disk('public')->put($filepath, 'contents');
-
-        $category->delete();
-        Storage::disk('public')->assertExists($filepath);
-
-        $this->firePurgeCommand()->assertSuccessful();
-
-        Storage::disk('public')->assertMissing($filepath);
-    }
-
-    public function test_deletes_manufacturer_images()
-    {
-        $this->markTestIncomplete();
     }
 
     private function firePurgeCommand()
