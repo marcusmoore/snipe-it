@@ -3,6 +3,7 @@
 namespace Tests\Feature\Console;
 
 use App\Models\Accessory;
+use App\Models\Asset;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
@@ -17,27 +18,32 @@ class PurgeTest extends TestCase
 
     public function test_deletes_accessory_images()
     {
-        // create an accessory
-        $accessory = Accessory::factory()->create(['image' => 'temp-file.jpg']);
-        $filepath = 'accessories/temp-file.jpg';
+        $accessory = Accessory::factory()->create(['image' => 'accessory-image.jpg']);
+        $filepath = 'accessories/accessory-image.jpg';
 
-        // store image for accessory
         Storage::disk('public')->put($filepath, 'contents');
 
-        // soft-delete accessory
         $accessory->delete();
+        Storage::disk('public')->assertExists($filepath);
 
-        // run purge
         $this->firePurgeCommand()->assertSuccessful();
 
-        // assert image removed
         Storage::disk('public')->assertMissing($filepath);
-
     }
 
     public function test_deletes_asset_images()
     {
-        $this->markTestIncomplete();
+        $asset = Asset::factory()->create(['image' => 'asset-image.jpg']);
+        $filepath = 'assets/asset-image.jpg';
+
+        Storage::disk('public')->put($filepath, 'contents');
+
+        $asset->delete();
+        Storage::disk('public')->assertExists($filepath);
+
+        $this->firePurgeCommand()->assertSuccessful();
+
+        Storage::disk('public')->assertMissing($filepath);
     }
 
     public function test_deletes_asset_model_images()
