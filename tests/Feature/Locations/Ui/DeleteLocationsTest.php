@@ -3,6 +3,7 @@
 namespace Tests\Feature\Locations\Ui;
 
 use App\Models\Consumable;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 use App\Models\Location;
 use App\Models\Accessory;
@@ -32,7 +33,29 @@ class DeleteLocationsTest extends TestCase
 
         $this->assertSoftDeleted($location);
     }
-    
+
+    public function test_preserves_image_in_case_model_restored()
+    {
+        Storage::fake('public');
+
+        $location = Location::factory()->create(['image' => 'image.jpg']);
+
+        Storage::disk('public')->put('locations/image.jpg', 'content');
+
+        Storage::disk('public')->assertExists('locations/image.jpg');
+
+        $this->actingAs(User::factory()->deleteLocations()->create())
+            ->delete(route('locations.destroy', $location));
+
+        Storage::disk('public')->assertExists('locations/image.jpg');
+
+        $this->assertEquals('image.jpg', $location->fresh()->image);
+    }
+
+    public function test_preserves_uploads_in_case_model_restored()
+    {
+        $this->markTestIncomplete();
+    }
 
     public function testCannotDeleteLocationWithAssetsAsLocation()
     {
@@ -131,9 +154,4 @@ class DeleteLocationsTest extends TestCase
 
         $this->assertNotSoftDeleted($location);
     }
-
-
-
-
-
 }

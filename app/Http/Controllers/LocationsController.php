@@ -205,14 +205,6 @@ class LocationsController extends Controller
         }
 
         if ($location->isDeletable()) {
-
-            if ($location->image) {
-                try {
-                    Storage::disk('public')->delete('locations/'.$location->image);
-                } catch (\Exception $e) {
-                    Log::error($e);
-                }
-            }
             $location->delete();
             return redirect()->to(route('locations.index'))->with('success', trans('admin/locations/message.delete.success'));
         } else {

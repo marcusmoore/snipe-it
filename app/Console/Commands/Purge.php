@@ -83,6 +83,7 @@ class Purge extends Command
             foreach ($locations as $location) {
                 $this->info('- Location "'.$location->name.'" deleted.');
                 $location->forceDelete();
+                DeleteFile::run('locations/' . $location->image);
             }
 
             $accessories = Accessory::whereNotNull('deleted_at')->withTrashed()->get();

@@ -8,10 +8,12 @@ use App\Models\AssetModel;
 use App\Models\Category;
 use App\Models\Component;
 use App\Models\Consumable;
+use App\Models\Location;
 use App\Models\Manufacturer;
 use App\Models\Supplier;
 use Illuminate\Support\Facades\Storage;
 use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\Group;
 use Tests\TestCase;
 
 class PurgeTest extends TestCase
@@ -33,10 +35,12 @@ class PurgeTest extends TestCase
             [Component::class, 'components'],
             [Consumable::class, 'consumables'],
             [Manufacturer::class, 'manufacturers'],
+            [Location::class, 'locations'],
             [Supplier::class, 'suppliers'],
         ];
     }
 
+    #[Group('focus')]
     #[DataProvider('models')]
     public function test_deletes_model_images($modelClass, $pathPrefix)
     {

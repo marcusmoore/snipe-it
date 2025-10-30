@@ -8,6 +8,7 @@ use App\Models\Component;
 use App\Models\Consumable;
 use App\Models\Location;
 use App\Models\User;
+use Illuminate\Support\Facades\Storage;
 use Tests\Concerns\TestsPermissionsRequirement;
 use Tests\TestCase;
 
@@ -185,5 +186,28 @@ class DeleteLocationsTest extends TestCase implements TestsPermissionsRequiremen
             ->assertStatusMessageIs('success');
 
         $this->assertSoftDeleted($location);
+    }
+
+    public function test_preserves_image_in_case_model_restored()
+    {
+        Storage::fake('public');
+
+        $location = Location::factory()->create(['image' => 'image.jpg']);
+
+        Storage::disk('public')->put('locations/image.jpg', 'content');
+
+        Storage::disk('public')->assertExists('locations/image.jpg');
+
+        $this->actingAsForApi(User::factory()->deleteLocations()->create())
+            ->deleteJson(route('api.locations.destroy', $location->id));
+
+        Storage::disk('public')->assertExists('locations/image.jpg');
+
+        $this->assertEquals('image.jpg', $location->fresh()->image);
+    }
+
+    public function test_preserves_uploads_in_case_model_restored()
+    {
+        $this->markTestIncomplete();
     }
 }
