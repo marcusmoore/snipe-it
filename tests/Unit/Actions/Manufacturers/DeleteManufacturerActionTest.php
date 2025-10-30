@@ -9,7 +9,7 @@ use Tests\TestCase;
 
 class DeleteManufacturerActionTest extends TestCase
 {
-    public function test_deletes_manufacturer()
+    public function test_soft_deletes_manufacturer()
     {
         $manufacturer = Manufacturer::factory()->create();
 

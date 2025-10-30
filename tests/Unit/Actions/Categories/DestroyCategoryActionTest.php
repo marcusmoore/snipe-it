@@ -9,7 +9,7 @@ use Tests\TestCase;
 
 class DestroyCategoryActionTest extends TestCase
 {
-    public function test_deletes_category()
+    public function test_soft_deletes_category()
     {
         $category = Category::factory()->create();
 
