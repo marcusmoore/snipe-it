@@ -9,8 +9,6 @@ use App\Models\Supplier;
 use App\Exceptions\ItemStillHasAssets;
 use App\Exceptions\ItemStillHasMaintenances;
 use App\Exceptions\ItemStillHasLicenses;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Storage;
 
 class DestroySupplierAction
 {
