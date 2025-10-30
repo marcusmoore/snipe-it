@@ -95,7 +95,7 @@ class DeleteAssetTest extends TestCase
         Event::assertDispatched(CheckoutableCheckedIn::class);
     }
 
-    public function testImageIsDeletedWhenAssetDeleted()
+    public function test_preserves_image_in_case_asset_restored()
     {
         Storage::fake('public');
 
@@ -108,6 +108,6 @@ class DeleteAssetTest extends TestCase
         $this->actingAs(User::factory()->deleteAssets()->create())
             ->delete(route('hardware.destroy', $asset));
 
-        Storage::disk('public')->assertMissing('assets/image.jpg');
+        Storage::disk('public')->assertExists('assets/image.jpg');
     }
 }

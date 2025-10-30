@@ -72,6 +72,7 @@ class Purge extends Command
                 $maintenances += $asset->maintenances()->count();
                 $asset->maintenances()->forceDelete();
                 $asset->forceDelete();
+                DeleteFile::run('assets/' . $asset->image);
             }
 
             $this->info($asset_assoc.' corresponding log records purged.');

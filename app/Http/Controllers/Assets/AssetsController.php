@@ -515,15 +515,6 @@ class AssetsController extends Controller
         }
 
 
-        if ($asset->image) {
-            try {
-                Storage::disk('public')->delete('assets'.'/'.$asset->image);
-            } catch (\Exception $e) {
-                Log::debug($e);
-            }
-        }
-
-
         $asset->delete();
 
         return redirect()->route('hardware.index')->with('success', trans('admin/hardware/message.delete.success'));
