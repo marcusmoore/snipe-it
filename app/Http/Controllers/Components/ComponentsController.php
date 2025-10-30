@@ -195,15 +195,6 @@ class ComponentsController extends Controller
 
         $this->authorize('delete', $component);
 
-        // Remove the image if one exists
-        if ($component->image && Storage::disk('public')->exists('components/' . $component->image)) {
-            try {
-                Storage::disk('public')->delete('components/'.$component->image);
-            } catch (\Exception $e) {
-                Log::debug($e);
-            }
-        }
-
         if ($component->numCheckedOut() > 0) {
             return redirect()->route('components.index')->with('error', trans('admin/components/message.delete.error_qty'));
         }

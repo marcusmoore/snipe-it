@@ -111,6 +111,7 @@ class Purge extends Command
                 $this->info('- Component "'.$component->name.'" deleted.');
                 $component->assetlog()->forceDelete();
                 $component->forceDelete();
+                DeleteFile::run('components/' . $component->image);
             }
 
             $licenses = License::whereNotNull('deleted_at')->withTrashed()->get();

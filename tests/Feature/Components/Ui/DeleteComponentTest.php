@@ -50,7 +50,7 @@ class DeleteComponentTest extends TestCase implements TestsFullMultipleCompanies
             ->assertRedirect(route('components.index'));
     }
 
-    public function testDeletingComponentRemovesComponentImage()
+    public function test_preserves_image_in_case_component_restored()
     {
         Storage::fake('public');
 
@@ -62,7 +62,7 @@ class DeleteComponentTest extends TestCase implements TestsFullMultipleCompanies
 
         $this->actingAs(User::factory()->deleteComponents()->create())->delete(route('components.destroy', $component->id));
 
-        Storage::disk('public')->assertMissing('components/component-image.jpg');
+        Storage::disk('public')->assertExists('components/component-image.jpg');
     }
 
     public function testDeletingComponentIsLogged()
