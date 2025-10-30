@@ -82,14 +82,6 @@ class ConsumableObserver
         }
 
 
-
-        try {
-            Storage::disk('public')->delete('consumables/'.$consumable->image);
-        } catch (\Exception $e) {
-            Log::info($e);
-        }
-
-        $consumable->image = null;
         $consumable->save();
 
 

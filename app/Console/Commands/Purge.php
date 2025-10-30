@@ -103,6 +103,7 @@ class Purge extends Command
                 $this->info('- Consumable "'.$consumable->name.'" deleted.');
                 $consumable->assetlog()->forceDelete();
                 $consumable->forceDelete();
+                DeleteFile::run('consumables/' . $consumable->image);
             }
 
             $components = Component::whereNotNull('deleted_at')->withTrashed()->get();

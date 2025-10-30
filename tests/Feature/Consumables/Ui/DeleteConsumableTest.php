@@ -5,6 +5,7 @@ namespace Tests\Feature\Consumables\Ui;
 use App\Models\Company;
 use App\Models\Consumable;
 use App\Models\User;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class DeleteConsumableTest extends TestCase
@@ -41,5 +42,30 @@ class DeleteConsumableTest extends TestCase
             ->assertRedirect(route('consumables.index'));
 
         $this->assertSoftDeleted($consumable);
+    }
+
+    public function test_preserves_image_in_case_consumable_restored()
+    {
+        Storage::fake('public');
+
+        $consumable = Consumable::factory()->create(['image' => 'image.jpg']);
+
+        Storage::disk('public')->put('consumables/image.jpg', 'content');
+
+        Storage::disk('public')->assertExists('consumables/image.jpg');
+
+        $this->actingAs(User::factory()->deleteConsumables()->create())
+            ->delete(route('consumables.destroy', $consumable->id));
+
+        Storage::disk('public')->assertExists('consumables/image.jpg');
+
+        $this->assertEquals('image.jpg', $consumable->fresh()->image);
+    }
+
+    public function test_preserves_uploads_in_case_consumable_restored()
+    {
+        $this->markTestIncomplete();
+
+        // this happens in the Observer
     }
 }

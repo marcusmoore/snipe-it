@@ -2,9 +2,11 @@
 
 namespace Tests\Feature\Consumables\Api;
 
+use App\Models\Actionlog;
 use App\Models\Company;
 use App\Models\Consumable;
 use App\Models\User;
+use Illuminate\Support\Facades\Storage;
 use Tests\Concerns\TestsFullMultipleCompaniesSupport;
 use Tests\Concerns\TestsPermissionsRequirement;
 use Tests\TestCase;
@@ -62,5 +64,30 @@ class DeleteConsumablesTest extends TestCase implements TestsFullMultipleCompani
             ->assertStatusMessageIs('success');
 
         $this->assertSoftDeleted($consumable);
+    }
+
+    public function test_preserves_image_in_case_consumable_restored()
+    {
+        Storage::fake('public');
+
+        $consumable = Consumable::factory()->create(['image' => 'image.jpg']);
+
+        Storage::disk('public')->put('consumables/image.jpg', 'content');
+
+        Storage::disk('public')->assertExists('consumables/image.jpg');
+
+        $this->actingAsForApi(User::factory()->deleteConsumables()->create())
+            ->deleteJson(route('api.consumables.destroy', $consumable));
+
+        Storage::disk('public')->assertExists('consumables/image.jpg');
+
+        $this->assertEquals('image.jpg', $consumable->fresh()->image);
+    }
+
+    public function test_preserves_uploads_in_case_consumable_restored()
+    {
+        $this->markTestIncomplete();
+
+        // this happens in the Observer
     }
 }

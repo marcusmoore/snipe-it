@@ -7,6 +7,7 @@ use App\Models\Asset;
 use App\Models\AssetModel;
 use App\Models\Category;
 use App\Models\Component;
+use App\Models\Consumable;
 use App\Models\Manufacturer;
 use App\Models\Supplier;
 use Illuminate\Support\Facades\Storage;
@@ -30,6 +31,7 @@ class PurgeTest extends TestCase
             [AssetModel::class, 'models'],
             [Category::class, 'categories'],
             [Component::class, 'components'],
+            [Consumable::class, 'consumables'],
             [Manufacturer::class, 'manufacturers'],
             [Supplier::class, 'suppliers'],
         ];
