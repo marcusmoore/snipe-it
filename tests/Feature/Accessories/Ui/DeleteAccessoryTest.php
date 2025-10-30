@@ -5,6 +5,7 @@ namespace Tests\Feature\Accessories\Ui;
 use App\Models\Accessory;
 use App\Models\Company;
 use App\Models\User;
+use Illuminate\Support\Facades\Storage;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
@@ -60,5 +61,22 @@ class DeleteAccessoryTest extends TestCase
             ->assertRedirect(route('accessories.index'));
 
         $this->assertTrue($accessory->refresh()->trashed(), 'Accessory should be deleted');
+    }
+
+    public function test_preserves_image_in_case_accessory_restored()
+    {
+        Storage::fake('public');
+
+        $filepath = 'accessories/temp-file.jpg';
+
+        Storage::disk('public')->put($filepath, 'contents');
+
+        $accessory = Accessory::factory()->create(['image' => 'temp-file.jpg']);
+
+        $this->actingAs(User::factory()->deleteAccessories()->create())
+            ->delete(route('accessories.destroy', $accessory->id))
+            ->assertRedirect(route('accessories.index'));
+
+        Storage::disk('public')->assertExists($filepath);
     }
 }

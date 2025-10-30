@@ -11,7 +11,6 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use \Illuminate\Contracts\View\View;
 use \Illuminate\Http\RedirectResponse;
-use Illuminate\Support\Facades\Log;
 
 /** This controller handles all actions related to Accessories for
  * the Snipe-IT Asset Management application.
@@ -212,14 +211,6 @@ class AccessoriesController extends Controller
 
         if ($accessory->checkouts_count > 0) {
             return redirect()->route('accessories.index')->with('error', trans('admin/accessories/general.delete_disabled'));
-        }
-
-        if ($accessory->image) {
-            try {
-                Storage::disk('public')->delete('accessories'.'/'.$accessory->image);
-            } catch (\Exception $e) {
-                Log::debug($e);
-            }
         }
 
         $accessory->delete();
