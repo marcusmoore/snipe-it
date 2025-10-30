@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Actions\DeleteFile;
 use App\Models\Accessory;
 use App\Models\Actionlog;
 use App\Models\Asset;
@@ -131,6 +132,7 @@ class Purge extends Command
             foreach ($categories as $category) {
                 $this->info('- Category "'.$category->name.'" deleted.');
                 $category->forceDelete();
+                DeleteFile::run('categories' . '/' . $category->image);
             }
 
             $suppliers = Supplier::whereNotNull('deleted_at')->withTrashed()->get();
