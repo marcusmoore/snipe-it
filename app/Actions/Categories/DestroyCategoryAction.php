@@ -9,7 +9,6 @@ use App\Exceptions\ItemStillHasComponents;
 use App\Exceptions\ItemStillHasConsumables;
 use App\Exceptions\ItemStillHasLicenses;
 use App\Models\Category;
-use Illuminate\Support\Facades\Storage;
 
 class DestroyCategoryAction
 {
@@ -51,7 +50,6 @@ class DestroyCategoryAction
             throw new ItemStillHasAssetModels($category);
         }
 
-        Storage::disk('public')->delete('categories'.'/'.$category->image);
         $category->delete();
 
         return true;
