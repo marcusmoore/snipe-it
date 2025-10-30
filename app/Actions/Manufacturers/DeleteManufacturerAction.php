@@ -8,8 +8,6 @@ use App\Exceptions\ItemStillHasComponents;
 use App\Exceptions\ItemStillHasConsumables;
 use App\Exceptions\ItemStillHasLicenses;
 use App\Models\Manufacturer;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Storage;
 
 class DeleteManufacturerAction
 {
@@ -46,16 +44,7 @@ class DeleteManufacturerAction
             throw new ItemStillHasLicenses($manufacturer);
         }
 
-        if ($manufacturer->image) {
-            try {
-                Storage::disk('public')->delete('manufacturers/'.$manufacturer->image);
-            } catch (\Exception $e) {
-                Log::info($e);
-            }
-        }
-
         $manufacturer->delete();
-        //dd($manufacturer);
 
         return true;
     }

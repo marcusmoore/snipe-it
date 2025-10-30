@@ -172,6 +172,7 @@ class Purge extends Command
             foreach ($manufacturers as $manufacturer) {
                 $this->info('- Manufacturer "'.$manufacturer->name.'" deleted.');
                 $manufacturer->forceDelete();
+                DeleteFile::run('manufacturers/' . $manufacturer->image);
             }
 
             $status_labels = Statuslabel::whereNotNull('deleted_at')->withTrashed()->get();

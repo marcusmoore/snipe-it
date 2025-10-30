@@ -10,4 +10,9 @@ class PurgeTest extends TestCase
     {
         $this->markTestIncomplete();
     }
+
+    public function test_deletes_manufacturer_image()
+    {
+        $this->markTestIncomplete();
+    }
 }
