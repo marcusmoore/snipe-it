@@ -171,6 +171,7 @@ class Purge extends Command
                 $user_assoc += $user->userlog()->count();
                 $user->userlog()->forceDelete();
                 $user->forceDelete();
+                DeleteFile::run('avatars/' . $user->avatar);
             }
             $this->info($user_assoc.' corresponding user log records purged.');
 

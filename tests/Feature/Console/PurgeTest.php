@@ -11,6 +11,7 @@ use App\Models\Consumable;
 use App\Models\Location;
 use App\Models\Manufacturer;
 use App\Models\Supplier;
+use App\Models\User;
 use Illuminate\Support\Facades\Storage;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
@@ -37,16 +38,17 @@ class PurgeTest extends TestCase
             [Manufacturer::class, 'manufacturers'],
             [Location::class, 'locations'],
             [Supplier::class, 'suppliers'],
+            [User::class, 'avatars', 'avatar'],
         ];
     }
 
     #[Group('focus')]
     #[DataProvider('models')]
-    public function test_deletes_model_images($modelClass, $pathPrefix)
+    public function test_deletes_model_images($modelClass, $pathPrefix, $property = 'image')
     {
         $filename = str_random() . '.jpg';
 
-        $model = $modelClass::factory()->create(['image' => $filename]);
+        $model = $modelClass::factory()->create([$property => $filename]);
 
         $filepath = "{$pathPrefix}/{$filename}";
 

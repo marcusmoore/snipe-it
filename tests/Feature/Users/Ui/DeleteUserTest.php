@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Users\Ui;
 
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 use App\Models\LicenseSeat;
 use App\Models\Location;
@@ -26,6 +27,25 @@ class DeleteUserTest extends TestCase
 
         $this->followRedirects($response)->assertSee(trans('general.notification_success'));
     }
+
+    public function test_preserves_image_in_case_user_restored()
+    {
+        Storage::fake('public');
+
+        $user = User::factory()->create(['avatar' => 'image.jpg']);
+
+        Storage::disk('public')->put('avatars/image.jpg', 'content');
+
+        Storage::disk('public')->assertExists('avatars/image.jpg');
+
+        $this->actingAs(User::factory()->deleteUsers()->create())
+            ->delete(route('users.destroy', $user));
+
+        Storage::disk('public')->assertExists('avatars/image.jpg');
+
+        $this->assertEquals('image.jpg', $user->fresh()->avatar);
+    }
+
 
 
     public function testErrorReturnedIfUserDoesNotExist()

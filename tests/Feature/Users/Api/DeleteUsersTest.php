@@ -6,6 +6,7 @@ use App\Models\Company;
 use App\Models\LicenseSeat;
 use App\Models\Location;
 use App\Models\User;
+use Illuminate\Support\Facades\Storage;
 use Tests\Concerns\TestsFullMultipleCompaniesSupport;
 use Tests\Concerns\TestsPermissionsRequirement;
 use Tests\TestCase;
@@ -151,5 +152,23 @@ class DeleteUsersTest extends TestCase implements TestsFullMultipleCompaniesSupp
             ->assertStatusMessageIs('success');
 
         $this->assertSoftDeleted($user);
+    }
+
+    public function test_preserves_image_in_case_user_restored()
+    {
+        Storage::fake('public');
+
+        $user = User::factory()->create(['avatar' => 'image.jpg']);
+
+        Storage::disk('public')->put('avatars/image.jpg', 'content');
+
+        Storage::disk('public')->assertExists('avatars/image.jpg');
+
+        $this->actingAsForApi(User::factory()->deleteUsers()->create())
+            ->deleteJson(route('api.users.destroy', $user->id));
+
+        Storage::disk('public')->assertExists('avatars/image.jpg');
+
+        $this->assertEquals('image.jpg', $user->fresh()->avatar);
     }
 }
