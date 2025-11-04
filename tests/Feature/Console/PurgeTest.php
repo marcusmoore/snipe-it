@@ -63,6 +63,29 @@ class PurgeTest extends TestCase
         Storage::disk('public')->assertMissing($filepath);
     }
 
+    public function test_deletes_users_uploads()
+    {
+        $pathPrefix = 'private_uploads/users';
+
+        $filename = str_random() . '.jpg';
+
+        $filepath = "{$pathPrefix}/{$filename}";
+
+        $user = User::factory()->create();
+
+        Storage::put($filepath, 'contents');
+
+        $user->logUpload($filename, '');
+
+        $user->delete();
+
+        Storage::assertExists($filepath);
+
+        $this->firePurgeCommand()->assertSuccessful();
+
+        Storage::assertMissing($filepath);
+    }
+
     private function firePurgeCommand()
     {
         $question = <<<TXT
