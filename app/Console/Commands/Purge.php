@@ -18,7 +18,6 @@ use App\Models\Supplier;
 use App\Models\User;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Storage;
 
 class Purge extends Command
 {
@@ -88,14 +87,7 @@ class Purge extends Command
 
             $this->purgeAccessories();
 
-            $consumables = Consumable::whereNotNull('deleted_at')->withTrashed()->get();
-            $this->info($consumables->count().' consumables purged.');
-            foreach ($consumables as $consumable) {
-                $this->info('- Consumable "'.$consumable->name.'" deleted.');
-                $consumable->assetlog()->forceDelete();
-                $consumable->forceDelete();
-                DeleteFile::run('consumables/' . $consumable->image, 'public');
-            }
+            $this->purgeConsumables();
 
             $components = Component::whereNotNull('deleted_at')->withTrashed()->get();
             $this->info($components->count().' components purged.');
@@ -165,11 +157,7 @@ class Purge extends Command
         $accessories = Accessory::query()
             ->whereNotNull('deleted_at')
             ->withTrashed()
-            ->with([
-                'assetlog' => function ($query) {
-                    $query->where('action_type', 'uploaded');
-                }
-            ])
+            ->with('uploads')
             ->get();
 
         $accessory_assoc = 0;
@@ -190,6 +178,31 @@ class Purge extends Command
             DeleteFile::run('accessories/' . $accessory->image, 'public');
         }
         $this->info($accessory_assoc . ' corresponding log records purged.');
+    }
+
+    private function purgeConsumables(): void
+    {
+        $consumables = Consumable::query()
+            ->whereNotNull('deleted_at')
+            ->with('uploads')
+            ->withTrashed()
+            ->get();
+
+        $this->info($consumables->count() . ' consumables purged.');
+        foreach ($consumables as $consumable) {
+            foreach ($consumable->assetlog->pluck('filename') as $filename) {
+                try {
+                    DeleteFile::run('private_uploads/consumables' . '/' . $filename);
+                } catch (\Exception $e) {
+                    Log::info('An error occurred while deleting files: ' . $e->getMessage());
+                }
+            }
+
+            $this->info('- Consumable "' . $consumable->name . '" deleted.');
+            $consumable->assetlog()->forceDelete();
+            $consumable->forceDelete();
+            DeleteFile::run('consumables/' . $consumable->image, 'public');
+        }
     }
 
     private function purgeUsers(): void
