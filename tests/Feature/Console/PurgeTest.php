@@ -31,7 +31,7 @@ class PurgeTest extends TestCase
         Storage::fake('public');
     }
 
-    public static function modelsThatArePurged()
+    public static function models_that_are_purged()
     {
         return [
             'Asset' => [Asset::class],
@@ -49,7 +49,7 @@ class PurgeTest extends TestCase
         ];
     }
 
-    #[DataProvider('modelsThatArePurged')]
+    #[DataProvider('models_that_are_purged')]
     public function test_purges_soft_deleted_models($modelClass)
     {
         $this->markTestIncomplete();
@@ -69,7 +69,7 @@ class PurgeTest extends TestCase
         // ensure maintenance and associated logs are completely removed
     }
 
-    public static function modelsWithImages()
+    public static function models_with_images()
     {
         return [
             'Accessory' => [Accessory::class, 'accessories'],
@@ -85,7 +85,7 @@ class PurgeTest extends TestCase
         ];
     }
 
-    #[DataProvider('modelsWithImages')]
+    #[DataProvider('models_with_images')]
     public function test_deletes_model_images($modelClass, $pathPrefix, $property = 'image')
     {
         $filename = str_random() . '.jpg';
@@ -105,7 +105,7 @@ class PurgeTest extends TestCase
         Storage::disk('public')->assertMissing($filepath);
     }
 
-    public static function modelsWithUploads()
+    public static function models_with_uploads()
     {
         return [
             'Accessory' => [Accessory::class, 'private_uploads/accessories'],
@@ -119,7 +119,7 @@ class PurgeTest extends TestCase
         ];
     }
 
-    #[DataProvider('modelsWithUploads')]
+    #[DataProvider('models_with_uploads')]
     public function test_deletes_uploads($modelClass, $pathPrefix)
     {
         $filename = str_random() . '.jpg';
