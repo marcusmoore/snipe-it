@@ -3,6 +3,7 @@
 namespace Tests\Feature\Console;
 
 use App\Models\Accessory;
+use App\Models\Actionlog;
 use App\Models\Asset;
 use App\Models\AssetModel;
 use App\Models\Category;
@@ -54,7 +55,43 @@ class PurgeTest extends TestCase
     {
         $this->markTestIncomplete();
 
-        // ensure model and associated logs are completely removed
+        $model = $modelClass::factory()->create();
+
+        $model->delete();
+
+        $this->firePurgeCommand()->assertSuccessful();
+
+        $this->assertDatabaseMissing($model->getTable(), ['id' => $model->id]);
+    }
+
+    public static function models_with_action_logs_that_are_purged()
+    {
+        return [
+            'Asset' => [Asset::class],
+            'Accessory' => [Accessory::class],
+            'Component' => [Component::class],
+            'Consumable' => [Consumable::class],
+            'License' => [License::class],
+            'User' => [User::class],
+        ];
+    }
+
+    #[DataProvider('models_with_action_logs_that_are_purged')]
+    public function test_purges_associated_action_logs()
+    {
+        $this->markTestIncomplete();
+
+        $model = $modelClass::factory()->create();
+
+        $actionLogEntries = Actionlog::whereMorphedTo('item', $model)->get();
+
+        $this->assertGreaterThan(0, $actionLogEntries->count());
+
+        $model->delete();
+
+        $this->firePurgeCommand()->assertSuccessful();
+
+        // todo assert action logs completely removed
     }
 
     public function test_purges_maintenances_for_soft_deleted_assets()
@@ -62,6 +99,7 @@ class PurgeTest extends TestCase
         $this->markTestIncomplete();
 
         // create maintenance
+
         // delete its asset
 
         // fire command
