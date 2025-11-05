@@ -156,13 +156,13 @@ class Purge extends Command
         $accessory_assoc = 0;
         $this->info($accessories->count() . ' accessories purged.');
         foreach ($accessories as $accessory) {
-            foreach ($accessory->uploads->pluck('filename') as $filename) {
+            $accessory->uploads->pluck('filename')->each(function ($filename) {
                 try {
                     DeleteFile::run('private_uploads/accessories' . '/' . $filename);
                 } catch (\Exception $e) {
                     Log::info('An error occurred while deleting files: ' . $e->getMessage());
                 }
-            }
+            });
 
             $this->info('- Accessory "' . $accessory->name . '" deleted.');
             $accessory_assoc += $accessory->assetlog()->count();
@@ -183,13 +183,13 @@ class Purge extends Command
 
         $this->info($components->count() . ' components purged.');
         foreach ($components as $component) {
-            foreach ($component->uploads->pluck('filename') as $filename) {
+            $component->uploads->pluck('filename')->each(function ($filename) {
                 try {
                     DeleteFile::run('private_uploads/components' . '/' . $filename);
                 } catch (\Exception $e) {
                     Log::info('An error occurred while deleting files: ' . $e->getMessage());
                 }
-            }
+            });
 
             $this->info('- Component "' . $component->name . '" deleted.');
             $component->assetlog()->forceDelete();
@@ -208,13 +208,13 @@ class Purge extends Command
 
         $this->info($consumables->count() . ' consumables purged.');
         foreach ($consumables as $consumable) {
-            foreach ($consumable->uploads->pluck('filename') as $filename) {
+            $consumable->uploads->pluck('filename')->each(function ($filename) {
                 try {
                     DeleteFile::run('private_uploads/consumables' . '/' . $filename);
                 } catch (\Exception $e) {
                     Log::info('An error occurred while deleting files: ' . $e->getMessage());
                 }
-            }
+            });
 
             $this->info('- Consumable "' . $consumable->name . '" deleted.');
             $consumable->assetlog()->forceDelete();
