@@ -16,6 +16,7 @@ use App\Models\Manufacturer;
 use App\Models\Statuslabel;
 use App\Models\Supplier;
 use App\Models\User;
+use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 
@@ -159,7 +160,7 @@ class Purge extends Command
             $accessory->uploads->pluck('filename')->each(function ($filename) {
                 try {
                     DeleteFile::run('private_uploads/accessories' . '/' . $filename);
-                } catch (\Exception $e) {
+                } catch (Exception $e) {
                     Log::info('An error occurred while deleting files: ' . $e->getMessage());
                 }
             });
@@ -186,7 +187,7 @@ class Purge extends Command
             $component->uploads->pluck('filename')->each(function ($filename) {
                 try {
                     DeleteFile::run('private_uploads/components' . '/' . $filename);
-                } catch (\Exception $e) {
+                } catch (Exception $e) {
                     Log::info('An error occurred while deleting files: ' . $e->getMessage());
                 }
             });
@@ -211,7 +212,7 @@ class Purge extends Command
             $consumable->uploads->pluck('filename')->each(function ($filename) {
                 try {
                     DeleteFile::run('private_uploads/consumables' . '/' . $filename);
-                } catch (\Exception $e) {
+                } catch (Exception $e) {
                     Log::info('An error occurred while deleting files: ' . $e->getMessage());
                 }
             });
@@ -238,7 +239,7 @@ class Purge extends Command
             foreach ($filenames as $filename) {
                 try {
                     DeleteFile::run($rel_path . '/' . $filename);
-                } catch (\Exception $e) {
+                } catch (Exception $e) {
                     Log::info('An error occurred while deleting files: ' . $e->getMessage());
                 }
             }
