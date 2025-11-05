@@ -86,14 +86,7 @@ class Purge extends Command
 
             $this->purgeComponents();
 
-            $licenses = License::whereNotNull('deleted_at')->withTrashed()->get();
-            $this->info($licenses->count().' licenses purged.');
-            foreach ($licenses as $license) {
-                $this->info('- License "'.$license->name.'" deleted.');
-                $license->assetlog()->forceDelete();
-                $license->licenseseats()->forceDelete();
-                $license->forceDelete();
-            }
+            $this->purgeLicenses();
 
             $models = AssetModel::whereNotNull('deleted_at')->withTrashed()->get();
             $this->info($models->count().' asset models purged.');
@@ -215,6 +208,30 @@ class Purge extends Command
             $consumable->assetlog()->forceDelete();
             $consumable->forceDelete();
             DeleteFile::run('consumables/' . $consumable->image, 'public');
+        }
+    }
+
+    private function purgeLicenses(): void
+    {
+        $licenses = License::query()
+            ->whereNotNull('deleted_at')
+            ->with('uploads')
+            ->withTrashed()
+            ->get();
+
+        $this->info($licenses->count() . ' licenses purged.');
+        foreach ($licenses as $license) {
+            $license->uploads->pluck('filename')->each(function ($filename) {
+                try {
+                    DeleteFile::run('private_uploads/licenses' . '/' . $filename);
+                } catch (Exception $e) {
+                    Log::info('An error occurred while deleting files: ' . $e->getMessage());
+                }
+            });
+            $this->info('- License "' . $license->name . '" deleted.');
+            $license->assetlog()->forceDelete();
+            $license->licenseseats()->forceDelete();
+            $license->forceDelete();
         }
     }
 
