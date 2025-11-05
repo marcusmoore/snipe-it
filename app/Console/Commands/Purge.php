@@ -156,7 +156,7 @@ class Purge extends Command
         $accessory_assoc = 0;
         $this->info($accessories->count() . ' accessories purged.');
         foreach ($accessories as $accessory) {
-            foreach ($accessory->assetlog->pluck('filename') as $filename) {
+            foreach ($accessory->uploads->pluck('filename') as $filename) {
                 try {
                     DeleteFile::run('private_uploads/accessories' . '/' . $filename);
                 } catch (\Exception $e) {
@@ -183,7 +183,7 @@ class Purge extends Command
 
         $this->info($components->count() . ' components purged.');
         foreach ($components as $component) {
-            foreach ($component->assetlog->pluck('filename') as $filename) {
+            foreach ($component->uploads->pluck('filename') as $filename) {
                 try {
                     DeleteFile::run('private_uploads/components' . '/' . $filename);
                 } catch (\Exception $e) {
@@ -208,7 +208,7 @@ class Purge extends Command
 
         $this->info($consumables->count() . ' consumables purged.');
         foreach ($consumables as $consumable) {
-            foreach ($consumable->assetlog->pluck('filename') as $filename) {
+            foreach ($consumable->uploads->pluck('filename') as $filename) {
                 try {
                     DeleteFile::run('private_uploads/consumables' . '/' . $filename);
                 } catch (\Exception $e) {
