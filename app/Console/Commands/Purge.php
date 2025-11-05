@@ -86,17 +86,7 @@ class Purge extends Command
                 DeleteFile::run('locations/' . $location->image, 'public');
             }
 
-            $accessories = Accessory::whereNotNull('deleted_at')->withTrashed()->get();
-            $accessory_assoc = 0;
-            $this->info($accessories->count().' accessories purged.');
-            foreach ($accessories as $accessory) {
-                $this->info('- Accessory "'.$accessory->name.'" deleted.');
-                $accessory_assoc += $accessory->assetlog()->count();
-                $accessory->assetlog()->forceDelete();
-                $accessory->forceDelete();
-                DeleteFile::run('accessories/' . $accessory->image, 'public');
-            }
-            $this->info($accessory_assoc.' corresponding log records purged.');
+            $this->purgeAccessories();
 
             $consumables = Consumable::whereNotNull('deleted_at')->withTrashed()->get();
             $this->info($consumables->count().' consumables purged.');
@@ -170,6 +160,38 @@ class Purge extends Command
         }
     }
 
+    private function purgeAccessories(): void
+    {
+        $accessories = Accessory::query()
+            ->whereNotNull('deleted_at')
+            ->withTrashed()
+            ->with([
+                'assetlog' => function ($query) {
+                    $query->where('action_type', 'uploaded');
+                }
+            ])
+            ->get();
+
+        $accessory_assoc = 0;
+        $this->info($accessories->count() . ' accessories purged.');
+        foreach ($accessories as $accessory) {
+            foreach ($accessory->assetlog->pluck('filename') as $filename) {
+                try {
+                    DeleteFile::run('private_uploads/accessories' . '/' . $filename);
+                } catch (\Exception $e) {
+                    Log::info('An error occurred while deleting files: ' . $e->getMessage());
+                }
+            }
+
+            $this->info('- Accessory "' . $accessory->name . '" deleted.');
+            $accessory_assoc += $accessory->assetlog()->count();
+            $accessory->assetlog()->forceDelete();
+            $accessory->forceDelete();
+            DeleteFile::run('accessories/' . $accessory->image, 'public');
+        }
+        $this->info($accessory_assoc . ' corresponding log records purged.');
+    }
+
     private function purgeUsers(): void
     {
         $users = User::whereNotNull('deleted_at')->where('show_in_list', '!=', '0')->withTrashed()->get();
@@ -184,9 +206,7 @@ class Purge extends Command
                 ->pluck('filename');
             foreach ($filenames as $filename) {
                 try {
-                    if (Storage::exists($rel_path . '/' . $filename)) {
-                        Storage::delete($rel_path . '/' . $filename);
-                    }
+                    DeleteFile::run($rel_path . '/' . $filename);
                 } catch (\Exception $e) {
                     Log::info('An error occurred while deleting files: ' . $e->getMessage());
                 }
