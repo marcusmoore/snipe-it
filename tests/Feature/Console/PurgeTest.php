@@ -10,7 +10,9 @@ use App\Models\Component;
 use App\Models\Consumable;
 use App\Models\License;
 use App\Models\Location;
+use App\Models\Maintenance;
 use App\Models\Manufacturer;
+use App\Models\Statuslabel;
 use App\Models\Supplier;
 use App\Models\User;
 use Illuminate\Support\Facades\Storage;
@@ -29,23 +31,42 @@ class PurgeTest extends TestCase
         Storage::fake('public');
     }
 
-    public function testPurgesModels()
+    public static function modelsThatArePurged()
+    {
+        return [
+            'Asset' => [Asset::class],
+            'Accessory' => [Accessory::class],
+            'AssetModel' => [AssetModel::class],
+            'Category' => [Category::class],
+            'Component' => [Component::class],
+            'Consumable' => [Consumable::class],
+            'License' => [License::class],
+            'Location' => [Location::class],
+            'Manufacturer' => [Manufacturer::class],
+            'StatusLabel' => [Statuslabel::class],
+            'Supplier' => [Supplier::class],
+            'User' => [User::class],
+        ];
+    }
+
+    #[DataProvider('modelsThatArePurged')]
+    public function test_purges_soft_deleted_models($modelClass)
     {
         $this->markTestIncomplete();
 
-        // Assets
-        // Maintenance
-        // Accessories
-        // AssetModels
-        // Categories
-        // Components
-        // Consumables
-        // Licenses
-        // Locations
-        // Manufacturers
-        // StatusLabels
-        // Suppliers
-        // Users
+        // ensure model and associated logs are completely removed
+    }
+
+    public function test_purges_maintenances_for_soft_deleted_assets()
+    {
+        $this->markTestIncomplete();
+
+        // create maintenance
+        // delete its asset
+
+        // fire command
+
+        // ensure maintenance and associated logs are completely removed
     }
 
     public static function modelsWithImages()
