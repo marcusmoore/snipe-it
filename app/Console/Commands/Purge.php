@@ -129,11 +129,7 @@ class Purge extends Command
 
     private function purgeAccessories(): void
     {
-        $accessories = Accessory::query()
-            ->whereNotNull('deleted_at')
-            ->with('uploads')
-            ->withTrashed()
-            ->get();
+        $accessories = Accessory::whereNotNull('deleted_at')->with('uploads')->withTrashed()->get();
 
         $accessory_assoc = 0;
         $this->info($accessories->count() . ' accessories purged.');
@@ -176,11 +172,7 @@ class Purge extends Command
 
     private function purgeComponents(): void
     {
-        $components = Component::query()
-            ->whereNotNull('deleted_at')
-            ->with('uploads')
-            ->withTrashed()
-            ->get();
+        $components = Component::whereNotNull('deleted_at')->with('uploads')->withTrashed()->get();
 
         $this->info($components->count() . ' components purged.');
         foreach ($components as $component) {
@@ -201,11 +193,7 @@ class Purge extends Command
 
     private function purgeConsumables(): void
     {
-        $consumables = Consumable::query()
-            ->whereNotNull('deleted_at')
-            ->with('uploads')
-            ->withTrashed()
-            ->get();
+        $consumables = Consumable::whereNotNull('deleted_at')->with('uploads')->withTrashed()->get();
 
         $this->info($consumables->count() . ' consumables purged.');
         foreach ($consumables as $consumable) {
@@ -226,11 +214,7 @@ class Purge extends Command
 
     private function purgeLicenses(): void
     {
-        $licenses = License::query()
-            ->whereNotNull('deleted_at')
-            ->with('uploads')
-            ->withTrashed()
-            ->get();
+        $licenses = License::whereNotNull('deleted_at')->with('uploads')->withTrashed()->get();
 
         $this->info($licenses->count() . ' licenses purged.');
         foreach ($licenses as $license) {
@@ -250,11 +234,7 @@ class Purge extends Command
 
     private function purgeLocations(): void
     {
-        $locations = Location::query()
-            ->whereNotNull('deleted_at')
-            ->with('uploads')
-            ->withTrashed()
-            ->get();
+        $locations = Location::whereNotNull('deleted_at')->with('uploads')->withTrashed()->get();
 
         $this->info($locations->count() . ' locations purged.');
         foreach ($locations as $location) {
@@ -275,6 +255,7 @@ class Purge extends Command
     private function purgeUsers(): void
     {
         $users = User::whereNotNull('deleted_at')->where('show_in_list', '!=', '0')->withTrashed()->get();
+
         $this->newLine();
         $this->info($users->count() . ' to be users purged.');
         $user_assoc = 0;
