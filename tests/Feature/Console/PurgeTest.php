@@ -31,49 +31,31 @@ class PurgeTest extends TestCase
     public static function modelsWithImages()
     {
         return [
-            [Accessory::class, 'accessories'],
-            [Asset::class, 'assets'],
-            [AssetModel::class, 'models'],
-            [Category::class, 'categories'],
-            [Component::class, 'components'],
-            [Consumable::class, 'consumables'],
-            [Manufacturer::class, 'manufacturers'],
-            [Location::class, 'locations'],
-            [Supplier::class, 'suppliers'],
+            'Accessory' => [Accessory::class, 'accessories'],
+            'Asset' => [Asset::class, 'assets'],
+            'AssetModel' => [AssetModel::class, 'models'],
+            'Category' => [Category::class, 'categories'],
+            'Component' => [Component::class, 'components'],
+            'Consumable' => [Consumable::class, 'consumables'],
+            'Manufacturer' => [Manufacturer::class, 'manufacturers'],
+            'Location' => [Location::class, 'locations'],
+            'Supplier' => [Supplier::class, 'suppliers'],
+            'User' => [User::class, 'avatars', 'avatar'],
         ];
     }
 
     #[DataProvider('modelsWithImages')]
-    public function test_deletes_model_images($modelClass, $pathPrefix)
+    public function test_deletes_model_images($modelClass, $pathPrefix, $property = 'image')
     {
         $filename = str_random() . '.jpg';
 
-        $model = $modelClass::factory()->create(['image' => $filename]);
+        $model = $modelClass::factory()->create([$property => $filename]);
 
         $filepath = "{$pathPrefix}/{$filename}";
 
         Storage::disk('public')->put($filepath, 'contents');
 
         $model->delete();
-
-        Storage::disk('public')->assertExists($filepath);
-
-        $this->firePurgeCommand()->assertSuccessful();
-
-        Storage::disk('public')->assertMissing($filepath);
-    }
-
-    public function test_deletes_user_avatar()
-    {
-        $filename = str_random() . '.jpg';
-
-        $user = User::factory()->create(['avatar' => $filename]);
-
-        $filepath = "avatars/{$filename}";
-
-        Storage::disk('public')->put($filepath, 'contents');
-
-        $user->delete();
 
         Storage::disk('public')->assertExists($filepath);
 
