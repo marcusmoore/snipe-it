@@ -56,9 +56,6 @@ class Purge extends Command
         $force = $this->option('force');
         if (($this->confirm("\n****************************************************\nTHIS WILL PURGE ALL SOFT-DELETED ITEMS IN YOUR SYSTEM. \nThere is NO undo. This WILL permanently destroy \nALL of your deleted data. \n****************************************************\n\nDo you wish to continue? No backsies! [y|N]")) || $force == 'true') {
 
-            /**
-             * Delete assets
-             */
             $assets = Asset::whereNotNull('deleted_at')->withTrashed()->get();
             $assetcount = $assets->count();
             $this->info($assets->count().' assets purged.');
@@ -90,38 +87,15 @@ class Purge extends Command
 
             $this->purgeAssetModels();
 
-            $categories = Category::whereNotNull('deleted_at')->withTrashed()->get();
-            $this->info($categories->count().' categories purged.');
-            foreach ($categories as $category) {
-                $this->info('- Category "'.$category->name.'" deleted.');
-                $category->forceDelete();
-                DeleteFile::run('categories' . '/' . $category->image, 'public');
-            }
+            $this->purgeCategories();
 
-            $suppliers = Supplier::whereNotNull('deleted_at')->withTrashed()->get();
-            $this->info($suppliers->count().' suppliers purged.');
-            foreach ($suppliers as $supplier) {
-                $this->info('- Supplier "'.$supplier->name.'" deleted.');
-                $supplier->forceDelete();
-                DeleteFile::run('suppliers/' . $supplier->image, 'public');
-            }
+            $this->purgeSuppliers();
 
             $this->purgeUsers();
 
-            $manufacturers = Manufacturer::whereNotNull('deleted_at')->withTrashed()->get();
-            $this->info($manufacturers->count().' manufacturers purged.');
-            foreach ($manufacturers as $manufacturer) {
-                $this->info('- Manufacturer "'.$manufacturer->name.'" deleted.');
-                $manufacturer->forceDelete();
-                DeleteFile::run('manufacturers/' . $manufacturer->image, 'public');
-            }
+            $this->purgeManufacturers();
 
-            $status_labels = Statuslabel::whereNotNull('deleted_at')->withTrashed()->get();
-            $this->info($status_labels->count().' status labels purged.');
-            foreach ($status_labels as $status_label) {
-                $this->info('- Status Label "'.$status_label->name.'" deleted.');
-                $status_label->forceDelete();
-            }
+            $this->purgeStatusLabels();
         } else {
             $this->info('Action canceled. Nothing was purged.');
         }
@@ -167,6 +141,17 @@ class Purge extends Command
             $this->info('- Asset Model "' . $model->name . '" deleted.');
             $model->forceDelete();
             DeleteFile::run('models/' . $model->image, 'public');
+        }
+    }
+
+    private function purgeCategories(): void
+    {
+        $categories = Category::whereNotNull('deleted_at')->withTrashed()->get();
+        $this->info($categories->count() . ' categories purged.');
+        foreach ($categories as $category) {
+            $this->info('- Category "' . $category->name . '" deleted.');
+            $category->forceDelete();
+            DeleteFile::run('categories' . '/' . $category->image, 'public');
         }
     }
 
@@ -249,6 +234,38 @@ class Purge extends Command
             $this->info('- Location "' . $location->name . '" deleted.');
             $location->forceDelete();
             DeleteFile::run('locations/' . $location->image, 'public');
+        }
+    }
+
+    private function purgeManufacturers(): void
+    {
+        $manufacturers = Manufacturer::whereNotNull('deleted_at')->withTrashed()->get();
+        $this->info($manufacturers->count() . ' manufacturers purged.');
+        foreach ($manufacturers as $manufacturer) {
+            $this->info('- Manufacturer "' . $manufacturer->name . '" deleted.');
+            $manufacturer->forceDelete();
+            DeleteFile::run('manufacturers/' . $manufacturer->image, 'public');
+        }
+    }
+
+    private function purgeStatusLabels(): void
+    {
+        $status_labels = Statuslabel::whereNotNull('deleted_at')->withTrashed()->get();
+        $this->info($status_labels->count() . ' status labels purged.');
+        foreach ($status_labels as $status_label) {
+            $this->info('- Status Label "' . $status_label->name . '" deleted.');
+            $status_label->forceDelete();
+        }
+    }
+
+    private function purgeSuppliers(): void
+    {
+        $suppliers = Supplier::whereNotNull('deleted_at')->withTrashed()->get();
+        $this->info($suppliers->count() . ' suppliers purged.');
+        foreach ($suppliers as $supplier) {
+            $this->info('- Supplier "' . $supplier->name . '" deleted.');
+            $supplier->forceDelete();
+            DeleteFile::run('suppliers/' . $supplier->image, 'public');
         }
     }
 
