@@ -149,31 +149,7 @@ class Purge extends Command
                 DeleteFile::run('suppliers/' . $supplier->image);
             }
 
-            $users = User::whereNotNull('deleted_at')->where('show_in_list', '!=', '0')->withTrashed()->get();
-            $this->info($users->count().' users purged.');
-            $user_assoc = 0;
-            foreach ($users as $user) {
-
-                $rel_path = 'private_uploads/users';
-                $filenames = Actionlog::where('action_type', 'uploaded')
-                    ->where('item_id', $user->id)
-                    ->pluck('filename');
-                foreach($filenames as $filename) {
-                    try {
-                        if (Storage::exists($rel_path . '/' . $filename)) {
-                            Storage::delete($rel_path . '/' . $filename);
-                        }
-                    } catch (\Exception $e) {
-                        Log::info('An error occurred while deleting files: ' . $e->getMessage());
-                    }
-                }
-                $this->info('- User "'.$user->username.'" deleted.');
-                $user_assoc += $user->userlog()->count();
-                $user->userlog()->forceDelete();
-                $user->forceDelete();
-                DeleteFile::run('avatars/' . $user->avatar);
-            }
-            $this->info($user_assoc.' corresponding user log records purged.');
+            $this->purgeUsers();
 
             $manufacturers = Manufacturer::whereNotNull('deleted_at')->withTrashed()->get();
             $this->info($manufacturers->count().' manufacturers purged.');
@@ -192,5 +168,36 @@ class Purge extends Command
         } else {
             $this->info('Action canceled. Nothing was purged.');
         }
+    }
+
+    private function purgeUsers(): void
+    {
+        $users = User::whereNotNull('deleted_at')->where('show_in_list', '!=', '0')->withTrashed()->get();
+        $this->newLine();
+        $this->info($users->count() . ' to be users purged.');
+        $user_assoc = 0;
+        foreach ($users as $user) {
+
+            $rel_path = 'private_uploads/users';
+            $filenames = Actionlog::where('action_type', 'uploaded')
+                ->where('item_id', $user->id)
+                ->pluck('filename');
+            foreach ($filenames as $filename) {
+                try {
+                    if (Storage::exists($rel_path . '/' . $filename)) {
+                        Storage::delete($rel_path . '/' . $filename);
+                    }
+                } catch (\Exception $e) {
+                    Log::info('An error occurred while deleting files: ' . $e->getMessage());
+                }
+            }
+            $this->info('- User "' . $user->username . '" deleted.');
+            $user_assoc += $user->userlog()->count();
+            $user->userlog()->forceDelete();
+            $user->forceDelete();
+            DeleteFile::run('avatars/' . $user->avatar);
+        }
+        $this->info($users->count() . ' users purged.');
+        $this->info($user_assoc . ' corresponding user log records purged.');
     }
 }
