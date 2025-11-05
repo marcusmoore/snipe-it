@@ -29,6 +29,25 @@ class PurgeTest extends TestCase
         Storage::fake('public');
     }
 
+    public function testPurgesModels()
+    {
+        $this->markTestIncomplete();
+
+        // Assets
+        // Maintenance
+        // Accessories
+        // AssetModels
+        // Categories
+        // Components
+        // Consumables
+        // Licenses
+        // Locations
+        // Manufacturers
+        // StatusLabels
+        // Suppliers
+        // Users
+    }
+
     public static function modelsWithImages()
     {
         return [
