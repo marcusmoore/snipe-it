@@ -88,13 +88,7 @@ class Purge extends Command
 
             $this->purgeLicenses();
 
-            $models = AssetModel::whereNotNull('deleted_at')->withTrashed()->get();
-            $this->info($models->count().' asset models purged.');
-            foreach ($models as $model) {
-                $this->info('- Asset Model "'.$model->name.'" deleted.');
-                $model->forceDelete();
-                DeleteFile::run('models/' . $model->image, 'public');
-            }
+            $this->purgeAssetModels();
 
             $categories = Category::whereNotNull('deleted_at')->withTrashed()->get();
             $this->info($categories->count().' categories purged.');
@@ -159,6 +153,25 @@ class Purge extends Command
             DeleteFile::run('accessories/' . $accessory->image, 'public');
         }
         $this->info($accessory_assoc . ' corresponding log records purged.');
+    }
+
+    private function purgeAssetModels(): void
+    {
+        $models = AssetModel::whereNotNull('deleted_at')->with('uploads')->withTrashed()->get();
+        $this->info($models->count() . ' asset models purged.');
+        foreach ($models as $model) {
+            $model->uploads->pluck('filename')->each(function ($filename) {
+                try {
+                    DeleteFile::run('private_uploads/models' . '/' . $filename);
+                } catch (Exception $e) {
+                    Log::info('An error occurred while deleting files: ' . $e->getMessage());
+                }
+            });
+
+            $this->info('- Asset Model "' . $model->name . '" deleted.');
+            $model->forceDelete();
+            DeleteFile::run('models/' . $model->image, 'public');
+        }
     }
 
     private function purgeComponents(): void
