@@ -17,16 +17,18 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
 use Tests\TestCase;
 
+#[Group('focus')]
 class PurgeTest extends TestCase
 {
     protected function setUp(): void
     {
         parent::setUp();
 
+        Storage::fake();
         Storage::fake('public');
     }
 
-    public static function models()
+    public static function modelsWithImages()
     {
         return [
             [Accessory::class, 'accessories'],
@@ -38,23 +40,40 @@ class PurgeTest extends TestCase
             [Manufacturer::class, 'manufacturers'],
             [Location::class, 'locations'],
             [Supplier::class, 'suppliers'],
-            [User::class, 'avatars', 'avatar'],
         ];
     }
 
-    #[Group('focus')]
-    #[DataProvider('models')]
-    public function test_deletes_model_images($modelClass, $pathPrefix, $property = 'image')
+    #[DataProvider('modelsWithImages')]
+    public function test_deletes_model_images($modelClass, $pathPrefix)
     {
         $filename = str_random() . '.jpg';
 
-        $model = $modelClass::factory()->create([$property => $filename]);
+        $model = $modelClass::factory()->create(['image' => $filename]);
 
         $filepath = "{$pathPrefix}/{$filename}";
 
         Storage::disk('public')->put($filepath, 'contents');
 
         $model->delete();
+
+        Storage::disk('public')->assertExists($filepath);
+
+        $this->firePurgeCommand()->assertSuccessful();
+
+        Storage::disk('public')->assertMissing($filepath);
+    }
+
+    public function test_deletes_user_avatar()
+    {
+        $filename = str_random() . '.jpg';
+
+        $user = User::factory()->create(['avatar' => $filename]);
+
+        $filepath = "avatars/{$filename}";
+
+        Storage::disk('public')->put($filepath, 'contents');
+
+        $user->delete();
 
         Storage::disk('public')->assertExists($filepath);
 
