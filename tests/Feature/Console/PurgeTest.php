@@ -11,7 +11,6 @@ use App\Models\Consumable;
 use App\Models\License;
 use App\Models\Location;
 use App\Models\Manufacturer;
-use App\Models\Statuslabel;
 use App\Models\Supplier;
 use App\Models\User;
 use Illuminate\Support\Facades\Storage;
@@ -69,22 +68,20 @@ class PurgeTest extends TestCase
     public static function modelsWithUploads()
     {
         return [
-            'Accessory' => [Accessory::class, 'accessories'],
-            'Asset' => [Asset::class, 'assets'],
-            'Asset Model' => [AssetModel::class, 'models'],
-            'Component' => [Component::class, 'components'],
-            'Consumable' => [Consumable::class, 'consumables'],
-            'License' => [License::class, 'licenses'],
-            'Location' => [Location::class, 'locations'],
-            'User' => [User::class, 'users'],
+            'Accessory' => [Accessory::class, 'private_uploads/accessories'],
+            'Asset' => [Asset::class, 'private_uploads/assets'],
+            'Asset Model' => [AssetModel::class, 'private_uploads/models'],
+            'Component' => [Component::class, 'private_uploads/components'],
+            'Consumable' => [Consumable::class, 'private_uploads/consumables'],
+            'License' => [License::class, 'private_uploads/licenses'],
+            'Location' => [Location::class, 'private_uploads/locations'],
+            'User' => [User::class, 'private_uploads/users'],
         ];
     }
 
     #[DataProvider('modelsWithUploads')]
     public function test_deletes_uploads($modelClass, $pathPrefix)
     {
-        $pathPrefix = "private_uploads/{$pathPrefix}";
-
         $filename = str_random() . '.jpg';
 
         $filepath = "{$pathPrefix}/{$filename}";
@@ -95,6 +92,8 @@ class PurgeTest extends TestCase
 
         $model->logUpload($filename, '');
 
+        $this->addUploadForAnotherModel($modelClass, $pathPrefix, 'keep.jpg');
+
         $model->delete();
 
         Storage::assertExists($filepath);
@@ -102,6 +101,7 @@ class PurgeTest extends TestCase
         $this->firePurgeCommand()->assertSuccessful();
 
         Storage::assertMissing($filepath);
+        $this->assertUploadRemainsForModel($pathPrefix, 'keep.jpg');
     }
 
     private function firePurgeCommand()
@@ -119,5 +119,19 @@ TXT;
 
         return $this->artisan('snipeit:purge')
             ->expectsConfirmation($question, 'yes');
+    }
+
+    private function addUploadForAnotherModel($modelClass, string $pathPrefix, string $filename): void
+    {
+        Storage::put("{$pathPrefix}/{$filename}", 'contents');
+
+        $modelClass::factory()->create()->logUpload($filename, '');
+
+        Storage::assertExists("{$pathPrefix}/{$filename}");
+    }
+
+    private function assertUploadRemainsForModel($pathPrefix, string $filename)
+    {
+        Storage::assertExists("{$pathPrefix}/{$filename}");
     }
 }
