@@ -8,8 +8,10 @@ use App\Models\AssetModel;
 use App\Models\Category;
 use App\Models\Component;
 use App\Models\Consumable;
+use App\Models\License;
 use App\Models\Location;
 use App\Models\Manufacturer;
+use App\Models\Statuslabel;
 use App\Models\Supplier;
 use App\Models\User;
 use Illuminate\Support\Facades\Storage;
@@ -33,7 +35,7 @@ class PurgeTest extends TestCase
         return [
             'Accessory' => [Accessory::class, 'accessories'],
             'Asset' => [Asset::class, 'assets'],
-            'AssetModel' => [AssetModel::class, 'models'],
+            'Asset Model' => [AssetModel::class, 'models'],
             'Category' => [Category::class, 'categories'],
             'Component' => [Component::class, 'components'],
             'Consumable' => [Consumable::class, 'consumables'],
@@ -64,21 +66,36 @@ class PurgeTest extends TestCase
         Storage::disk('public')->assertMissing($filepath);
     }
 
-    public function test_deletes_users_uploads()
+    public static function modelsWithUploads()
     {
-        $pathPrefix = 'private_uploads/users';
+        return [
+            'Accessory' => [Accessory::class, 'accessories'],
+            'Asset' => [Asset::class, 'assets'],
+            'Asset Model' => [AssetModel::class, 'models'],
+            'Component' => [Component::class, 'components'],
+            'Consumable' => [Consumable::class, 'consumables'],
+            'License' => [License::class, 'licenses'],
+            'Location' => [Location::class, 'locations'],
+            'User' => [User::class, 'users'],
+        ];
+    }
+
+    #[DataProvider('modelsWithUploads')]
+    public function test_deletes_uploads($modelClass, $pathPrefix)
+    {
+        $pathPrefix = "private_uploads/{$pathPrefix}";
 
         $filename = str_random() . '.jpg';
 
         $filepath = "{$pathPrefix}/{$filename}";
 
-        $user = User::factory()->create();
+        $model = $modelClass::factory()->create();
 
         Storage::put($filepath, 'contents');
 
-        $user->logUpload($filename, '');
+        $model->logUpload($filename, '');
 
-        $user->delete();
+        $model->delete();
 
         Storage::assertExists($filepath);
 
