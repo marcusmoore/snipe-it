@@ -78,13 +78,7 @@ class Purge extends Command
             $this->info($asset_assoc.' corresponding log records purged.');
             $this->info($maintenances.' corresponding maintenance records purged.');
 
-            $locations = Location::whereNotNull('deleted_at')->withTrashed()->get();
-            $this->info($locations->count().' locations purged.');
-            foreach ($locations as $location) {
-                $this->info('- Location "'.$location->name.'" deleted.');
-                $location->forceDelete();
-                DeleteFile::run('locations/' . $location->image, 'public');
-            }
+            $this->purgeLocations();
 
             $this->purgeAccessories();
 
@@ -221,6 +215,30 @@ class Purge extends Command
             $consumable->assetlog()->forceDelete();
             $consumable->forceDelete();
             DeleteFile::run('consumables/' . $consumable->image, 'public');
+        }
+    }
+
+    private function purgeLocations(): void
+    {
+        $locations = Location::query()
+            ->whereNotNull('deleted_at')
+            ->with('uploads')
+            ->withTrashed()
+            ->get();
+
+        $this->info($locations->count() . ' locations purged.');
+        foreach ($locations as $location) {
+            $location->uploads->pluck('filename')->each(function ($filename) {
+                try {
+                    DeleteFile::run('private_uploads/locations' . '/' . $filename);
+                } catch (Exception $e) {
+                    Log::info('An error occurred while deleting files: ' . $e->getMessage());
+                }
+            });
+
+            $this->info('- Location "' . $location->name . '" deleted.');
+            $location->forceDelete();
+            DeleteFile::run('locations/' . $location->image, 'public');
         }
     }
 
