@@ -70,21 +70,7 @@ class ConsumableObserver
     {
 
         $consumable->users()->detach();
-        $uploads = $consumable->uploads;
-
-        foreach ($uploads as $file) {
-            try {
-                Storage::delete('private_uploads/consumables/'.$file->filename);
-                $file->delete();
-            } catch (\Exception $e) {
-                Log::info($e);
-            }
-        }
-
-
         $consumable->save();
-
-
 
         $logAction = new Actionlog();
         $logAction->item_type = Consumable::class;
