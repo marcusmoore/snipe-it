@@ -89,14 +89,7 @@ class Purge extends Command
 
             $this->purgeConsumables();
 
-            $components = Component::whereNotNull('deleted_at')->withTrashed()->get();
-            $this->info($components->count().' components purged.');
-            foreach ($components as $component) {
-                $this->info('- Component "'.$component->name.'" deleted.');
-                $component->assetlog()->forceDelete();
-                $component->forceDelete();
-                DeleteFile::run('components/' . $component->image, 'public');
-            }
+            $this->purgeComponents();
 
             $licenses = License::whereNotNull('deleted_at')->withTrashed()->get();
             $this->info($licenses->count().' licenses purged.');
@@ -156,8 +149,8 @@ class Purge extends Command
     {
         $accessories = Accessory::query()
             ->whereNotNull('deleted_at')
-            ->withTrashed()
             ->with('uploads')
+            ->withTrashed()
             ->get();
 
         $accessory_assoc = 0;
@@ -178,6 +171,31 @@ class Purge extends Command
             DeleteFile::run('accessories/' . $accessory->image, 'public');
         }
         $this->info($accessory_assoc . ' corresponding log records purged.');
+    }
+
+    private function purgeComponents(): void
+    {
+        $components = Component::query()
+            ->whereNotNull('deleted_at')
+            ->with('uploads')
+            ->withTrashed()
+            ->get();
+
+        $this->info($components->count() . ' components purged.');
+        foreach ($components as $component) {
+            foreach ($component->assetlog->pluck('filename') as $filename) {
+                try {
+                    DeleteFile::run('private_uploads/components' . '/' . $filename);
+                } catch (\Exception $e) {
+                    Log::info('An error occurred while deleting files: ' . $e->getMessage());
+                }
+            }
+
+            $this->info('- Component "' . $component->name . '" deleted.');
+            $component->assetlog()->forceDelete();
+            $component->forceDelete();
+            DeleteFile::run('components/' . $component->image, 'public');
+        }
     }
 
     private function purgeConsumables(): void
