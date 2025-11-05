@@ -72,7 +72,7 @@ class Purge extends Command
                 $maintenances += $asset->maintenances()->count();
                 $asset->maintenances()->forceDelete();
                 $asset->forceDelete();
-                DeleteFile::run('assets/' . $asset->image);
+                DeleteFile::run('assets/' . $asset->image, 'public');
             }
 
             $this->info($asset_assoc.' corresponding log records purged.');
@@ -83,7 +83,7 @@ class Purge extends Command
             foreach ($locations as $location) {
                 $this->info('- Location "'.$location->name.'" deleted.');
                 $location->forceDelete();
-                DeleteFile::run('locations/' . $location->image);
+                DeleteFile::run('locations/' . $location->image, 'public');
             }
 
             $accessories = Accessory::whereNotNull('deleted_at')->withTrashed()->get();
@@ -94,7 +94,7 @@ class Purge extends Command
                 $accessory_assoc += $accessory->assetlog()->count();
                 $accessory->assetlog()->forceDelete();
                 $accessory->forceDelete();
-                DeleteFile::run('accessories/' . $accessory->image);
+                DeleteFile::run('accessories/' . $accessory->image, 'public');
             }
             $this->info($accessory_assoc.' corresponding log records purged.');
 
@@ -104,7 +104,7 @@ class Purge extends Command
                 $this->info('- Consumable "'.$consumable->name.'" deleted.');
                 $consumable->assetlog()->forceDelete();
                 $consumable->forceDelete();
-                DeleteFile::run('consumables/' . $consumable->image);
+                DeleteFile::run('consumables/' . $consumable->image, 'public');
             }
 
             $components = Component::whereNotNull('deleted_at')->withTrashed()->get();
@@ -113,7 +113,7 @@ class Purge extends Command
                 $this->info('- Component "'.$component->name.'" deleted.');
                 $component->assetlog()->forceDelete();
                 $component->forceDelete();
-                DeleteFile::run('components/' . $component->image);
+                DeleteFile::run('components/' . $component->image, 'public');
             }
 
             $licenses = License::whereNotNull('deleted_at')->withTrashed()->get();
@@ -130,7 +130,7 @@ class Purge extends Command
             foreach ($models as $model) {
                 $this->info('- Asset Model "'.$model->name.'" deleted.');
                 $model->forceDelete();
-                DeleteFile::run('models/' . $model->image);
+                DeleteFile::run('models/' . $model->image, 'public');
             }
 
             $categories = Category::whereNotNull('deleted_at')->withTrashed()->get();
@@ -138,7 +138,7 @@ class Purge extends Command
             foreach ($categories as $category) {
                 $this->info('- Category "'.$category->name.'" deleted.');
                 $category->forceDelete();
-                DeleteFile::run('categories' . '/' . $category->image);
+                DeleteFile::run('categories' . '/' . $category->image, 'public');
             }
 
             $suppliers = Supplier::whereNotNull('deleted_at')->withTrashed()->get();
@@ -146,7 +146,7 @@ class Purge extends Command
             foreach ($suppliers as $supplier) {
                 $this->info('- Supplier "'.$supplier->name.'" deleted.');
                 $supplier->forceDelete();
-                DeleteFile::run('suppliers/' . $supplier->image);
+                DeleteFile::run('suppliers/' . $supplier->image, 'public');
             }
 
             $this->purgeUsers();
@@ -156,7 +156,7 @@ class Purge extends Command
             foreach ($manufacturers as $manufacturer) {
                 $this->info('- Manufacturer "'.$manufacturer->name.'" deleted.');
                 $manufacturer->forceDelete();
-                DeleteFile::run('manufacturers/' . $manufacturer->image);
+                DeleteFile::run('manufacturers/' . $manufacturer->image, 'public');
             }
 
             $status_labels = Statuslabel::whereNotNull('deleted_at')->withTrashed()->get();
@@ -195,7 +195,7 @@ class Purge extends Command
             $user_assoc += $user->userlog()->count();
             $user->userlog()->forceDelete();
             $user->forceDelete();
-            DeleteFile::run('avatars/' . $user->avatar);
+            DeleteFile::run('avatars/' . $user->avatar, 'public');
         }
         $this->info($users->count() . ' users purged.');
         $this->info($user_assoc . ' corresponding user log records purged.');
