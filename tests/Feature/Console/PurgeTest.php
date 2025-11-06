@@ -53,7 +53,7 @@ class PurgeTest extends TestCase
     #[DataProvider('models_that_are_purged')]
     public function test_purges_soft_deleted_models($modelClass)
     {
-        $this->markTestIncomplete();
+        // $this->markTestIncomplete();
 
         $model = $modelClass::factory()->create();
 
