@@ -109,6 +109,11 @@ class PurgeTest extends TestCase
         // ensure maintenance and associated logs are completely removed
     }
 
+    public function test_purges_license_seats_for_soft_deleted_license()
+    {
+        $this->markTestIncomplete();
+    }
+
     public static function models_with_images()
     {
         return [
