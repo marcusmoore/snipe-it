@@ -53,8 +53,6 @@ class PurgeTest extends TestCase
     #[DataProvider('models_that_are_purged')]
     public function test_purges_soft_deleted_models($modelClass)
     {
-        // $this->markTestIncomplete();
-
         $model = $modelClass::factory()->create();
 
         $model->delete();
@@ -72,26 +70,30 @@ class PurgeTest extends TestCase
             'Component' => [Component::class],
             'Consumable' => [Consumable::class],
             'License' => [License::class],
-            'User' => [User::class],
         ];
     }
 
     #[DataProvider('models_with_action_logs_that_are_purged')]
-    public function test_purges_associated_action_logs()
+    public function test_purges_associated_action_logs($modelClass)
     {
-        $this->markTestIncomplete();
-
         $model = $modelClass::factory()->create();
 
-        $actionLogEntries = Actionlog::whereMorphedTo('item', $model)->get();
-
-        $this->assertGreaterThan(0, $actionLogEntries->count());
+        // use "greater than" because some models like license have other events like "add seats"
+        $this->assertGreaterThan(0, Actionlog::whereMorphedTo('item', $model)->count());
 
         $model->delete();
 
         $this->firePurgeCommand()->assertSuccessful();
 
-        // todo assert action logs completely removed
+        // there should only be one "delete" entry logging the force-delete
+        $this->assertEquals(1, Actionlog::whereMorphedTo('item', $model)->count());
+    }
+
+    public function test_user_action_logs_where_user_is_item_and_target_are_purged()
+    {
+        $this->markTestIncomplete();
+
+        // calling $user->userlog()->forceDelete(); currently
     }
 
     public function test_purges_maintenances_for_soft_deleted_assets()
