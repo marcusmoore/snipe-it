@@ -98,15 +98,17 @@ class PurgeTest extends TestCase
 
     public function test_purges_maintenances_for_soft_deleted_assets()
     {
-        $this->markTestIncomplete();
-
         // create maintenance
+        $maintenance = Maintenance::factory()->create();
 
         // delete its asset
+        $maintenance->asset->delete();
 
         // fire command
+        $this->firePurgeCommand()->assertSuccessful();
 
-        // ensure maintenance and associated logs are completely removed
+        // ensure maintenance completely removed
+        $this->assertDatabaseMissing($maintenance->getTable(), ['id' => $maintenance->id]);
     }
 
     public function test_purges_license_seats_for_soft_deleted_license()
