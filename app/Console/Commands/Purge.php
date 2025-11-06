@@ -56,24 +56,7 @@ class Purge extends Command
         $force = $this->option('force');
         if (($this->confirm("\n****************************************************\nTHIS WILL PURGE ALL SOFT-DELETED ITEMS IN YOUR SYSTEM. \nThere is NO undo. This WILL permanently destroy \nALL of your deleted data. \n****************************************************\n\nDo you wish to continue? No backsies! [y|N]")) || $force == 'true') {
 
-            $assets = Asset::whereNotNull('deleted_at')->withTrashed()->get();
-            $assetcount = $assets->count();
-            $this->info($assets->count().' assets purged.');
-            $asset_assoc = 0;
-            $maintenances = 0;
-
-            foreach ($assets as $asset) {
-                $this->info('- Asset "'.$asset->display_name.'" deleted.');
-                $asset_assoc += $asset->assetlog()->count();
-                $asset->assetlog()->forceDelete();
-                $maintenances += $asset->maintenances()->count();
-                $asset->maintenances()->forceDelete();
-                $asset->forceDelete();
-                DeleteFile::run('assets/' . $asset->image, 'public');
-            }
-
-            $this->info($asset_assoc.' corresponding log records purged.');
-            $this->info($maintenances.' corresponding maintenance records purged.');
+            $this->purgeAssets();
 
             $this->purgeLocations();
 
@@ -123,6 +106,36 @@ class Purge extends Command
             DeleteFile::run('accessories/' . $accessory->image, 'public');
         }
         $this->info($accessory_assoc . ' corresponding log records purged.');
+    }
+
+    private function purgeAssets(): void
+    {
+        $assets = Asset::whereNotNull('deleted_at')->with('uploads')->withTrashed()->get();
+        $assetcount = $assets->count();
+        $this->info($assets->count() . ' assets purged.');
+        $asset_assoc = 0;
+        $maintenances = 0;
+
+        foreach ($assets as $asset) {
+            $asset->uploads->pluck('filename')->each(function ($filename) {
+                try {
+                    DeleteFile::run('private_uploads/assets' . '/' . $filename);
+                } catch (Exception $e) {
+                    Log::info('An error occurred while deleting files: ' . $e->getMessage());
+                }
+            });
+
+            $this->info('- Asset "' . $asset->display_name . '" deleted.');
+            $asset_assoc += $asset->assetlog()->count();
+            $asset->assetlog()->forceDelete();
+            $maintenances += $asset->maintenances()->count();
+            $asset->maintenances()->forceDelete();
+            $asset->forceDelete();
+            DeleteFile::run('assets/' . $asset->image, 'public');
+        }
+
+        $this->info($asset_assoc . ' corresponding log records purged.');
+        $this->info($maintenances . ' corresponding maintenance records purged.');
     }
 
     private function purgeAssetModels(): void
