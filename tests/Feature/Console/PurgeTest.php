@@ -53,13 +53,14 @@ class PurgeTest extends TestCase
     #[DataProvider('models_that_are_purged')]
     public function test_purges_soft_deleted_models($modelClass)
     {
-        $model = $modelClass::factory()->create();
+        $models = $modelClass::factory()->count(2)->create();
 
-        $model->delete();
+        $models->first()->delete();
 
         $this->firePurgeCommand()->assertSuccessful();
 
-        $this->assertDatabaseMissing($model->getTable(), ['id' => $model->id]);
+        $this->assertDatabaseMissing($models->first()->getTable(), ['id' => $models->first()->id]);
+        $this->assertDatabaseHas($models->last()->getTable(), ['id' => $models->last()->id]);
     }
 
     public static function models_with_action_logs_that_are_purged()
