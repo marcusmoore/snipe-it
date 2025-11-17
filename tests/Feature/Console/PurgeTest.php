@@ -21,7 +21,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
 use Tests\TestCase;
 
-#[Group('focus')]
+#[Group('purging')]
 class PurgeTest extends TestCase
 {
     protected function setUp(): void
