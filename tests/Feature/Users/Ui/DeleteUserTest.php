@@ -46,7 +46,10 @@ class DeleteUserTest extends TestCase
         $this->assertEquals('image.jpg', $user->fresh()->avatar);
     }
 
-
+    public function test_preserves_uploads_in_case_user_restored()
+    {
+        $this->markTestIncomplete();
+    }
 
     public function testErrorReturnedIfUserDoesNotExist()
     {

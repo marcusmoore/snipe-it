@@ -65,6 +65,11 @@ class DeleteComponentTest extends TestCase implements TestsFullMultipleCompanies
         Storage::disk('public')->assertExists('components/component-image.jpg');
     }
 
+    public function test_preserves_uploads_in_case_component_restored()
+    {
+        $this->markTestIncomplete();
+    }
+
     public function testDeletingComponentIsLogged()
     {
         $user = User::factory()->deleteComponents()->create();

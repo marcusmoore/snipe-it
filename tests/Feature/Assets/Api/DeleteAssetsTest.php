@@ -69,4 +69,14 @@ class DeleteAssetsTest extends TestCase implements TestsFullMultipleCompaniesSup
         $this->assertSoftDeleted($asset);
         $this->assertHasTheseActionLogs($asset, ['create', 'delete']);
     }
+
+    public function test_preserves_image_in_case_asset_restored()
+    {
+        $this->markTestIncomplete();
+    }
+
+    public function test_preserves_uploads_in_case_asset_restored()
+    {
+        $this->markTestIncomplete();
+    }
 }

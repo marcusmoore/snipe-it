@@ -61,4 +61,9 @@ class DeleteManufacturersTest extends TestCase implements TestsPermissionsRequir
 
         $this->assertSoftDeleted($manufacturer);
     }
+
+    public function test_preserves_image_in_case_manufacturer_restored()
+    {
+        $this->markTestIncomplete();
+    }
 }

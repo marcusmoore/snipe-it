@@ -59,4 +59,9 @@ class DeleteAssetModelsTest extends TestCase implements TestsPermissionsRequirem
 
         Storage::disk('public')->assertExists($filepath);
     }
+
+    public function test_preserves_uploads_in_case_asset_model_restored()
+    {
+        $this->markTestIncomplete();
+    }
 }

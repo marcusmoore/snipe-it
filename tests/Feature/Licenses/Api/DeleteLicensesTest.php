@@ -87,4 +87,9 @@ class DeleteLicensesTest extends TestCase implements TestsFullMultipleCompaniesS
 
         $this->assertTrue($license->fresh()->licenseseats->isEmpty());
     }
+
+    public function test_preserves_uploads_in_case_license_restored()
+    {
+        $this->markTestIncomplete();
+    }
 }

@@ -56,4 +56,9 @@ class DeleteCategoriesTest extends TestCase implements TestsPermissionsRequireme
 
         $this->assertSoftDeleted($category);
     }
+
+    public function test_preserves_image_in_case_category_restored()
+    {
+        $this->markTestIncomplete();
+    }
 }

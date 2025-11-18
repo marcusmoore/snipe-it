@@ -72,4 +72,14 @@ class DeleteComponentTest extends TestCase implements TestsFullMultipleCompanies
             ->deleteJson(route('api.components.destroy', $component))
             ->assertStatusMessageIs('error');
     }
+
+    public function test_preserves_image_in_case_component_restored()
+    {
+        $this->markTestIncomplete();
+    }
+
+    public function test_preserves_uploads_in_case_component_restored()
+    {
+        $this->markTestIncomplete();
+    }
 }

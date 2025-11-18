@@ -79,4 +79,9 @@ class DeleteAccessoryTest extends TestCase
 
         Storage::disk('public')->assertExists($filepath);
     }
+
+    public function test_preserves_uploads_in_case_accessory_restored()
+    {
+        $this->markTestIncomplete();
+    }
 }

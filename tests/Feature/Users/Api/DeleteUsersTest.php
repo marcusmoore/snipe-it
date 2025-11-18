@@ -171,4 +171,9 @@ class DeleteUsersTest extends TestCase implements TestsFullMultipleCompaniesSupp
 
         $this->assertEquals('image.jpg', $user->fresh()->avatar);
     }
+
+    public function test_preserves_uploads_in_case_user_restored()
+    {
+        $this->markTestIncomplete();
+    }
 }

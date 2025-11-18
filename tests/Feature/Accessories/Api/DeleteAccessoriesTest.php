@@ -83,4 +83,14 @@ class DeleteAccessoriesTest extends TestCase implements TestsFullMultipleCompani
 
         $this->assertSoftDeleted($accessory);
     }
+
+    public function test_preserves_image_in_case_accessory_restored()
+    {
+        $this->markTestIncomplete();
+    }
+
+    public function test_preserves_uploads_in_case_accessory_restored()
+    {
+        $this->markTestIncomplete();
+    }
 }

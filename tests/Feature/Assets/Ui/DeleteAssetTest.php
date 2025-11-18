@@ -110,4 +110,9 @@ class DeleteAssetTest extends TestCase
 
         Storage::disk('public')->assertExists('assets/image.jpg');
     }
+
+    public function test_preserves_uploads_in_case_asset_restored()
+    {
+        $this->markTestIncomplete();
+    }
 }

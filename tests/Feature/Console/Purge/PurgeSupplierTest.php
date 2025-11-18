@@ -51,4 +51,9 @@ class PurgeSupplierTest extends TestCase
 
         Storage::disk('public')->assertMissing($filepath);
     }
+
+    public function test_deletes_suppliers_uploads()
+    {
+        $this->markTestIncomplete();
+    }
 }

@@ -57,4 +57,8 @@ class DeleteCategoriesTest extends TestCase
         $this->assertNotSoftDeleted($category);
     }
 
+    public function test_preserves_image_in_case_category_restored()
+    {
+        $this->markTestIncomplete();
+    }
 }

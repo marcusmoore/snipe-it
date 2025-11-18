@@ -50,4 +50,14 @@ class DeleteSuppliersTest extends TestCase implements TestsPermissionsRequiremen
 
         $this->assertSoftDeleted($supplier);
     }
+
+    public function test_preserves_image_in_case_supplier_restored()
+    {
+        $this->markTestIncomplete();
+    }
+
+    public function test_preserves_uploads_in_case_supplier_restored()
+    {
+        $this->markTestIncomplete();
+    }
 }
