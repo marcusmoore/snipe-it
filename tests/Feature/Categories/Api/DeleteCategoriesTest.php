@@ -6,6 +6,7 @@ use App\Models\Asset;
 use App\Models\AssetModel;
 use App\Models\Category;
 use App\Models\User;
+use Illuminate\Support\Facades\Storage;
 use Tests\Concerns\TestsPermissionsRequirement;
 use Tests\TestCase;
 
@@ -59,6 +60,18 @@ class DeleteCategoriesTest extends TestCase implements TestsPermissionsRequireme
 
     public function test_preserves_image_in_case_category_restored()
     {
-        $this->markTestIncomplete();
+        Storage::fake('public');
+
+        $category = Category::factory()->create(['image' => 'image.jpg']);
+
+        Storage::disk('public')->put('categories/image.jpg', 'content');
+
+        Storage::disk('public')->assertExists('categories/image.jpg');
+
+        $this->actingAsForApi(User::factory()->deleteCategories()->create())
+            ->deleteJson(route('api.categories.destroy', $category))
+            ->assertStatusMessageIs('success');
+
+        Storage::disk('public')->assertExists('categories/image.jpg');
     }
 }

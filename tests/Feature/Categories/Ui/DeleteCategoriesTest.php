@@ -59,6 +59,18 @@ class DeleteCategoriesTest extends TestCase
 
     public function test_preserves_image_in_case_category_restored()
     {
-        $this->markTestIncomplete();
+        Storage::fake('public');
+
+        $category = Category::factory()->create(['image' => 'image.jpg']);
+
+        Storage::disk('public')->put('categories/image.jpg', 'content');
+
+        Storage::disk('public')->assertExists('categories/image.jpg');
+
+        $this->actingAs(User::factory()->deleteCategories()->create())
+            ->delete(route('categories.destroy', $category))
+            ->assertSessionHas('success');
+
+        Storage::disk('public')->assertExists('categories/image.jpg');
     }
 }

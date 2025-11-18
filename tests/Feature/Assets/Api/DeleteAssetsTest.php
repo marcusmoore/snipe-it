@@ -5,6 +5,7 @@ namespace Tests\Feature\Assets\Api;
 use App\Models\Asset;
 use App\Models\Company;
 use App\Models\User;
+use Illuminate\Support\Facades\Storage;
 use Tests\Concerns\TestsFullMultipleCompaniesSupport;
 use Tests\Concerns\TestsPermissionsRequirement;
 use Tests\TestCase;
@@ -72,7 +73,19 @@ class DeleteAssetsTest extends TestCase implements TestsFullMultipleCompaniesSup
 
     public function test_preserves_image_in_case_asset_restored()
     {
-        $this->markTestIncomplete();
+        Storage::fake('public');
+
+        $asset = Asset::factory()->create(['image' => 'image.jpg']);
+
+        Storage::disk('public')->put('assets/image.jpg', 'content');
+
+        Storage::disk('public')->assertExists('assets/image.jpg');
+
+        $this->actingAsForApi(User::factory()->deleteAssets()->create())
+            ->deleteJson(route('api.assets.destroy', $asset))
+            ->assertStatusMessageIs('success');
+
+        Storage::disk('public')->assertExists('assets/image.jpg');
     }
 
     public function test_preserves_uploads_in_case_asset_restored()
