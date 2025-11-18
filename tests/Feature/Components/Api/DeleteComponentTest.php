@@ -93,6 +93,19 @@ class DeleteComponentTest extends TestCase implements TestsFullMultipleCompanies
 
     public function test_preserves_uploads_in_case_component_restored()
     {
-        $this->markTestIncomplete();
+        Storage::fake('public');
+
+        $filepath = 'private_uploads/components';
+
+        $component = Component::factory()->create();
+
+        Storage::put("{$filepath}/to-keep.txt", 'contents');
+        $component->logUpload("to-keep.txt", '');
+
+        $this->actingAsForApi(User::factory()->deleteComponents()->create())
+            ->deleteJson(route('api.components.destroy', $component))
+            ->assertStatusMessageIs('success');
+
+        Storage::assertExists("{$filepath}/to-keep.txt");
     }
 }

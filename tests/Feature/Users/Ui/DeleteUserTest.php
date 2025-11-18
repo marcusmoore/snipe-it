@@ -39,7 +39,8 @@ class DeleteUserTest extends TestCase
         Storage::disk('public')->assertExists('avatars/image.jpg');
 
         $this->actingAs(User::factory()->deleteUsers()->create())
-            ->delete(route('users.destroy', $user));
+            ->delete(route('users.destroy', $user))
+            ->assertSessionHas('success');
 
         Storage::disk('public')->assertExists('avatars/image.jpg');
 
@@ -48,7 +49,20 @@ class DeleteUserTest extends TestCase
 
     public function test_preserves_uploads_in_case_user_restored()
     {
-        $this->markTestIncomplete();
+        Storage::fake('public');
+
+        $filepath = 'private_uploads/users';
+
+        $user = User::factory()->create();
+
+        Storage::put("{$filepath}/to-keep.txt", 'contents');
+        $user->logUpload("to-keep.txt", '');
+
+        $this->actingAs(User::factory()->deleteUsers()->create())
+            ->delete(route('users.destroy', $user))
+            ->assertSessionHas('success');
+
+        Storage::assertExists("{$filepath}/to-keep.txt");
     }
 
     public function testErrorReturnedIfUserDoesNotExist()

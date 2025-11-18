@@ -60,14 +60,29 @@ class DeleteComponentTest extends TestCase implements TestsFullMultipleCompanies
 
         Storage::disk('public')->assertExists('components/component-image.jpg');
 
-        $this->actingAs(User::factory()->deleteComponents()->create())->delete(route('components.destroy', $component->id));
+        $this->actingAs(User::factory()->deleteComponents()->create())
+            ->delete(route('components.destroy', $component->id))
+            ->assertSessionHas('success');
 
         Storage::disk('public')->assertExists('components/component-image.jpg');
     }
 
     public function test_preserves_uploads_in_case_component_restored()
     {
-        $this->markTestIncomplete();
+        Storage::fake('public');
+
+        $filepath = 'private_uploads/components';
+
+        $component = Component::factory()->create();
+
+        Storage::put("{$filepath}/to-keep.txt", 'contents');
+        $component->logUpload("to-keep.txt", '');
+
+        $this->actingAs(User::factory()->deleteComponents()->create())
+            ->delete(route('components.destroy', $component->id))
+            ->assertSessionHas('success');
+
+        Storage::assertExists("{$filepath}/to-keep.txt");
     }
 
     public function testDeletingComponentIsLogged()

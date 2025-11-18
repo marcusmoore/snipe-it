@@ -55,7 +55,20 @@ class DeleteLocationsTest extends TestCase
 
     public function test_preserves_uploads_in_case_model_restored()
     {
-        $this->markTestIncomplete();
+        Storage::fake('public');
+
+        $filepath = 'private_uploads/locations';
+
+        $location = Location::factory()->create();
+
+        Storage::put("{$filepath}/to-keep.txt", 'contents');
+        $location->logUpload("to-keep.txt", '');
+
+        $this->actingAs(User::factory()->deleteLocations()->create())
+            ->delete(route('locations.destroy', $location))
+            ->assertSessionHas('success');
+
+        Storage::assertExists("{$filepath}/to-keep.txt");
     }
 
     public function testCannotDeleteLocationWithAssetsAsLocation()

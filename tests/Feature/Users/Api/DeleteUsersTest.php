@@ -165,7 +165,9 @@ class DeleteUsersTest extends TestCase implements TestsFullMultipleCompaniesSupp
         Storage::disk('public')->assertExists('avatars/image.jpg');
 
         $this->actingAsForApi(User::factory()->deleteUsers()->create())
-            ->deleteJson(route('api.users.destroy', $user->id));
+            ->deleteJson(route('api.users.destroy', $user->id))
+            ->assertOk()
+            ->assertStatusMessageIs('success');
 
         Storage::disk('public')->assertExists('avatars/image.jpg');
 
@@ -174,6 +176,20 @@ class DeleteUsersTest extends TestCase implements TestsFullMultipleCompaniesSupp
 
     public function test_preserves_uploads_in_case_user_restored()
     {
-        $this->markTestIncomplete();
+        Storage::fake('public');
+
+        $filepath = 'private_uploads/users';
+
+        $user = User::factory()->create();
+
+        Storage::put("{$filepath}/to-keep.txt", 'contents');
+        $user->logUpload("to-keep.txt", '');
+
+        $this->actingAsForApi(User::factory()->deleteUsers()->create())
+            ->deleteJson(route('api.users.destroy', $user->id))
+            ->assertOk()
+            ->assertStatusMessageIs('success');
+
+        Storage::assertExists("{$filepath}/to-keep.txt");
     }
 }

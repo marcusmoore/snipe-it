@@ -5,6 +5,7 @@ namespace Tests\Feature\Licenses\Api;
 use App\Models\Company;
 use App\Models\License;
 use App\Models\User;
+use Illuminate\Support\Facades\Storage;
 use Tests\Concerns\TestsFullMultipleCompaniesSupport;
 use Tests\Concerns\TestsPermissionsRequirement;
 use Tests\TestCase;
@@ -90,6 +91,19 @@ class DeleteLicensesTest extends TestCase implements TestsFullMultipleCompaniesS
 
     public function test_preserves_uploads_in_case_license_restored()
     {
-        $this->markTestIncomplete();
+        Storage::fake('public');
+
+        $filepath = 'private_uploads/licenses';
+
+        $license = License::factory()->create();
+
+        Storage::put("{$filepath}/to-keep.txt", 'contents');
+        $license->logUpload("to-keep.txt", '');
+
+        $this->actingAsForApi(User::factory()->deleteLicenses()->create())
+            ->deleteJson(route('api.licenses.destroy', $license))
+            ->assertStatusMessageIs('success');
+
+        Storage::assertExists("{$filepath}/to-keep.txt");
     }
 }

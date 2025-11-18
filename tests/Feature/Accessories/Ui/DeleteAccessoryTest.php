@@ -75,13 +75,26 @@ class DeleteAccessoryTest extends TestCase
 
         $this->actingAs(User::factory()->deleteAccessories()->create())
             ->delete(route('accessories.destroy', $accessory->id))
-            ->assertRedirect(route('accessories.index'));
+            ->assertSessionHas('success');
 
         Storage::disk('public')->assertExists($filepath);
     }
 
     public function test_preserves_uploads_in_case_accessory_restored()
     {
-        $this->markTestIncomplete();
+        Storage::fake('public');
+
+        $filepath = 'private_uploads/accessories';
+
+        $accessory = Accessory::factory()->create();
+
+        Storage::put("{$filepath}/to-keep.txt", 'contents');
+        $accessory->logUpload("to-keep.txt", '');
+
+        $this->actingAs(User::factory()->deleteAccessories()->create())
+            ->delete(route('accessories.destroy', $accessory->id))
+            ->assertSessionHas('success');
+
+        Storage::assertExists("{$filepath}/to-keep.txt");
     }
 }

@@ -72,6 +72,20 @@ class DeleteSuppliersTest extends TestCase implements TestsPermissionsRequiremen
 
     public function test_preserves_uploads_in_case_supplier_restored()
     {
-        $this->markTestIncomplete();
+        Storage::fake('public');
+
+        $filepath = 'private_uploads/suppliers';
+
+        $supplier = Supplier::factory()->create();
+
+        Storage::put("{$filepath}/to-keep.txt", 'contents');
+        $supplier->logUpload("to-keep.txt", '');
+
+        $this->actingAsForApi(User::factory()->deleteSuppliers()->create())
+            ->deleteJson(route('api.suppliers.destroy', $supplier))
+            ->assertOk()
+            ->assertStatusMessageIs('success');
+
+        Storage::assertExists("{$filepath}/to-keep.txt");
     }
 }

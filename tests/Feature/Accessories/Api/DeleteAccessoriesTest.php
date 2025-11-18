@@ -104,6 +104,19 @@ class DeleteAccessoriesTest extends TestCase implements TestsFullMultipleCompani
 
     public function test_preserves_uploads_in_case_accessory_restored()
     {
-        $this->markTestIncomplete();
+        Storage::fake('public');
+
+        $filepath = 'private_uploads/accessories';
+
+        $accessory = Accessory::factory()->create();
+
+        Storage::put("{$filepath}/to-keep.txt", 'contents');
+        $accessory->logUpload("to-keep.txt", '');
+
+        $this->actingAsForApi(User::factory()->deleteAccessories()->create())
+            ->deleteJson(route('api.accessories.destroy', $accessory))
+            ->assertStatusMessageIs('success');
+
+        Storage::assertExists("{$filepath}/to-keep.txt");
     }
 }

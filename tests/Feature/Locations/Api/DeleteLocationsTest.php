@@ -6,6 +6,7 @@ use App\Models\Accessory;
 use App\Models\Asset;
 use App\Models\Component;
 use App\Models\Consumable;
+use App\Models\License;
 use App\Models\Location;
 use App\Models\User;
 use Illuminate\Support\Facades\Storage;
@@ -199,7 +200,8 @@ class DeleteLocationsTest extends TestCase implements TestsPermissionsRequiremen
         Storage::disk('public')->assertExists('locations/image.jpg');
 
         $this->actingAsForApi(User::factory()->deleteLocations()->create())
-            ->deleteJson(route('api.locations.destroy', $location->id));
+            ->deleteJson(route('api.locations.destroy', $location->id))
+            ->assertStatusMessageIs('success');
 
         Storage::disk('public')->assertExists('locations/image.jpg');
 
@@ -208,6 +210,19 @@ class DeleteLocationsTest extends TestCase implements TestsPermissionsRequiremen
 
     public function test_preserves_uploads_in_case_model_restored()
     {
-        $this->markTestIncomplete();
+        Storage::fake('public');
+
+        $filepath = 'private_uploads/locations';
+
+        $location = Location::factory()->create();
+
+        Storage::put("{$filepath}/to-keep.txt", 'contents');
+        $location->logUpload("to-keep.txt", '');
+
+        $this->actingAsForApi(User::factory()->deleteLocations()->create())
+            ->deleteJson(route('api.locations.destroy', $location->id))
+            ->assertStatusMessageIs('success');
+
+        Storage::assertExists("{$filepath}/to-keep.txt");
     }
 }

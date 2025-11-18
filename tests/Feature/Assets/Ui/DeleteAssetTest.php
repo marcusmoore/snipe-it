@@ -106,13 +106,27 @@ class DeleteAssetTest extends TestCase
         Storage::disk('public')->assertExists('assets/image.jpg');
 
         $this->actingAs(User::factory()->deleteAssets()->create())
-            ->delete(route('hardware.destroy', $asset));
+            ->delete(route('hardware.destroy', $asset))
+            ->assertSessionHas('success');
 
         Storage::disk('public')->assertExists('assets/image.jpg');
     }
 
     public function test_preserves_uploads_in_case_asset_restored()
     {
-        $this->markTestIncomplete();
+        Storage::fake('public');
+
+        $filepath = 'private_uploads/assets';
+
+        $asset = Asset::factory()->create();
+
+        Storage::put("{$filepath}/to-keep.txt", 'contents');
+        $asset->logUpload("to-keep.txt", '');
+
+        $this->actingAs(User::factory()->deleteAssets()->create())
+            ->delete(route('hardware.destroy', $asset))
+            ->assertSessionHas('success');
+
+        Storage::assertExists("{$filepath}/to-keep.txt");
     }
 }

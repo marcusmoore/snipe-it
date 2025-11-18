@@ -55,13 +55,27 @@ class DeleteAssetModelsTest extends TestCase implements TestsPermissionsRequirem
         $assetModel = AssetModel::factory()->create(['image' => 'temp-file.jpg']);
 
         $this->actingAsForApi(User::factory()->deleteAssetModels()->create())
-            ->deleteJson(route('api.models.destroy', $assetModel));
+            ->deleteJson(route('api.models.destroy', $assetModel))
+            ->assertStatusMessageIs('success');
 
         Storage::disk('public')->assertExists($filepath);
     }
 
     public function test_preserves_uploads_in_case_asset_model_restored()
     {
-        $this->markTestIncomplete();
+        Storage::fake('public');
+
+        $filepath = 'private_uploads/models';
+
+        $assetModel = AssetModel::factory()->create();
+
+        Storage::put("{$filepath}/to-keep.txt", 'contents');
+        $assetModel->logUpload("to-keep.txt", '');
+
+        $this->actingAsForApi(User::factory()->deleteAssetModels()->create())
+            ->deleteJson(route('api.models.destroy', $assetModel))
+            ->assertStatusMessageIs('success');
+
+        Storage::assertExists("{$filepath}/to-keep.txt");
     }
 }
