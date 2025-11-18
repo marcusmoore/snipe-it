@@ -3,6 +3,7 @@
 namespace Tests\Feature\Console\Purge;
 
 use App\Models\Accessory;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use PHPUnit\Framework\Attributes\Group;
 use Tests\Feature\Console\Purge\Traits\FiresPurgeCommand;
@@ -36,11 +37,43 @@ class PurgeAccessoryTest extends TestCase
     public function test_associated_action_logs_are_not_purged_by_default()
     {
         $this->markTestIncomplete();
+
+        $accessory = Accessory::factory()->create();
+
+        $originalCount = DB::table('action_logs')
+            ->where([
+                'item_type' => Accessory::class,
+                'item_id' => $accessory->id,
+            ])
+            ->count();
+
+        $this->assertGreaterThan(
+            0,
+            $originalCount,
+            'Model does not have action log entries as expected'
+        );
+
+        $accessory->delete();
+
+        $this->firePurgeCommand()->assertSuccessful();
+
+        $newCount = DB::table('action_logs')
+            ->where([
+                'item_type' => Accessory::class,
+                'item_id' => $accessory->id,
+            ])
+            ->count();
+
+        // should include the "delete" entry
+        $this->assertEquals($originalCount + 1, $newCount);
     }
 
     public function test_associated_action_logs_can_be_purged_via_env_variable()
     {
         $this->markTestIncomplete();
+
+        // todo: should this only be the final "delete" or nothing at all?
+        // Current behavior is one "delete" entry
     }
 
     public function test_deletes_accessories_image()
