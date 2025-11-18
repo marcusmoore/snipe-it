@@ -3,7 +3,10 @@
 namespace App\Models;
 
 use App\Http\Traits\UniqueUndeletedTrait;
+use App\Models\Traits\HasUploads;
+use App\Models\Traits\Loggable;
 use App\Models\Traits\Searchable;
+use App\Presenters\Presentable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Watson\Validating\ValidatingTrait;
@@ -12,6 +15,10 @@ class Supplier extends SnipeModel
 {
     use HasFactory;
     use SoftDeletes;
+    use HasUploads;
+    use Presentable;
+
+    protected $presenter = \App\Presenters\SupplierPresenter::class;
 
     protected $table = 'suppliers';
 
@@ -42,6 +49,7 @@ class Supplier extends SnipeModel
     use ValidatingTrait;
     use UniqueUndeletedTrait;
     use Searchable;
+    use Loggable;
 
     /**
      * The attributes that should be included when searching the model.
@@ -62,7 +70,7 @@ class Supplier extends SnipeModel
      *
      * @var array
      */
-    protected $fillable = ['name', 'address', 'address2', 'city', 'state', 'country', 'zip', 'phone', 'fax', 'email', 'contact', 'url', 'notes'];
+    protected $fillable = ['name', 'address', 'address2', 'city', 'state', 'country', 'zip', 'phone', 'fax', 'email', 'contact', 'url', 'tag_color', 'notes'];
 
     /**
      * Eager load counts

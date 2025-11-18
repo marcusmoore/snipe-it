@@ -34,8 +34,16 @@ class LicenseSeatsTransformer
                         [
                             'id' => (int) $seat->user->department->id,
                             'name' => e($seat->user->department->name),
+                            'tag_color' => $seat->user->department->tag_color ? e($seat->user->department->tag_color) : null,
 
                         ] : null,
+                'company'=> ($seat->user->company) ?
+                    [
+                        'id' => (int) $seat->user->company->id,
+                        'name' => e($seat->user->company->name),
+                        'tag_color' => $seat->user->company->tag_color ? e($seat->user->company->tag_color) : null,
+
+                    ] : null,
                 'created_at' => Helper::getFormattedDateObject($seat->created_at, 'datetime'),
             ] : null,
             'assigned_asset' => ($seat->asset) ? [
@@ -46,6 +54,7 @@ class LicenseSeatsTransformer
             'location' => ($seat->location()) ? [
                 'id' => (int) $seat->location()->id,
                 'name'=> e($seat->location()->name),
+                'tag_color' => $seat->location()->tag_color ? e($seat->location()->tag_color) : null,
                 'created_at' => Helper::getFormattedDateObject($seat->created_at, 'datetime'),
             ] : null,
             'reassignable' => (bool) $seat->license->reassignable,

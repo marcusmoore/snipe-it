@@ -347,8 +347,7 @@ $(function () {
     }
 
     function formatDatalistSafe(datalist) {
-        // console.warn("What in the hell is going on with Select2?!?!!?!?");
-        // console.warn($.select2);
+
         if (datalist.loading) {
             return $('<i class="fas fa-spinner fa-spin" aria-hidden="true"></i> Loading...');
         }
@@ -356,28 +355,29 @@ $(function () {
         var root_div = $("<div class='clearfix'>") ;
         var left_pull = $("<div class='pull-left' style='padding-right: 10px;'>");
         if (datalist.image) {
-            var inner_div = $("<div style='width: 30px;'>");
+            var inner_div = $("<div style='width: 20px;'>");
             /******************************************************************
-             * 
-             * We are specifically chosing empty alt-text below, because this 
+             *
+             * We are specifically chosing empty alt-text below, because this
              * image conveys no additional information, relative to the text
              * that will *always* be there in any select2 list that is in use
              * in Snipe-IT. If that changes, we would probably want to change
              * some signatures of some functions, but right now, we don't want
-             * screen readers to say "HP SuperJet 5000, .... picture of HP 
+             * screen readers to say "HP SuperJet 5000, .... picture of HP
              * SuperJet 5000..." and so on, for every single row in a list of
              * assets or models or whatever.
-             * 
+             *
              *******************************************************************/
-            var img = $("<img src='' style='max-height: 20px; max-width: 30px;' alt=''>");
-            // console.warn("Img is: ");
-            // console.dir(img);
-            // console.warn("Strigularly, that's: ");
-            // console.log(img);
-            img.attr("src", datalist.image );
+            var img = $("<img src='' style='max-height: 20px; max-width: 20px;' alt=''>");
+            img.attr("src", datalist.image);
             inner_div.append(img)
+        } else if (datalist.tag_color) {
+            var inner_div = $("<div style='width: 20px;'>");
+            var icon = $('<i class="fa-solid fa-square" style="font-size: 20px;" aria-hidden="true"></i>');
+            icon.css("color", datalist.tag_color );
+            inner_div.append(icon)
         } else {
-            var inner_div=$("<div style='height: 20px; width: 30px;'></div>");
+            var inner_div=$("<div style='height: 20px; width: 20px;'></div>");
         }
         left_pull.append(inner_div);
         root_div.append(left_pull);
@@ -625,35 +625,29 @@ $('.header-row input:radio').change(function() {
 
 // Generic toggleable callouts with remember state
 $(".remember-toggle").on("click",function(){
+
     var toggleable_callout_id = $(this).attr('id');
     var toggle_content_class = 'toggle-content-'+$(this).attr('id');
     var toggle_arrow = '#toggle-arrow-' + toggleable_callout_id;
     var toggle_cookie_name='toggle_state_'+toggleable_callout_id;
 
-    console.log('Callout ID: ' + toggleable_callout_id);
-    console.log('Content ID: '+toggle_content_class);
-    console.log('Arrow ID: '+toggle_arrow);
-    console.log('Cookie Name: '+toggle_cookie_name);
-
     $('.'+toggle_content_class).fadeToggle(100);
     $(toggle_arrow).toggleClass('fa-caret-right fa-caret-down');
     var toggle_open = $(toggle_arrow).hasClass('fa-caret-down');
-    console.log('Cookie will set open state to: '+toggle_open);
     document.cookie=toggle_cookie_name+"="+toggle_open+';path=/';
 });
 
 var all_cookies = document.cookie.split(';')
 for (var i in all_cookies) {
     var trimmed_cookie = all_cookies[i].trim(' ')
-    elems = all_cookies[i].split('=', 2);
-
+    elems = trimmed_cookie.split('=', 2);
 
     // We have to do more here since we don't know the name of the selector
     if (trimmed_cookie.startsWith('toggle_state_')) {
-        console.log(trimmed_cookie + ' matches toggle_state_');
-        var toggle_selector_name = elems[0].replace(' toggle_state_','');
-        if (elems[1] == 'true') {
-            console.log('Selector name for cookie click trigger: '+toggle_selector_name);
+
+        var toggle_selector_name = elems[0].replace('toggle_state_','');
+
+        if (elems[1] != "true") {
             $('#'+toggle_selector_name+'.remember-toggle').trigger('click')
         }
     }
@@ -714,3 +708,80 @@ $(".admin").change(function() {
     }
 });
 
+// Handle the select/deselect of the select boxes with the button from right to left
+
+$(function () {
+
+    function moveItems(origin, dest) {
+        $(origin).find(':selected').appendTo(dest);
+        $(dest).attr('selected', true);
+        $(dest).sort_select_box();
+    }
+
+    function moveAllItems(origin, dest) {
+        $(origin).children("option:visible").appendTo(dest);
+        $(dest).attr('selected', true);
+        $(dest).sort_select_box();
+    }
+
+    $('.left').on('click', function () {
+        var container = $(this).closest('.addremove-multiselect');
+        moveItems($(container).find('select.multiselect.selected'), $(container).find('select.multiselect.available'));
+    });
+
+    $('.right').on('click', function () {
+        var container = $(this).closest('.addremove-multiselect');
+        moveItems($(container).find('select.multiselect.available'), $(container).find('select.multiselect.selected'));
+
+    });
+
+    $('.leftall').on('click', function () {
+        var container = $(this).closest('.addremove-multiselect');
+        moveAllItems($(container).find('select.multiselect.selected'), $(container).find('select.multiselect.available'));
+    });
+
+    $('.rightall').on('click', function () {
+        var container = $(this).closest('.addremove-multiselect');
+        moveAllItems($(container).find('select.multiselect.available'), $(container).find('select.multiselect.selected'));
+    });
+
+    $('select.multiselect.selected').on('dblclick keyup',function(e){
+        if(e.which == 13 || e.type == 'dblclick') {
+            var container = $(this).closest('.addremove-multiselect');
+            moveItems($(container).find('select.multiselect.selected'), $(container).find('select.multiselect.available'));
+        }
+    });
+
+    $('select.multiselect.available').on('dblclick keyup',function(e){
+        if(e.which == 13 || e.type == 'dblclick') {
+            var container = $(this).closest('.addremove-multiselect');
+            moveItems($(container).find('select.multiselect.available'), $(container).find('select.multiselect.selected'));
+            $('#hidden_ids_box').val($('#selected-select').val());
+        }
+    });
+
+
+});
+
+$.fn.sort_select_box = function(){
+    // Get options from select box
+    var selected_options = $(this).children('option');
+    // sort alphabetically
+    selected_options.sort(function(a,b) {
+        if (a.text > b.text) return 1;
+        else if (a.text < b.text) return -1;
+        else return 0
+    })
+    //replace with sorted my_options;
+    $(this).empty().append(selected_options);
+
+    var selected_in_box =  $('#selected-select option').toArray().map(item => item.value).join();
+
+    $('#hidden_ids_box').empty().val(selected_in_box);
+
+    $('#count_selected_box').html($('#selected-select option').length);
+    $('#count_unselected_box').html($('#available-select option').length);
+
+    // clearing any selections
+    $("#"+this.attr('id')+" option").attr('selected', true);
+}

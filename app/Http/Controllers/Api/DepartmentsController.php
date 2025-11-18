@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Helpers\Helper;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StoreDepartmentRequest;
 use App\Http\Transformers\DepartmentsTransformer;
 use App\Http\Transformers\SelectlistTransformer;
 use App\Models\Department;
@@ -23,21 +24,23 @@ class DepartmentsController extends Controller
     public function index(Request $request) : JsonResponse | array
     {
         $this->authorize('view', Department::class);
-        $allowed_columns = ['id', 'name', 'image', 'users_count', 'notes'];
+        $allowed_columns = ['id', 'name', 'image', 'users_count', 'notes', 'tag_color'];
 
         $departments = Department::select(
-            'departments.id',
-            'departments.name',
-            'departments.phone',
-            'departments.fax',
-            'departments.location_id',
-            'departments.company_id',
-            'departments.manager_id',
-            'departments.created_at',
-            'departments.updated_at',
-            'departments.image',
-            'departments.notes',
-        )->with('users')->with('location')->with('manager')->with('company')->withCount('users as users_count');
+            [
+                'departments.id',
+                'departments.name',
+                'departments.phone',
+                'departments.fax',
+                'departments.location_id',
+                'departments.company_id',
+                'departments.manager_id',
+                'departments.created_at',
+                'departments.updated_at',
+                'departments.image',
+                'departments.tag_color',
+                'departments.notes'
+            ])->with('location')->with('manager')->with('company')->withCount('users as users_count');
 
         if ($request->filled('search')) {
             $departments = $departments->TextSearch($request->input('search'));
@@ -57,6 +60,10 @@ class DepartmentsController extends Controller
 
         if ($request->filled('location_id')) {
             $departments->where('location_id', '=', $request->input('location_id'));
+        }
+
+        if ($request->filled('tag_color')) {
+            $departments->where('tag_color', '=', $request->input('departments.tag_color'));
         }
 
         // Make sure the offset and limit are actually integers and do not exceed system limits
@@ -94,18 +101,17 @@ class DepartmentsController extends Controller
      * @since [v4.0]
      * @param  \App\Http\Requests\ImageUploadRequest  $request
      */
-    public function store(ImageUploadRequest $request) : JsonResponse
+    public function store(StoreDepartmentRequest $request): JsonResponse
     {
-        $this->authorize('create', Department::class);
         $department = new Department;
-        $department->fill($request->all());
+        $department->fill($request->validated());
         $department = $request->handleImages($department);
 
         $department->created_by = auth()->id();
         $department->manager_id = ($request->filled('manager_id') ? $request->input('manager_id') : null);
 
         if ($department->save()) {
-            return response()->json(Helper::formatStandardApiResponse('success', $department, trans('admin/departments/message.create.success')));
+            return response()->json(Helper::formatStandardApiResponse('success', (new DepartmentsTransformer)->transformDepartment($department), trans('admin/departments/message.create.success')));
         }
         return response()->json(Helper::formatStandardApiResponse('error', null, $department->getErrors()));
 
@@ -121,7 +127,7 @@ class DepartmentsController extends Controller
     public function show($id) : array
     {
         $this->authorize('view', Department::class);
-        $department = Department::findOrFail($id);
+        $department = Department::withCount('users as users_count')->findOrFail($id);
         return (new DepartmentsTransformer)->transformDepartment($department);
     }
 
@@ -141,7 +147,7 @@ class DepartmentsController extends Controller
         $department = $request->handleImages($department);
 
         if ($department->save()) {
-            return response()->json(Helper::formatStandardApiResponse('success', $department, trans('admin/departments/message.update.success')));
+            return response()->json(Helper::formatStandardApiResponse('success', (new DepartmentsTransformer)->transformDepartment($department), trans('admin/departments/message.update.success')));
         }
 
         return response()->json(Helper::formatStandardApiResponse('error', null, $department->getErrors()));
@@ -185,6 +191,7 @@ class DepartmentsController extends Controller
             'id',
             'name',
             'image',
+            'tag_color',
         ]);
 
         if ($request->filled('search')) {

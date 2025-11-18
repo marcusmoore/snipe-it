@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Http\Traits\UniqueUndeletedTrait;
 use App\Models\Traits\CompanyableTrait;
 use App\Models\Traits\Searchable;
+use App\Presenters\Presentable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Watson\Validating\ValidatingTrait;
 
@@ -22,7 +23,10 @@ class Department extends SnipeModel
      */
     protected $injectUniqueIdentifier = true;
 
-    use ValidatingTrait, UniqueUndeletedTrait;
+    protected $presenter = \App\Presenters\DepartmentPresenter::class;
+
+
+    use ValidatingTrait, UniqueUndeletedTrait, Presentable;
 
     protected $casts = [
         'manager_id'   => 'integer',
@@ -31,10 +35,13 @@ class Department extends SnipeModel
     ];
 
     protected $rules = [
-        'name'                  => 'required|max:255|is_unique_department',
-        'location_id'           => 'numeric|nullable',
-        'company_id'            => 'numeric|nullable',
-        'manager_id'            => 'numeric|nullable',
+        'name'        => 'required|max:255|is_unique_across_company_and_location:departments,name',
+        'location_id' => 'numeric|nullable|exists:locations,id',
+        'company_id'  => 'numeric|nullable|exists:companies,id',
+        'manager_id'  => 'numeric|nullable|exists:users,id',
+        'phone'       => 'string|max:255|nullable',
+        'fax'         => 'string|max:255|nullable',
+        'notes'       => 'string|max:255|nullable',
     ];
 
     /**
@@ -50,6 +57,7 @@ class Department extends SnipeModel
         'location_id',
         'company_id',
         'manager_id',
+        'tag_color',
         'notes',
     ];
 

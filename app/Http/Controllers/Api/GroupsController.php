@@ -24,7 +24,7 @@ class GroupsController extends Controller
 
         $this->authorize('view', Group::class);
 
-        $groups = Group::select('id', 'name', 'permissions', 'notes', 'created_at', 'updated_at', 'created_by')->with('adminuser')->withCount('users as users_count');
+        $groups = Group::select(['id', 'name', 'permissions', 'notes', 'created_at', 'updated_at', 'created_by'])->with('adminuser')->withCount('users as users_count');
 
         if ($request->filled('search')) {
             $groups = $groups->TextSearch($request->input('search'));
@@ -50,6 +50,7 @@ class GroupsController extends Controller
                     'id',
                     'name',
                     'created_at',
+                    'updated_at',
                     'users_count',
                 ];
 

@@ -282,7 +282,7 @@ class Asset extends Depreciable
     protected function warrantyExpires(): Attribute
     {
         return Attribute:: make(
-            get: fn(mixed $value, array $attributes) => ($attributes['warranty_months'] && $attributes['purchase_date']) ? Carbon::parse($attributes['purchase_date'])->addMonths($attributes['warranty_months']) : null,
+            get: fn(mixed $value, array $attributes) => ($attributes['warranty_months'] && $attributes['purchase_date']) ? Carbon::parse($attributes['purchase_date'])->addMonths((int)$attributes['warranty_months']) : null,
         );
     }
 
@@ -405,6 +405,13 @@ class Asset extends Depreciable
     {
         return Attribute:: make(
             get: fn(mixed $value, array $attributes) => array_key_exists('expected_checkin', $attributes) ? Helper::getFormattedDateObject($attributes['expected_checkin'], 'date', false) : null,
+        );
+    }
+
+    protected function expectedCheckinDiffForHumans(): Attribute
+    {
+        return Attribute:: make(
+            get: fn(mixed $value, array $attributes) => array_key_exists('expected_checkin', $attributes)  ? Carbon::parse($this->expected_checkin)->diffForHumans() : null,
         );
     }
 
