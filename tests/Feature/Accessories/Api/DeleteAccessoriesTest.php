@@ -5,6 +5,7 @@ namespace Tests\Feature\Accessories\Api;
 use App\Models\Accessory;
 use App\Models\Company;
 use App\Models\User;
+use Illuminate\Support\Facades\Storage;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\Concerns\TestsFullMultipleCompaniesSupport;
 use Tests\Concerns\TestsPermissionsRequirement;
@@ -86,7 +87,19 @@ class DeleteAccessoriesTest extends TestCase implements TestsFullMultipleCompani
 
     public function test_preserves_image_in_case_accessory_restored()
     {
-        $this->markTestIncomplete();
+        Storage::fake('public');
+
+        $filepath = 'accessories/temp-file.jpg';
+
+        Storage::disk('public')->put($filepath, 'contents');
+
+        $accessory = Accessory::factory()->create(['image' => 'temp-file.jpg']);
+
+        $this->actingAsForApi(User::factory()->deleteAccessories()->create())
+            ->deleteJson(route('api.accessories.destroy', $accessory))
+            ->assertStatusMessageIs('success');
+
+        Storage::disk('public')->assertExists($filepath);
     }
 
     public function test_preserves_uploads_in_case_accessory_restored()
