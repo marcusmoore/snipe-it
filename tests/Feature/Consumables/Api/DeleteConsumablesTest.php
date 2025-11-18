@@ -77,7 +77,8 @@ class DeleteConsumablesTest extends TestCase implements TestsFullMultipleCompani
         Storage::disk('public')->assertExists('consumables/image.jpg');
 
         $this->actingAsForApi(User::factory()->deleteConsumables()->create())
-            ->deleteJson(route('api.consumables.destroy', $consumable));
+            ->deleteJson(route('api.consumables.destroy', $consumable))
+            ->assertStatusMessageIs('success');
 
         Storage::disk('public')->assertExists('consumables/image.jpg');
 
@@ -86,8 +87,17 @@ class DeleteConsumablesTest extends TestCase implements TestsFullMultipleCompani
 
     public function test_preserves_uploads_in_case_consumable_restored()
     {
-        $this->markTestIncomplete();
+        $filepath = 'private_uploads/consumables';
 
-        // this happens in the Observer
+        $consumable = Consumable::factory()->create();
+
+        Storage::put("{$filepath}/to-keep.txt", 'contents');
+        $consumable->logUpload("to-keep.txt", '');
+
+        $this->actingAsForApi(User::factory()->deleteConsumables()->create())
+            ->deleteJson(route('api.consumables.destroy', $consumable))
+            ->assertStatusMessageIs('success');
+
+        Storage::assertExists("{$filepath}/to-keep.txt");
     }
 }

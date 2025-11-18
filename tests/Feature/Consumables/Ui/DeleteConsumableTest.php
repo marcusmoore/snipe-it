@@ -55,7 +55,8 @@ class DeleteConsumableTest extends TestCase
         Storage::disk('public')->assertExists('consumables/image.jpg');
 
         $this->actingAs(User::factory()->deleteConsumables()->create())
-            ->delete(route('consumables.destroy', $consumable->id));
+            ->delete(route('consumables.destroy', $consumable->id))
+            ->assertSessionHas('success');
 
         Storage::disk('public')->assertExists('consumables/image.jpg');
 
@@ -64,8 +65,17 @@ class DeleteConsumableTest extends TestCase
 
     public function test_preserves_uploads_in_case_consumable_restored()
     {
-        $this->markTestIncomplete();
+        $filepath = 'private_uploads/consumables';
 
-        // this happens in the Observer
+        $consumable = Consumable::factory()->create();
+
+        Storage::put("{$filepath}/to-keep.txt", 'contents');
+        $consumable->logUpload("to-keep.txt", '');
+
+        $this->actingAs(User::factory()->deleteConsumables()->create())
+            ->delete(route('consumables.destroy', $consumable->id))
+            ->assertSessionHas('success');
+
+        Storage::assertExists("{$filepath}/to-keep.txt");
     }
 }
