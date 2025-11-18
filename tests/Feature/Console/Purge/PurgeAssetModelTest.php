@@ -54,6 +54,21 @@ class PurgeAssetModelTest extends TestCase
 
     public function test_deletes_asset_model_uploads()
     {
-        $this->markTestIncomplete();
+        $filepath = 'private_uploads/models';
+
+        $assetModels = AssetModel::factory()->count(2)->create();
+
+        Storage::put("{$filepath}/to-remove.txt", 'contents');
+        $assetModels->first()->logUpload("to-remove.txt", '');
+
+        Storage::put("{$filepath}/to-keep.txt", 'contents');
+        $assetModels->last()->logUpload("to-keep.txt", '');
+
+        $assetModels->first()->delete();
+
+        $this->firePurgeCommand()->assertSuccessful();
+
+        Storage::assertMissing("{$filepath}/to-remove.txt");
+        Storage::assertExists("{$filepath}/to-keep.txt");
     }
 }

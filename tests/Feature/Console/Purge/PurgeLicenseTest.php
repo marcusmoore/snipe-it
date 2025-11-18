@@ -50,6 +50,21 @@ class PurgeLicenseTest extends TestCase
 
     public function test_deletes_license_uploads()
     {
-        $this->markTestIncomplete();
+        $filepath = 'private_uploads/licenses';
+
+        $licenses = License::factory()->count(2)->create();
+
+        Storage::put("{$filepath}/to-remove.txt", 'contents');
+        $licenses->first()->logUpload("to-remove.txt", '');
+
+        Storage::put("{$filepath}/to-keep.txt", 'contents');
+        $licenses->last()->logUpload("to-keep.txt", '');
+
+        $licenses->first()->delete();
+
+        $this->firePurgeCommand()->assertSuccessful();
+
+        Storage::assertMissing("{$filepath}/to-remove.txt");
+        Storage::assertExists("{$filepath}/to-keep.txt");
     }
 }

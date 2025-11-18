@@ -64,6 +64,21 @@ class PurgeConsumableTest extends TestCase
 
     public function test_deletes_consumable_uploads()
     {
-        $this->markTestIncomplete();
+        $filepath = 'private_uploads/consumables';
+
+        $consumables = Consumable::factory()->count(2)->create();
+
+        Storage::put("{$filepath}/to-remove.txt", 'contents');
+        $consumables->first()->logUpload("to-remove.txt", '');
+
+        Storage::put("{$filepath}/to-keep.txt", 'contents');
+        $consumables->last()->logUpload("to-keep.txt", '');
+
+        $consumables->first()->delete();
+
+        $this->firePurgeCommand()->assertSuccessful();
+
+        Storage::assertMissing("{$filepath}/to-remove.txt");
+        Storage::assertExists("{$filepath}/to-keep.txt");
     }
 }

@@ -64,6 +64,21 @@ class PurgeUserTest extends TestCase
 
     public function test_deletes_user_uploads()
     {
-        $this->markTestIncomplete();
+        $filepath = 'private_uploads/users';
+
+        $users = User::factory()->count(2)->create();
+
+        Storage::put("{$filepath}/to-remove.txt", 'contents');
+        $users->first()->logUpload("to-remove.txt", '');
+
+        Storage::put("{$filepath}/to-keep.txt", 'contents');
+        $users->last()->logUpload("to-keep.txt", '');
+
+        $users->first()->delete();
+
+        $this->firePurgeCommand()->assertSuccessful();
+
+        Storage::assertMissing("{$filepath}/to-remove.txt");
+        Storage::assertExists("{$filepath}/to-keep.txt");
     }
 }

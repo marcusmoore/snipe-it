@@ -64,6 +64,21 @@ class PurgeAccessoryTest extends TestCase
 
     public function test_deletes_accessory_uploads()
     {
-        $this->markTestIncomplete();
+        $filepath = 'private_uploads/accessories';
+
+        $accessories = Accessory::factory()->count(2)->create();
+
+        Storage::put("{$filepath}/to-remove.txt", 'contents');
+        $accessories->first()->logUpload("to-remove.txt", '');
+
+        Storage::put("{$filepath}/to-keep.txt", 'contents');
+        $accessories->last()->logUpload("to-keep.txt", '');
+
+        $accessories->first()->delete();
+
+        $this->firePurgeCommand()->assertSuccessful();
+
+        Storage::assertMissing("{$filepath}/to-remove.txt");
+        Storage::assertExists("{$filepath}/to-keep.txt");
     }
 }

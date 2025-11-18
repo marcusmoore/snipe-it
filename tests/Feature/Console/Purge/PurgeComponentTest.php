@@ -64,6 +64,21 @@ class PurgeComponentTest extends TestCase
 
     public function test_deletes_component_uploads()
     {
-        $this->markTestIncomplete();
+        $filepath = 'private_uploads/components';
+
+        $components = Component::factory()->count(2)->create();
+
+        Storage::put("{$filepath}/to-remove.txt", 'contents');
+        $components->first()->logUpload("to-remove.txt", '');
+
+        Storage::put("{$filepath}/to-keep.txt", 'contents');
+        $components->last()->logUpload("to-keep.txt", '');
+
+        $components->first()->delete();
+
+        $this->firePurgeCommand()->assertSuccessful();
+
+        Storage::assertMissing("{$filepath}/to-remove.txt");
+        Storage::assertExists("{$filepath}/to-keep.txt");
     }
 }
