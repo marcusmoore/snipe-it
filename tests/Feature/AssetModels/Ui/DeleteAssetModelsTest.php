@@ -11,12 +11,12 @@ class DeleteAssetModelsTest extends TestCase
         $this->markTestIncomplete();
     }
 
-    public function test_preserves_image_in_case_asset_restored()
+    public function test_preserves_image_in_case_asset_model_restored()
     {
         $this->markTestIncomplete();
     }
 
-    public function test_preserves_uploads_in_case_asset_restored()
+    public function test_preserves_uploads_in_case_asset_model_restored()
     {
         $this->markTestIncomplete();
     }

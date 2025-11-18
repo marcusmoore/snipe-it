@@ -6,6 +6,7 @@ use App\Models\Asset;
 use App\Models\AssetModel;
 use App\Models\Manufacturer;
 use App\Models\User;
+use Illuminate\Support\Facades\Storage;
 use Tests\Concerns\TestsPermissionsRequirement;
 use Tests\TestCase;
 
@@ -64,6 +65,19 @@ class DeleteManufacturersTest extends TestCase implements TestsPermissionsRequir
 
     public function test_preserves_image_in_case_manufacturer_restored()
     {
-        $this->markTestIncomplete();
+        Storage::fake('public');
+
+        $filepath = 'manufacturers/temp-file.jpg';
+
+        Storage::disk('public')->put($filepath, 'contents');
+
+        $manufacturer = Manufacturer::factory()->create(['image' => 'temp-file.jpg']);
+
+        $this->actingAsForApi(User::factory()->deleteManufacturers()->create())
+            ->deleteJson(route('api.manufacturers.destroy', $manufacturer))
+            ->assertOk()
+            ->assertStatusMessageIs('success');
+
+        Storage::disk('public')->assertExists($filepath);
     }
 }

@@ -45,7 +45,8 @@ class DeleteLocationsTest extends TestCase
         Storage::disk('public')->assertExists('locations/image.jpg');
 
         $this->actingAs(User::factory()->deleteLocations()->create())
-            ->delete(route('locations.destroy', $location));
+            ->delete(route('locations.destroy', $location))
+            ->assertSessionHas('success');
 
         Storage::disk('public')->assertExists('locations/image.jpg');
 

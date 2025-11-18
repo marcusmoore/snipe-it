@@ -5,6 +5,7 @@ namespace Tests\Feature\Suppliers\Api;
 use App\Models\Maintenance;
 use App\Models\Supplier;
 use App\Models\User;
+use Illuminate\Support\Facades\Storage;
 use Tests\Concerns\TestsPermissionsRequirement;
 use Tests\TestCase;
 
@@ -53,7 +54,20 @@ class DeleteSuppliersTest extends TestCase implements TestsPermissionsRequiremen
 
     public function test_preserves_image_in_case_supplier_restored()
     {
-        $this->markTestIncomplete();
+        Storage::fake('public');
+
+        $filepath = 'suppliers/temp-file.jpg';
+
+        Storage::disk('public')->put($filepath, 'contents');
+
+        $supplier = Supplier::factory()->create(['image' => 'temp-file.jpg']);
+
+        $this->actingAsForApi(User::factory()->deleteSuppliers()->create())
+            ->deleteJson(route('api.suppliers.destroy', $supplier))
+            ->assertOk()
+            ->assertStatusMessageIs('success');
+
+        Storage::disk('public')->assertExists($filepath);
     }
 
     public function test_preserves_uploads_in_case_supplier_restored()
