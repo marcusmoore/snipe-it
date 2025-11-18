@@ -35,7 +35,21 @@ class PurgeAssetModelTest extends TestCase
 
     public function test_deletes_asset_models_image()
     {
-        $this->markTestIncomplete();
+        $filename = str_random() . '.jpg';
+
+        $assetModel = AssetModel::factory()->create(['image' => $filename]);
+
+        $filepath = "models/{$filename}";
+
+        Storage::disk('public')->put($filepath, 'contents');
+
+        $assetModel->delete();
+
+        Storage::disk('public')->assertExists($filepath);
+
+        $this->firePurgeCommand()->assertSuccessful();
+
+        Storage::disk('public')->assertMissing($filepath);
     }
 
     public function test_deletes_asset_model_uploads()

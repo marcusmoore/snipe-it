@@ -2,13 +2,17 @@
 
 namespace Tests\Feature\Console\Purge;
 
+use App\Models\Location;
 use Illuminate\Support\Facades\Storage;
 use PHPUnit\Framework\Attributes\Group;
+use Tests\Feature\Console\Purge\Traits\FiresPurgeCommand;
 use Tests\TestCase;
 
 #[Group('purging')]
 class PurgeLocationTest extends TestCase
 {
+    use FiresPurgeCommand;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -19,12 +23,33 @@ class PurgeLocationTest extends TestCase
 
     public function test_soft_deleted_locations_purged()
     {
-        $this->markTestIncomplete();
+        $locations = Location::factory()->count(2)->create();
+
+        $locations->first()->delete();
+
+        $this->firePurgeCommand()->assertSuccessful();
+
+        $this->assertDatabaseMissing('locations', ['id' => $locations->first()->id]);
+        $this->assertDatabaseHas('locations', ['id' => $locations->last()->id]);
     }
 
     public function test_deletes_locations_image()
     {
-        $this->markTestIncomplete();
+        $filename = str_random() . '.jpg';
+
+        $location = Location::factory()->create(['image' => $filename]);
+
+        $filepath = "locations/{$filename}";
+
+        Storage::disk('public')->put($filepath, 'contents');
+
+        $location->delete();
+
+        Storage::disk('public')->assertExists($filepath);
+
+        $this->firePurgeCommand()->assertSuccessful();
+
+        Storage::disk('public')->assertMissing($filepath);
     }
 
     public function test_deletes_location_uploads()

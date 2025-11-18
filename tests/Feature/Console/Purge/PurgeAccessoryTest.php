@@ -45,7 +45,21 @@ class PurgeAccessoryTest extends TestCase
 
     public function test_deletes_accessories_image()
     {
-        $this->markTestIncomplete();
+        $filename = str_random() . '.jpg';
+
+        $accessory = Accessory::factory()->create(['image' => $filename]);
+
+        $filepath = "accessories/{$filename}";
+
+        Storage::disk('public')->put($filepath, 'contents');
+
+        $accessory->delete();
+
+        Storage::disk('public')->assertExists($filepath);
+
+        $this->firePurgeCommand()->assertSuccessful();
+
+        Storage::disk('public')->assertMissing($filepath);
     }
 
     public function test_deletes_accessory_uploads()

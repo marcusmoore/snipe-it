@@ -23,8 +23,6 @@ class PurgeCategoryTest extends TestCase
 
     public function test_soft_deleted_categories_purged()
     {
-        $this->markTestIncomplete();
-
         $categories = Category::factory()->count(2)->create();
 
         $categories->first()->delete();
@@ -37,6 +35,20 @@ class PurgeCategoryTest extends TestCase
 
     public function test_deletes_categories_image()
     {
-        $this->markTestIncomplete();
+        $filename = str_random() . '.jpg';
+
+        $category = Category::factory()->create(['image' => $filename]);
+
+        $filepath = "categories/{$filename}";
+
+        Storage::disk('public')->put($filepath, 'contents');
+
+        $category->delete();
+
+        Storage::disk('public')->assertExists($filepath);
+
+        $this->firePurgeCommand()->assertSuccessful();
+
+        Storage::disk('public')->assertMissing($filepath);
     }
 }

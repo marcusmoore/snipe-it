@@ -23,8 +23,6 @@ class PurgeConsumableTest extends TestCase
 
     public function test_soft_deleted_consumables_purged()
     {
-        $this->markTestIncomplete();
-
         $consumables = Consumable::factory()->count(2)->create();
 
         $consumables->first()->delete();
@@ -47,7 +45,21 @@ class PurgeConsumableTest extends TestCase
 
     public function test_deletes_consumables_image()
     {
-        $this->markTestIncomplete();
+        $filename = str_random() . '.jpg';
+
+        $consumable = Consumable::factory()->create(['image' => $filename]);
+
+        $filepath = "consumables/{$filename}";
+
+        Storage::disk('public')->put($filepath, 'contents');
+
+        $consumable->delete();
+
+        Storage::disk('public')->assertExists($filepath);
+
+        $this->firePurgeCommand()->assertSuccessful();
+
+        Storage::disk('public')->assertMissing($filepath);
     }
 
     public function test_deletes_consumable_uploads()

@@ -23,8 +23,6 @@ class PurgeComponentTest extends TestCase
 
     public function test_soft_deleted_components_purged()
     {
-        $this->markTestIncomplete();
-
         $components = Component::factory()->count(2)->create();
 
         $components->first()->delete();
@@ -47,7 +45,21 @@ class PurgeComponentTest extends TestCase
 
     public function test_deletes_components_image()
     {
-        $this->markTestIncomplete();
+        $filename = str_random() . '.jpg';
+
+        $component = Component::factory()->create(['image' => $filename]);
+
+        $filepath = "components/{$filename}";
+
+        Storage::disk('public')->put($filepath, 'contents');
+
+        $component->delete();
+
+        Storage::disk('public')->assertExists($filepath);
+
+        $this->firePurgeCommand()->assertSuccessful();
+
+        Storage::disk('public')->assertMissing($filepath);
     }
 
     public function test_deletes_component_uploads()

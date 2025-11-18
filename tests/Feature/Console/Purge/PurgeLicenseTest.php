@@ -2,13 +2,17 @@
 
 namespace Tests\Feature\Console\Purge;
 
+use App\Models\License;
 use Illuminate\Support\Facades\Storage;
 use PHPUnit\Framework\Attributes\Group;
+use Tests\Feature\Console\Purge\Traits\FiresPurgeCommand;
 use Tests\TestCase;
 
 #[Group('purging')]
 class PurgeLicenseTest extends TestCase
 {
+    use FiresPurgeCommand;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -19,7 +23,14 @@ class PurgeLicenseTest extends TestCase
 
     public function test_soft_deleted_licenses_purged()
     {
-        $this->markTestIncomplete();
+        $licenses = License::factory()->count(2)->create();
+
+        $licenses->first()->delete();
+
+        $this->firePurgeCommand()->assertSuccessful();
+
+        $this->assertDatabaseMissing('licenses', ['id' => $licenses->first()->id]);
+        $this->assertDatabaseHas('licenses', ['id' => $licenses->last()->id]);
     }
 
     public function test_purges_license_seats_for_soft_deleted_license()
