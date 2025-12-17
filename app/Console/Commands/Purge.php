@@ -179,7 +179,8 @@ class Purge extends Command
     {
         $components = Component::whereNotNull('deleted_at')->with('uploads')->withTrashed()->get();
 
-        $this->info($components->count() . ' components purged.');
+        $associatedLogCount = 0;
+
         foreach ($components as $component) {
             $component->uploads->pluck('filename')->each(function ($filename) {
                 try {
@@ -189,10 +190,18 @@ class Purge extends Command
                 }
             });
 
-            $this->info('- Component "' . $component->name . '" deleted.');
-            $component->assetlog()->forceDelete();
             $component->forceDelete();
+            $this->info('- Component "' . $component->name . '" deleted.');
+
+            $associatedLogCount += $this->handleLogs($component);
+
             DeleteFile::run('components/' . $component->image, 'public');
+        }
+
+        $this->info($components->count() . ' components purged.');
+
+        if (config('app.include_related_action_logs_when_purging')) {
+            $this->info($associatedLogCount . ' corresponding log records purged.');
         }
     }
 
@@ -200,7 +209,8 @@ class Purge extends Command
     {
         $consumables = Consumable::whereNotNull('deleted_at')->with('uploads')->withTrashed()->get();
 
-        $this->info($consumables->count() . ' consumables purged.');
+        $associatedLogCount = 0;
+
         foreach ($consumables as $consumable) {
             $consumable->uploads->pluck('filename')->each(function ($filename) {
                 try {
@@ -210,10 +220,18 @@ class Purge extends Command
                 }
             });
 
-            $this->info('- Consumable "' . $consumable->name . '" deleted.');
-            $consumable->assetlog()->forceDelete();
             $consumable->forceDelete();
+            $this->info('- Consumable "' . $consumable->name . '" deleted.');
+
+            $associatedLogCount += $this->handleLogs($consumable);
+
             DeleteFile::run('consumables/' . $consumable->image, 'public');
+        }
+
+        $this->info($consumables->count() . ' consumables purged.');
+
+        if (config('app.include_related_action_logs_when_purging')) {
+            $this->info($associatedLogCount . ' corresponding log records purged.');
         }
     }
 
@@ -221,7 +239,8 @@ class Purge extends Command
     {
         $licenses = License::whereNotNull('deleted_at')->with('uploads')->withTrashed()->get();
 
-        $this->info($licenses->count() . ' licenses purged.');
+        $associatedLogCount = 0;
+
         foreach ($licenses as $license) {
             $license->uploads->pluck('filename')->each(function ($filename) {
                 try {
@@ -230,10 +249,18 @@ class Purge extends Command
                     Log::info('An error occurred while deleting files: ' . $e->getMessage());
                 }
             });
-            $this->info('- License "' . $license->name . '" deleted.');
-            $license->assetlog()->forceDelete();
+
             $license->licenseseats()->forceDelete();
             $license->forceDelete();
+            $this->info('- License "' . $license->name . '" deleted.');
+
+            $associatedLogCount += $this->handleLogs($license);
+        }
+
+        $this->info($licenses->count() . ' licenses purged.');
+
+        if (config('app.include_related_action_logs_when_purging')) {
+            $this->info($associatedLogCount . ' corresponding log records purged.');
         }
     }
 
