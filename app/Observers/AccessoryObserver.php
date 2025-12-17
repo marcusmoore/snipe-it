@@ -2,6 +2,7 @@
 
 namespace App\Observers;
 
+use App\Enums\ActionType;
 use App\Models\Accessory;
 use App\Models\Actionlog;
 use Illuminate\Support\Facades\Auth;
@@ -57,6 +58,13 @@ class AccessoryObserver
         $logAction->item_id = $accessory->id;
         $logAction->created_at = date('Y-m-d H:i:s');
         $logAction->created_by = auth()->id();
+
+        if ($accessory->isForceDeleting()) {
+            $logAction->logaction(ActionType::ForceDelete);
+
+            return;
+        }
+
         $logAction->logaction('delete');
     }
 }

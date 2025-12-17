@@ -7,6 +7,7 @@ enum ActionType: string
     case Create = 'create';
     case Update = 'update';
     case Delete = 'delete';
+    case ForceDelete = 'force delete';
     case Restore = 'restore';
 
     // Assets/Accessories/Components/Licenses/Consumables
