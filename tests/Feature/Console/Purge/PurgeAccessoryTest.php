@@ -3,6 +3,7 @@
 namespace Tests\Feature\Console\Purge;
 
 use App\Models\Accessory;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use PHPUnit\Framework\Attributes\Group;
@@ -36,16 +37,14 @@ class PurgeAccessoryTest extends TestCase
 
     public function test_associated_action_logs_are_not_purged_by_default()
     {
-        // $this->markTestIncomplete();
-
         $accessory = Accessory::factory()->create();
 
-        $originalCount = DB::table('action_logs')
-            ->where([
-                'item_type' => Accessory::class,
-                'item_id' => $accessory->id,
-            ])
-            ->count();
+        $query = DB::table('action_logs')->where([
+            'item_type' => Accessory::class,
+            'item_id' => $accessory->id,
+        ]);
+
+        $originalCount = $query->count();
 
         $this->assertGreaterThan(
             0,
@@ -57,33 +56,26 @@ class PurgeAccessoryTest extends TestCase
 
         $this->firePurgeCommand()->assertSuccessful();
 
-        $newCount = DB::table('action_logs')
-            ->where([
-                'item_type' => Accessory::class,
-                'item_id' => $accessory->id,
-            ])
-            ->whereNull('deleted_at')
+        $newCount = $query
+            ->whereNotNull('deleted_at')
             ->count();
 
-        // all entries should be soft deleted including the last "deleted" entry
-        $this->assertEquals($originalCount + 1, $newCount);
+        // all entries should be soft deleted including the "delete" and "force delete" entries
+        $this->assertEquals($originalCount + 2, $newCount);
     }
 
     public function test_associated_action_logs_can_be_purged_via_env_variable()
     {
-        // $this->markTestIncomplete();
-
-        // todo: build out this variable
-        config(['app.include_action_logs_when_purging', true]);
+        Config::set('app.include_related_action_logs_when_purging', true);
 
         $accessory = Accessory::factory()->create();
 
-        $originalCount = DB::table('action_logs')
-            ->where([
-                'item_type' => Accessory::class,
-                'item_id' => $accessory->id,
-            ])
-            ->count();
+        $query = DB::table('action_logs')->where([
+            'item_type' => Accessory::class,
+            'item_id' => $accessory->id,
+        ]);
+
+        $originalCount = $query->count();
 
         $this->assertGreaterThan(
             0,
@@ -95,16 +87,9 @@ class PurgeAccessoryTest extends TestCase
 
         $this->firePurgeCommand()->assertSuccessful();
 
-        $newCount = DB::table('action_logs')
-            ->where([
-                'item_type' => Accessory::class,
-                'item_id' => $accessory->id,
-            ])
-            ->count();
+        $newCount = $query->count();
 
-        // todo: should this only be the final "delete" or nothing at all?
-        // Current behavior is one "delete" entry
-        $this->assertEquals($originalCount + 1, $newCount);
+        $this->assertEquals(0, $newCount);
     }
 
     public function test_deletes_accessories_image()

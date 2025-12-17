@@ -421,6 +421,17 @@ return [
 
     'allow_purge' => env('ALLOW_DATA_PURGE', false),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Purge Related Action Logs
+    |--------------------------------------------------------------------------
+    |
+    | This sets whether or not related action logs are removed when deleted data is purged.
+    |
+    */
+
+    'include_related_action_logs_when_purging' => env('INCLUDE_RELATED_ACTION_LOGS_WHEN_PURGING', false),
+
 
    /*
    |--------------------------------------------------------------------------

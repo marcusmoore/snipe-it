@@ -101,8 +101,13 @@ class Purge extends Command
 
             $this->info('- Accessory "' . $accessory->name . '" deleted.');
             $accessory_assoc += $accessory->assetlog()->count();
-            $accessory->assetlog()->forceDelete();
+
             $accessory->forceDelete();
+
+            config('app.include_related_action_logs_when_purging')
+                ? $accessory->assetlog()->forceDelete()
+                : $accessory->assetlog()->delete();
+
             DeleteFile::run('accessories/' . $accessory->image, 'public');
         }
         $this->info($accessory_assoc . ' corresponding log records purged.');
