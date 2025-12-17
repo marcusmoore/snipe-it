@@ -18,6 +18,7 @@ use App\Models\Supplier;
 use App\Models\User;
 use Exception;
 use Illuminate\Console\Command;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Log;
 
 class Purge extends Command
@@ -88,8 +89,8 @@ class Purge extends Command
     {
         $accessories = Accessory::whereNotNull('deleted_at')->with('uploads')->withTrashed()->get();
 
-        $accessory_assoc = 0;
-        $this->info($accessories->count() . ' accessories purged.');
+        $associatedLogCount = 0;
+
         foreach ($accessories as $accessory) {
             $accessory->uploads->pluck('filename')->each(function ($filename) {
                 try {
@@ -99,18 +100,19 @@ class Purge extends Command
                 }
             });
 
-            $this->info('- Accessory "' . $accessory->name . '" deleted.');
-            $accessory_assoc += $accessory->assetlog()->count();
-
             $accessory->forceDelete();
+            $this->info('- Accessory "' . $accessory->name . '" deleted.');
 
-            config('app.include_related_action_logs_when_purging')
-                ? $accessory->assetlog()->forceDelete()
-                : $accessory->assetlog()->delete();
+            $associatedLogCount += $this->handleLogs($accessory);
 
             DeleteFile::run('accessories/' . $accessory->image, 'public');
         }
-        $this->info($accessory_assoc . ' corresponding log records purged.');
+
+        $this->info($accessories->count() . ' accessories purged.');
+
+        if (config('app.include_related_action_logs_when_purging')) {
+            $this->info($associatedLogCount . ' corresponding log records purged.');
+        }
     }
 
     private function purgeAssets(): void
@@ -315,5 +317,23 @@ class Purge extends Command
         }
         $this->info($users->count() . ' users purged.');
         $this->info($user_assoc . ' corresponding user log records purged.');
+    }
+
+    private function handleLogs(Model $model): int
+    {
+        $query = $model->assetlog();
+
+        if (config('app.include_related_action_logs_when_purging')) {
+
+            $count = $query->count();
+
+            $query->forceDelete();
+
+            return $count;
+        }
+
+        $query->delete();
+
+        return 0;
     }
 }
