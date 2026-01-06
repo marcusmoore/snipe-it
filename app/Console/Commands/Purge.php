@@ -320,15 +320,14 @@ class Purge extends Command
     {
         $users = User::whereNotNull('deleted_at')->where('show_in_list', '!=', '0')->withTrashed()->get();
 
-        $this->newLine();
-        $this->info($users->count() . ' to be users purged.');
-        $user_assoc = 0;
-        foreach ($users as $user) {
+        $associatedLogCount = 0;
 
+        foreach ($users as $user) {
             $rel_path = 'private_uploads/users';
             $filenames = Actionlog::where('action_type', 'uploaded')
                 ->where('item_id', $user->id)
                 ->pluck('filename');
+
             foreach ($filenames as $filename) {
                 try {
                     DeleteFile::run($rel_path . '/' . $filename);
@@ -336,14 +335,25 @@ class Purge extends Command
                     Log::info('An error occurred while deleting files: ' . $e->getMessage());
                 }
             }
-            $this->info('- User "' . $user->username . '" deleted.');
-            $user_assoc += $user->userlog()->count();
-            $user->userlog()->forceDelete();
+
             $user->forceDelete();
+            $this->info('- User "' . $user->username . '" deleted.');
+
+            if (config('app.include_related_action_logs_when_purging')) {
+                $associatedLogCount += $user->userlog()->count();
+                $user->userlog()->forceDelete();
+            } else {
+                $user->userlog()->delete();
+            }
+
             DeleteFile::run('avatars/' . $user->avatar, 'public');
         }
+
         $this->info($users->count() . ' users purged.');
-        $this->info($user_assoc . ' corresponding user log records purged.');
+
+        if (config('app.include_related_action_logs_when_purging')) {
+            $this->info($associatedLogCount . ' corresponding log records purged.');
+        }
     }
 
     private function handleLogs(Model $model): int
