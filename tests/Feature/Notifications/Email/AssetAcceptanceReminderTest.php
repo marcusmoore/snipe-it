@@ -16,6 +16,7 @@ use App\Models\Consumable;
 use App\Models\License;
 use App\Models\LicenseSeat;
 use App\Models\User;
+use Illuminate\Mail\Mailable;
 use Illuminate\Support\Facades\Mail;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
@@ -141,8 +142,13 @@ class AssetAcceptanceReminderTest extends TestCase
         }
 
         Mail::assertSent($mailable, 1);
-        Mail::assertSent($mailable, function ($mail) use ($assignee) {
+
+        Mail::assertSent($mailable, function (Mailable $mail) use ($assignee) {
             return $mail->hasTo($assignee->email);
+        });
+
+        Mail::assertSent($mailable, function (Mailable $mail) use ($assignee) {
+            return $mail->hasSubject(trans('mail.unaccepted_asset_reminder'));
         });
     }
 
