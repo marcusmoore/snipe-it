@@ -121,13 +121,13 @@ class AssetAcceptanceReminderTest extends TestCase
 
             if ($modelClass === LicenseSeat::class) {
                 $logType = License::class;
-                $logId   = $item->license->id;
+                $logId = $item->license->id;
             } else {
                 $logType = $modelClass;
-                $logId   = $item->id;
+                $logId = $item->id;
             }
 
-          Actionlog::factory()->create([
+            Actionlog::factory()->create([
                 'action_type' => 'checkout',
                 'created_by' => $checkedOutBy->id,
                 'target_id' => $assignee->id,
@@ -136,20 +136,20 @@ class AssetAcceptanceReminderTest extends TestCase
                 'created_at' => $acceptance->created_at,
             ]);
 
-        $this->actingAs($checkedOutBy)
-            ->post($this->routeFor($acceptance))
-            ->assertRedirect(route('reports/unaccepted_assets'));
+            $this->actingAs($checkedOutBy)
+                ->post($this->routeFor($acceptance))
+                ->assertRedirect(route('reports/unaccepted_assets'));
+
+            Mail::assertSent($mailable, 1);
+
+            Mail::assertSent($mailable, function (Mailable $mail) use ($assignee) {
+                return $mail->hasTo($assignee->email);
+            });
+
+            Mail::assertSent($mailable, function (Mailable $mail) use ($assignee) {
+                return $mail->hasSubject(trans('mail.unaccepted_asset_reminder'));
+            });
         }
-
-        Mail::assertSent($mailable, 1);
-
-        Mail::assertSent($mailable, function (Mailable $mail) use ($assignee) {
-            return $mail->hasTo($assignee->email);
-        });
-
-        Mail::assertSent($mailable, function (Mailable $mail) use ($assignee) {
-            return $mail->hasSubject(trans('mail.unaccepted_asset_reminder'));
-        });
     }
 
     private function routeFor(CheckoutAcceptance $checkoutAcceptance): string
