@@ -16,15 +16,18 @@ class CheckoutLicenseMail extends BaseMailable
 {
     use Queueable, SerializesModels;
 
+    private bool $firstTimeSending;
+
     /**
      * Create a new message instance.
      */
-    public function __construct(LicenseSeat $licenseSeat, $checkedOutTo, User $checkedOutBy, $acceptance, $note)
+    public function __construct(LicenseSeat $licenseSeat, $checkedOutTo, User $checkedOutBy, $acceptance, $note, bool $firstTimeSending = true)
     {
         $this->item = $licenseSeat;
         $this->admin = $checkedOutBy;
         $this->note = $note;
         $this->acceptance = $acceptance;
+        $this->firstTimeSending = $firstTimeSending;
         $this->settings = Setting::getSettings();
         $this->target = $checkedOutTo;
 

@@ -18,10 +18,12 @@ class CheckoutAccessoryMail extends BaseMailable
 {
     use Queueable, SerializesModels;
 
+    private bool $firstTimeSending;
+
     /**
      * Create a new message instance.
      */
-    public function __construct(Accessory $accessory, $checkedOutTo, User $checkedOutBy, $acceptance, $note)
+    public function __construct(Accessory $accessory, $checkedOutTo, User $checkedOutBy, $acceptance, $note, bool $firstTimeSending = true)
     {
         $this->item = $accessory;
         $this->admin = $checkedOutBy;
@@ -29,6 +31,7 @@ class CheckoutAccessoryMail extends BaseMailable
         $this->checkout_qty = $accessory->checkout_qty;
         $this->target = $checkedOutTo;
         $this->acceptance = $acceptance;
+        $this->firstTimeSending = $firstTimeSending;
         $this->settings = Setting::getSettings();
     }
 
