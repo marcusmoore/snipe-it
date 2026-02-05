@@ -1,6 +1,6 @@
 <?php
 
-namespace Tests\Feature\Notifications\Email;
+namespace Tests\Feature\Notifications\Email\AssetAcceptanceReminder;
 
 use App\Mail\CheckoutAccessoryMail;
 use App\Mail\CheckoutAssetMail;
