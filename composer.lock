@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "a740c546e61c9867513ec230ac9293f0",
+    "content-hash": "702580ad51379eea0eb1f53812123d89",
     "packages": [
         {
             "name": "alek13/slack",
@@ -74,22 +74,22 @@
         },
         {
             "name": "arietimmerman/laravel-scim-server",
-            "version": "dev-master",
+            "version": "dev-bump_to_laravel_12",
             "source": {
                 "type": "git",
                 "url": "https://github.com/grokability/laravel-scim-server.git",
-                "reference": "ad77044af7c36291b69dc1a7dbfa86ba82362554"
+                "reference": "ad5b8a706eeade1c042118c2ec3a4b3a749991e9"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/grokability/laravel-scim-server/zipball/ad77044af7c36291b69dc1a7dbfa86ba82362554",
-                "reference": "ad77044af7c36291b69dc1a7dbfa86ba82362554",
+                "url": "https://api.github.com/repos/grokability/laravel-scim-server/zipball/ad5b8a706eeade1c042118c2ec3a4b3a749991e9",
+                "reference": "ad5b8a706eeade1c042118c2ec3a4b3a749991e9",
                 "shasum": ""
             },
             "require": {
-                "illuminate/console": "^6.0|^7.0|^8.0|^9.0|^10.0|^11.0",
-                "illuminate/database": "^6.0|^7.0|^8.0|^9.0|^10.0|^11.0",
-                "illuminate/support": "^6.0|^7.0|^8.0|^9.0|^10.0|^11.0",
+                "illuminate/console": "^6.0|^7.0|^8.0|^9.0|^10.0|^11.0|^12.0",
+                "illuminate/database": "^6.0|^7.0|^8.0|^9.0|^10.0|^11.0|^12.0",
+                "illuminate/support": "^6.0|^7.0|^8.0|^9.0|^10.0|^11.0|^12.0",
                 "php": "^7.0|^8.0",
                 "tmilos/scim-filter-parser": "^1.3",
                 "tmilos/scim-schema": "^0.1.0"
@@ -98,7 +98,6 @@
                 "laravel/legacy-factories": "*",
                 "orchestra/testbench": "^4.0|^5.0|^6.0|^7.0|^8.0"
             },
-            "default-branch": true,
             "type": "library",
             "extra": {
                 "laravel": {
@@ -131,9 +130,9 @@
             ],
             "description": "Laravel Package for creating a SCIM server",
             "support": {
-                "source": "https://github.com/grokability/laravel-scim-server/tree/master"
+                "source": "https://github.com/grokability/laravel-scim-server/tree/bump_to_laravel_12"
             },
-            "time": "2026-01-14T14:30:06+00:00"
+            "time": "2026-03-17T14:09:21+00:00"
         },
         {
             "name": "aws/aws-crt-php",
