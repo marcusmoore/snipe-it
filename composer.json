@@ -79,7 +79,7 @@
   },
   "require-dev": {
     "fruitcake/laravel-debugbar": "^4.0",
-    "larastan/larastan": "^2.9",
+    "larastan/larastan": "^3.0",
     "laravel/telescope": "^5.11",
     "mockery/mockery": "^1.4",
     "nunomaduro/phpinsights": "^2.11",
