@@ -80,6 +80,7 @@
   "require-dev": {
     "fruitcake/laravel-debugbar": "^4.0",
     "larastan/larastan": "^2.9",
+    "laravel/boost": "^2.0",
     "laravel/pint": "^1.29",
     "laravel/telescope": "^5.11",
     "mockery/mockery": "^1.4",
@@ -121,10 +122,14 @@
     "post-autoload-dump": [
       "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
       "@php artisan package:discover --ansi",
-      "@php artisan vendor:publish --force --tag=livewire:assets --ansi"
+      "@php artisan vendor:publish --force --tag=livewire:assets --ansi",
+      "@php artisan boost:install --no-interaction"
     ],
     "post-create-project-cmd": [
       "php artisan key:generate"
+    ],
+    "post-update-cmd": [
+      "@php artisan boost:update --ansi"
     ],
     "coverage:herd:clover": "herd coverage vendor/bin/phpunit --coverage-clover tests/coverage/clover.xml",
     "coverage:herd:html": "herd coverage vendor/bin/phpunit --coverage-html tests/coverage/html"

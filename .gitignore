@@ -71,3 +71,19 @@ storage/ldap_client_tls.key
 /storage/framework/testing
 
 /.phpunit.cache
+
+.mcp.json
+.agents/
+.amp/
+.claude/
+.codex/
+.cursor/
+.gemini/
+.github/skills/
+.junie/
+AGENTS.md
+boost.json
+CLAUDE.md
+GEMINI.md
+opencode.json
+
