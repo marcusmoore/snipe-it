@@ -84,6 +84,8 @@ storage/ldap_client_tls.key
 AGENTS.md
 boost.json
 CLAUDE.md
+CLAUDE.local.md
 GEMINI.md
+mcp.json
 opencode.json
 
