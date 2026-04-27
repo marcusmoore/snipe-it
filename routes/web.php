@@ -455,9 +455,6 @@ Route::group(['middleware' => ['auth']], function () {
     Route::post('notes', [NotesController::class, 'store'])->name('notes.store');
 });
 
-// leading / is intentional:
-Route::redirect('/reports/custom', '/reports/custom/assets');
-
 Route::group(['prefix' => 'reports', 'middleware' => ['auth']], function () {
 
     Route::get('audit', [ReportsController::class, 'audit'])
@@ -504,7 +501,7 @@ Route::group(['prefix' => 'reports', 'middleware' => ['auth']], function () {
     Route::get('export/accessories', [ReportsController::class, 'exportAccessoryReport'])
         ->name('reports/export/accessories');
 
-    Route::get('custom/assets', [ReportsController::class, 'getCustomReport'])
+    Route::get('custom', [ReportsController::class, 'getCustomReport'])
         ->name('reports/custom')
         ->breadcrumbs(fn (Trail $trail) => $trail->parent('home')
             ->push(trans('general.custom_report'), route('reports/custom')));
@@ -736,5 +733,3 @@ Route::middleware(['auth'])->get(
 )->name('home')
     ->breadcrumbs(fn (Trail $trail) => $trail->push('Home', route('home'))
     );
-
-// Route::redirect('/reports/custom', '/reports/custom/assets');
