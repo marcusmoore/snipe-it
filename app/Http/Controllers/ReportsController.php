@@ -426,7 +426,7 @@ class ReportsController extends Controller
             $template->options = $request->old();
         }
 
-        return view('reports/custom', [
+        return view('reports.custom.asset', [
             'customfields' => $customfields,
             'report_templates' => $report_templates,
             'template' => $template,

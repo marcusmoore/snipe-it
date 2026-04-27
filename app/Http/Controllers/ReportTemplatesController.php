@@ -35,7 +35,7 @@ class ReportTemplatesController extends Controller
         $customfields = CustomField::get();
         $report_templates = ReportTemplate::orderBy('name')->get();
 
-        return view('reports/custom', [
+        return view('reports.custom.asset', [
             'customfields' => $customfields,
             'report_templates' => $report_templates,
             'template' => $reportTemplate,
@@ -52,7 +52,7 @@ class ReportTemplatesController extends Controller
                 ->withError(trans('general.report_not_editable'));
         }
 
-        return view('reports/custom', [
+        return view('reports.custom.asset', [
             'customfields' => CustomField::get(),
             'template' => $reportTemplate,
         ]);
