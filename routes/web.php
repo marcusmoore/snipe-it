@@ -501,13 +501,15 @@ Route::group(['prefix' => 'reports', 'middleware' => ['auth']], function () {
     Route::get('export/accessories', [ReportsController::class, 'exportAccessoryReport'])
         ->name('reports/export/accessories');
 
-    Route::get('custom', [ReportsController::class, 'getCustomReport'])
-        ->name('reports/custom')
-        ->breadcrumbs(fn (Trail $trail) => $trail->parent('home')
-            ->push(trans('general.custom_report'), route('reports/custom')));
+    Route::group(['prefix' => 'custom'], function () {
+        Route::get('/', [ReportsController::class, 'getCustomReport'])
+            ->name('reports/custom')
+            ->breadcrumbs(fn (Trail $trail) => $trail->parent('home')
+                ->push(trans('general.custom_report'), route('reports/custom')));
 
-    Route::post('custom', [ReportsController::class, 'postCustom'])
-        ->name('reports.post-custom');
+        Route::post('/', [ReportsController::class, 'postCustom'])
+            ->name('reports.post-custom');
+    });
 
     Route::prefix('templates')
         ->group(function () {
