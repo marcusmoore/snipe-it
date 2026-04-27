@@ -17,7 +17,7 @@ use Tests\Concerns\TestsPermissionsRequirement;
 use Tests\TestCase;
 
 #[Group('custom-reporting')]
-class CustomReportTest extends TestCase implements TestsPermissionsRequirement
+class CustomAssetReportTest extends TestCase implements TestsPermissionsRequirement
 {
     protected function setUp(): void
     {
