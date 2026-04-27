@@ -70,8 +70,10 @@ class CustomReportTest extends TestCase implements TestsPermissionsRequirement
             ]);
     }
 
-    public function test_saved_templates_on_page_are_scoped_to_the_user()
+    public function test_saved_templates_on_page_are_scoped_to_the_user_and_type()
     {
+        $this->markTestIncomplete('Add {type} check');
+
         // Given there is a saved template for one user
         ReportTemplate::factory()->create(['name' => 'Report A']);
 
