@@ -57,6 +57,13 @@ class CustomAssetReportTest extends TestCase implements TestsPermissionsRequirem
             ->assertForbidden();
     }
 
+    public function test_redirects_old_url_to_new_url()
+    {
+        $this->actingAs(User::factory()->canViewReports()->create())
+            ->get('/reports/custom')
+            ->assertRedirect('/reports/custom/assets');
+    }
+
     public function test_can_load_custom_report_page()
     {
         $this->actingAs(User::factory()->canViewReports()->create())
