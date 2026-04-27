@@ -1,6 +1,6 @@
 <?php
 
-namespace Tests\Feature\Reporting;
+namespace Tests\Feature\Reporting\Custom;
 
 use App\Models\Asset;
 use App\Models\Company;
