@@ -21,6 +21,7 @@ use App\Http\Controllers\ManufacturersController;
 use App\Http\Controllers\ModalController;
 use App\Http\Controllers\NotesController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\Reports\CustomAccessoryReportController;
 use App\Http\Controllers\ReportsController;
 use App\Http\Controllers\ReportTemplatesController;
 use App\Http\Controllers\SettingsController;
@@ -509,6 +510,14 @@ Route::group(['prefix' => 'reports', 'middleware' => ['auth']], function () {
 
         Route::post('/', [ReportsController::class, 'postCustom'])
             ->name('reports.post-custom');
+
+        Route::get('accessory', [CustomAccessoryReportController::class, 'show'])
+            ->name('reports.custom.accessory')
+            ->breadcrumbs(fn (Trail $trail) => $trail->parent('home')
+                ->push('Custom Accessory Report', route('reports.custom.accessory')));
+
+        Route::post('accessory', [CustomAccessoryReportController::class, 'run'])
+            ->name('reports.custom.accessory.run');
     });
 
     Route::prefix('templates')

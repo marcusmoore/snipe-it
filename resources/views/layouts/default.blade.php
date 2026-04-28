@@ -1838,6 +1838,11 @@
                                             {{ trans('general.custom_report') }}
                                         </a>
                                     </li>
+                                    <li {{!! (request()->is('reports.custom.accessory') ? ' class="active"' : '') !!}}>
+                                        <a href="{{ route('reports.custom.accessory') }}">
+                                            Custom Accessory Report
+                                        </a>
+                                    </li>
                                     <li {{!! (request()->is('reports/audit') ? ' class="active"' : '') !!}}>
                                         <a href="{{ route('reports.audit') }}">
                                             {{ trans('general.audit_report') }}</a>
