@@ -9,6 +9,8 @@ class CustomAccessoryReportController extends Controller
 {
     public function show(Request $request)
     {
+        $this->authorize('reports.view');
+
         return view('reports.custom.accessory');
     }
 

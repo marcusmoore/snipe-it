@@ -2,13 +2,21 @@
 
 namespace Tests\Feature\Reporting\Custom;
 
+use App\Models\User;
 use PHPUnit\Framework\Attributes\Group;
 use Tests\TestCase;
 
 #[Group('custom-reporting')]
 class CustomAccessoryReportTest extends TestCase
 {
-    public function test_requires_permission()
+    public function test_requires_permission_to_view_page()
+    {
+        $this->actingAs(User::factory()->create())
+            ->get(route('reports.custom.accessory'))
+            ->assertForbidden();
+    }
+
+    public function test_requires_permission_to_run_report()
     {
         $this->markTestIncomplete();
     }
