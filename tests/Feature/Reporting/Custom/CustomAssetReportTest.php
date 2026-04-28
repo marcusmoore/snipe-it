@@ -57,7 +57,11 @@ class CustomAssetReportTest extends TestCase
 
     public function test_requires_permission_to_run_report()
     {
-        $this->markTestIncomplete();
+        $this->actingAs(User::factory()->create())
+            ->post(route('reports.post-custom'), [
+                //
+            ])
+            ->assertForbidden();
     }
 
     public function test_can_load_custom_report_page()
