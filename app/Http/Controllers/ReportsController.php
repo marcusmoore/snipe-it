@@ -414,7 +414,7 @@ class ReportsController extends Controller
     {
         $this->authorize('reports.view');
         $customfields = CustomField::get();
-        $report_templates = ReportTemplate::orderBy('name')->get();
+        $report_templates = ReportTemplate::where('type', 'asset')->orderBy('name')->get();
 
         // The view needs a template to render correctly, even if it is empty...
         $template = new ReportTemplate;

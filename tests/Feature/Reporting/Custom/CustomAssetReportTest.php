@@ -7,17 +7,15 @@ use App\Models\Company;
 use App\Models\CustomField;
 use App\Models\ReportTemplate;
 use App\Models\User;
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Testing\TestResponse;
 use League\Csv\Reader;
 use PHPUnit\Framework\Assert;
 use PHPUnit\Framework\Attributes\Group;
-use Tests\Concerns\TestsPermissionsRequirement;
 use Tests\TestCase;
 
 #[Group('custom-reporting')]
-class CustomAssetReportTest extends TestCase implements TestsPermissionsRequirement
+class CustomAssetReportTest extends TestCase
 {
     protected function setUp(): void
     {
@@ -77,24 +75,25 @@ class CustomAssetReportTest extends TestCase implements TestsPermissionsRequirem
 
     public function test_saved_templates_on_page_are_scoped_to_the_user_and_type()
     {
-        $this->markTestIncomplete('Add {type} check');
+        // Given there are saved templates for one user
+        ReportTemplate::factory()->create(['type' => 'asset', 'name' => 'Another User: Asset']);
+        ReportTemplate::factory()->create(['type' => 'accessory', 'name' => 'Another User: Accessory']);
 
-        // Given there is a saved template for one user
-        ReportTemplate::factory()->create(['name' => 'Report A']);
-
-        // When loading reports/custom while acting as another user that also has a saved template
+        // When loading reports/custom while acting as another user that also has saved templates
         $user = User::factory()->canViewReports()
-            ->has(ReportTemplate::factory(['name' => 'Report B']))
+            ->has(ReportTemplate::factory(['type' => 'asset', 'name' => 'User: Asset']))
+            ->has(ReportTemplate::factory(['type' => 'accessory', 'name' => 'User: Accessory']))
             ->create();
 
-        // The user should not see the other user's template (in view as 'report_templates')
-        $this->actingAs($user)
-            ->get(route('reports/custom'))
-            ->assertViewHas([
-                'report_templates' => function (Collection $reports) {
-                    return $reports->pluck('name')->doesntContain('Report A');
-                },
-            ]);
+        $response = $this->actingAs($user)->get(route('reports/custom'));
+
+        $viewTemplateNames = $response->viewData('report_templates')->pluck('name');
+
+        // The user should only see their asset template
+        $this->assertTrue($viewTemplateNames->contains('User: Asset'));
+        $this->assertTrue($viewTemplateNames->doesntContain('User: Accessory'));
+        $this->assertTrue($viewTemplateNames->doesntContain('Another User: Asset'));
+        $this->assertTrue($viewTemplateNames->doesntContain('Another User: Accessory'));
     }
 
     public function test_custom_asset_report()

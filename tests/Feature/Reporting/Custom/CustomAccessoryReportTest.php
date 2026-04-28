@@ -23,7 +23,9 @@ class CustomAccessoryReportTest extends TestCase
 
     public function test_can_load_custom_report_page()
     {
-        $this->markTestIncomplete();
+        $this->actingAs(User::factory()->canViewReports()->create())
+            ->get(route('reports.custom.accessory'))
+            ->assertOk();
     }
 
     public function test_saved_templates_on_page_are_scoped_to_the_user_and_type()
