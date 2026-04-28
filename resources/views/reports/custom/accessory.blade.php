@@ -275,85 +275,61 @@
 
                         <div class="col-md-8">
 
-                        {{--    <p>--}}
-                        {{--        {!! trans('general.report_fields_info') !!}--}}
-                        {{--    </p>--}}
+                            <p>
+                                {!! trans('general.report_fields_info') !!}
+                            </p>
 
-                        {{--    <br>--}}
+                            <br>
 
-                        {{--    @include ('partials.forms.edit.company-select', [--}}
-                        {{--            'translated_name' => trans('general.company'),--}}
-                        {{--            'fieldname' =>--}}
-                        {{--            'by_company_id[]',--}}
-                        {{--            'multiple' => 'true',--}}
-                        {{--            'hide_new' => 'true',--}}
-                        {{--            'selected' => $template->selectValues('by_company_id', \App\Models\Company::class),--}}
-                        {{--    ])--}}
-                        {{--    @include ('partials.forms.edit.location-select', [--}}
-                        {{--            'translated_name' => trans('general.location'),--}}
-                        {{--            'fieldname' => 'by_location_id[]',--}}
-                        {{--            'multiple' => 'true',--}}
-                        {{--            'hide_new' => 'true',--}}
-                        {{--            'selected' => $template->selectValues('by_location_id', \App\Models\Location::class),--}}
-                        {{--    ])--}}
-                        {{--    @include ('partials.forms.edit.location-select', [--}}
-                        {{--            'translated_name' => trans('admin/hardware/form.default_location'),--}}
-                        {{--            'fieldname' => 'by_rtd_location_id[]',--}}
-                        {{--            'multiple' => 'true',--}}
-                        {{--            'hide_new' => 'true',--}}
-                        {{--            'selected' => $template->selectValues('by_rtd_location_id', \App\Models\Location::class),--}}
-                        {{--    ])--}}
-                        {{--    @include ('partials.forms.edit.department-select',[--}}
-                        {{--            'translated_name' => trans('general.department'),--}}
-                        {{--            'fieldname' => 'by_dept_id[]',--}}
-                        {{--            'multiple' => 'true',--}}
-                        {{--            'hide_new' => 'true',--}}
-                        {{--            'selected' => $template->selectValues('by_dept_id', \App\Models\Department::class),--}}
-                        {{--    ])--}}
-                        {{--    @include ('partials.forms.edit.supplier-select', [--}}
-                        {{--            'translated_name' => trans('general.supplier'),--}}
-                        {{--            'fieldname' => 'by_supplier_id[]',--}}
-                        {{--            'multiple' => 'true',--}}
-                        {{--            'hide_new' => 'true',--}}
-                        {{--            'selected' => $template->selectValues('by_supplier_id', \App\Models\Supplier::class),--}}
-                        {{--    ])--}}
-                        {{--    @include ('partials.forms.edit.model-select', [--}}
-                        {{--            'translated_name' => trans('general.asset_model'),--}}
-                        {{--            'fieldname' => 'by_model_id[]',--}}
-                        {{--            'multiple' => 'true',--}}
-                        {{--            'hide_new' => 'true',--}}
-                        {{--            'selected' => $template->selectValues('by_model_id', \App\Models\AssetModel::class),--}}
-                        {{--    ])--}}
-                        {{--    @include ('partials.forms.edit.manufacturer-select', [--}}
-                        {{--            'translated_name' => trans('general.manufacturer'),--}}
-                        {{--            'fieldname' => 'by_manufacturer_id[]',--}}
-                        {{--            'multiple' => 'true',--}}
-                        {{--            'hide_new' => 'true',--}}
-                        {{--            'selected' => $template->selectValues('by_manufacturer_id', \App\Models\Manufacturer::class),--}}
-                        {{--    ])--}}
-                        {{--    @include ('partials.forms.edit.category-select', [--}}
-                        {{--            'translated_name' => trans('general.category'),--}}
-                        {{--            'fieldname' => 'by_category_id[]',--}}
-                        {{--            'multiple' => 'true',--}}
-                        {{--            'hide_new' => 'true',--}}
-                        {{--            'category_type' => 'asset',--}}
-                        {{--            'selected' => $template->selectValues('by_category_id', \App\Models\Category::class),--}}
-                        {{--    ])--}}
-                        {{--    @include ('partials.forms.edit.status-select', [--}}
-                        {{--            'translated_name' => trans('admin/hardware/form.status'),--}}
-                        {{--            'fieldname' => 'by_status_id[]',--}}
-                        {{--            'multiple' => 'true',--}}
-                        {{--            'hide_new' => 'true',--}}
-                        {{--            'selected' => $template->selectValues('by_status_id', \App\Models\Statuslabel::class),--}}
-                        {{--    ])--}}
+                            @include ('partials.forms.edit.company-select', [
+                                    'translated_name' => trans('general.company'),
+                                    'fieldname' =>
+                                    'by_company_id[]',
+                                    'multiple' => 'true',
+                                    'hide_new' => 'true',
+                                    'selected' => $template->selectValues('by_company_id', \App\Models\Company::class),
+                            ])
 
-                        {{--    <!-- Order Number -->--}}
-                        {{--    <div class="form-group">--}}
-                        {{--        <label for="by_order_number" class="col-md-3 control-label">{{ trans('general.order_number') }}</label>--}}
-                        {{--        <div class="col-md-7">--}}
-                        {{--            <input class="form-control" type="text" name="by_order_number" value="{{ $template->textValue('by_order_number', old('by_order_number')) }}" aria-label="by_order_number">--}}
-                        {{--        </div>--}}
-                        {{--    </div>--}}
+                            @include ('partials.forms.edit.category-select', [
+                                    'translated_name' => trans('general.category'),
+                                    'fieldname' => 'by_category_id[]',
+                                    'multiple' => 'true',
+                                    'hide_new' => 'true',
+                                    'category_type' => 'asset',
+                                    'selected' => $template->selectValues('by_category_id', \App\Models\Category::class),
+                            ])
+
+                            @include ('partials.forms.edit.supplier-select', [
+                                    'translated_name' => trans('general.supplier'),
+                                    'fieldname' => 'by_supplier_id[]',
+                                    'multiple' => 'true',
+                                    'hide_new' => 'true',
+                                    'selected' => $template->selectValues('by_supplier_id', \App\Models\Supplier::class),
+                            ])
+
+                            @include ('partials.forms.edit.manufacturer-select', [
+                                    'translated_name' => trans('general.manufacturer'),
+                                    'fieldname' => 'by_manufacturer_id[]',
+                                    'multiple' => 'true',
+                                    'hide_new' => 'true',
+                                    'selected' => $template->selectValues('by_manufacturer_id', \App\Models\Manufacturer::class),
+                            ])
+
+                            @include ('partials.forms.edit.location-select', [
+                                    'translated_name' => trans('general.location'),
+                                    'fieldname' => 'by_location_id[]',
+                                    'multiple' => 'true',
+                                    'hide_new' => 'true',
+                                    'selected' => $template->selectValues('by_location_id', \App\Models\Location::class),
+                            ])
+
+                            <!-- Order Number -->
+                            <div class="form-group">
+                                <label for="by_order_number" class="col-md-3 control-label">{{ trans('general.order_number') }}</label>
+                                <div class="col-md-7">
+                                    <input class="form-control" type="text" name="by_order_number" value="{{ $template->textValue('by_order_number', old('by_order_number')) }}" aria-label="by_order_number">
+                                </div>
+                            </div>
 
                         {{--    <!-- Purchase Date -->--}}
                         {{--    <div class="form-group purchase-range{{ ($errors->has('purchase_start') || $errors->has('purchase_end')) ? ' has-error' : '' }}">--}}
