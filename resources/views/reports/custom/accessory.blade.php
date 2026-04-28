@@ -323,6 +323,22 @@
                                     'selected' => $template->selectValues('by_location_id', \App\Models\Location::class),
                             ])
 
+                            <!-- Name -->
+                            <div class="form-group">
+                                <label for="by_name" class="col-md-3 control-label">{{ trans('general.name') }}</label>
+                                <div class="col-md-7">
+                                    <input class="form-control" type="text" name="by_name" value="{{ $template->textValue('by_name', old('by_name')) }}" aria-label="by_name">
+                                </div>
+                            </div>
+
+                            <!-- Model Number -->
+                            <div class="form-group">
+                                <label for="by_model_number" class="col-md-3 control-label">{{ trans('general.model_no') }}</label>
+                                <div class="col-md-7">
+                                    <input class="form-control" type="text" name="by_model_number" value="{{ $template->textValue('by_model_number', old('by_model_number')) }}" aria-label="by_model_number">
+                                </div>
+                            </div>
+
                             <!-- Order Number -->
                             <div class="form-group">
                                 <label for="by_order_number" class="col-md-3 control-label">{{ trans('general.order_number') }}</label>
@@ -331,244 +347,189 @@
                                 </div>
                             </div>
 
-                        {{--    <!-- Purchase Date -->--}}
-                        {{--    <div class="form-group purchase-range{{ ($errors->has('purchase_start') || $errors->has('purchase_end')) ? ' has-error' : '' }}">--}}
-                        {{--        <label for="purchase_start" class="col-md-3 control-label">{{ trans('general.purchase_date') }}</label>--}}
-                        {{--        <div class="input-daterange input-group col-md-7" id="purchase-range-datepicker">--}}
+                            <!-- Purchase Date -->
+                            <div class="form-group purchase-range{{ ($errors->has('purchase_start') || $errors->has('purchase_end')) ? ' has-error' : '' }}">
+                                <label for="purchase_start" class="col-md-3 control-label">{{ trans('general.purchase_date') }}</label>
+                                <div class="input-daterange input-group col-md-7" id="purchase-range-datepicker">
 
-                        {{--            <input type="text" placeholder="{{ trans('general.select_date') }}" class="form-control" name="purchase_start" aria-label="purchase_start" value="{{ $template->textValue('purchase_start', old('purchase_start')) }}">--}}
-                        {{--            <span class="input-group-addon"> - </span>--}}
-                        {{--            <input type="text" placeholder="{{ trans('general.select_date') }}" class="form-control" name="purchase_end" aria-label="purchase_end" value="{{ $template->textValue('purchase_end', old('purchase_end')) }}">--}}
-                        {{--        </div>--}}
+                                    <input type="text" placeholder="{{ trans('general.select_date') }}" class="form-control" name="purchase_start" aria-label="purchase_start" value="{{ $template->textValue('purchase_start', old('purchase_start')) }}">
+                                    <span class="input-group-addon"> - </span>
+                                    <input type="text" placeholder="{{ trans('general.select_date') }}" class="form-control" name="purchase_end" aria-label="purchase_end" value="{{ $template->textValue('purchase_end', old('purchase_end')) }}">
+                                </div>
 
-                        {{--        @if ($errors->has('purchase_start') || $errors->has('purchase_end'))--}}
-                        {{--            <div class="col-md-9 col-lg-offset-3">--}}
-                        {{--                {!! $errors->first('purchase_start', '<span class="alert-msg" aria-hidden="true"><i class="fas fa-times" aria-hidden="true"></i> :message</span>') !!}--}}
-                        {{--                {!! $errors->first('purchase_end', '<span class="alert-msg" aria-hidden="true"><i class="fas fa-times" aria-hidden="true"></i> :message</span>') !!}--}}
-                        {{--            </div>--}}
-                        {{--        @endif--}}
+                                @if ($errors->has('purchase_start') || $errors->has('purchase_end'))
+                                    <div class="col-md-9 col-lg-offset-3">
+                                        {!! $errors->first('purchase_start', '<span class="alert-msg" aria-hidden="true"><i class="fas fa-times" aria-hidden="true"></i> :message</span>') !!}
+                                        {!! $errors->first('purchase_end', '<span class="alert-msg" aria-hidden="true"><i class="fas fa-times" aria-hidden="true"></i> :message</span>') !!}
+                                    </div>
+                                @endif
+                            </div>
 
-                        {{--    </div>--}}
+                            <!-- Unit Cost -->
+                            <div class="form-group unit-range{{ ($errors->has('unit_cost_start') || $errors->has('unit_cost_end')) ? ' has-error' : '' }}">
+                                <label for="unit_cost_start" class="col-md-3 control-label">{{ trans('general.unit_cost') }}</label>
+                                <div class="input-group col-md-7">
+                                    <input type="number" min="0" step="0.01" class="form-control" name="unit_cost_start" aria-label="unit_cost_start" value="{{ $template->textValue('unit_cost_start', old('unit_cost_start')) }}">
+                                    <span class="input-group-addon"> - </span>
+                                    <input type="number" min="0" step="0.01" class="form-control" name="unit_cost_end" aria-label="unit_cost_end" value="{{ $template->textValue('unit_cost_end', old('unit_cost_end')) }}">
+                                </div>
 
-                        {{--    <!-- Purchase Cost -->--}}
-                        {{--    <div class="form-group purchase-range{{ ($errors->has('purchase_cost_start') || $errors->has('purchase_cost_end')) ? ' has-error' : '' }}">--}}
-                        {{--        <label for="purchase_cost_start" class="col-md-3 control-label">{{ trans('admin/hardware/form.cost') }}</label>--}}
-                        {{--        <div class="input-group col-md-7">--}}
-                        {{--            <input type="number" min="0" step="0.01" class="form-control" name="purchase_cost_start" aria-label="purchase_cost_start" value="{{ $template->textValue('purchase_cost_start', old('purchase_cost_start')) }}">--}}
-                        {{--            <span class="input-group-addon"> - </span>--}}
-                        {{--            <input type="number" min="0" step="0.01" class="form-control" name="purchase_cost_end" aria-label="purchase_cost_end" value="{{ $template->textValue('purchase_cost_end', old('purchase_cost_end')) }}">--}}
-                        {{--        </div>--}}
+                                @if ($errors->has('unit_cost_start') || $errors->has('unit_cost_end'))
+                                    <div class="col-md-9 col-lg-offset-3">
+                                        {!! $errors->first('unit_cost_start', '<span class="alert-msg" aria-hidden="true"><i class="fas fa-times" aria-hidden="true"></i> :message</span>') !!}
+                                        {!! $errors->first('unit_cost_end', '<span class="alert-msg" aria-hidden="true"><i class="fas fa-times" aria-hidden="true"></i> :message</span>') !!}
+                                    </div>
+                                @endif
+                            </div>
 
-                        {{--        @if ($errors->has('purchase_cost_start') || $errors->has('purchase_cost_end'))--}}
-                        {{--            <div class="col-md-9 col-lg-offset-3">--}}
-                        {{--                {!! $errors->first('purchase_cost_start', '<span class="alert-msg" aria-hidden="true"><i class="fas fa-times" aria-hidden="true"></i> :message</span>') !!}--}}
-                        {{--                {!! $errors->first('purchase_cost_end', '<span class="alert-msg" aria-hidden="true"><i class="fas fa-times" aria-hidden="true"></i> :message</span>') !!}--}}
-                        {{--            </div>--}}
-                        {{--        @endif--}}
+                            <!-- Quantity -->
+                            <div class="form-group quantity-range{{ ($errors->has('quantity_cost_start') || $errors->has('quantity_cost_end')) ? ' has-error' : '' }}">
+                                <label for="quantity_cost_start" class="col-md-3 control-label">{{ trans('general.quantity') }}</label>
+                                <div class="input-group col-md-7">
+                                    <input type="number" min="0" class="form-control" name="quantity_cost_start" aria-label="quantity_cost_start" value="{{ $template->textValue('quantity_cost_start', old('quantity_cost_start')) }}">
+                                    <span class="input-group-addon"> - </span>
+                                    <input type="number" min="0" class="form-control" name="quantity_cost_end" aria-label="quantity_cost_end" value="{{ $template->textValue('quantity_cost_end', old('quantity_cost_end')) }}">
+                                </div>
 
-                        {{--    </div>--}}
+                                @if ($errors->has('quantity_cost_start') || $errors->has('quantity_cost_end'))
+                                    <div class="col-md-9 col-lg-offset-3">
+                                        {!! $errors->first('quantity_cost_start', '<span class="alert-msg" aria-hidden="true"><i class="fas fa-times" aria-hidden="true"></i> :message</span>') !!}
+                                        {!! $errors->first('quantity_cost_end', '<span class="alert-msg" aria-hidden="true"><i class="fas fa-times" aria-hidden="true"></i> :message</span>') !!}
+                                    </div>
+                                @endif
+                            </div>
 
-                        {{--    <!-- Created Date -->--}}
-                        {{--    <div class="form-group created-range{{ ($errors->has('created_start') || $errors->has('created_end')) ? ' has-error' : '' }}">--}}
-                        {{--        <label for="created_start" class="col-md-3 control-label">{{ trans('general.created_at') }} </label>--}}
-                        {{--        <div class="input-daterange input-group col-md-7" id="created-range-datepicker">--}}
-                        {{--            <input type="text" placeholder="{{ trans('general.select_date') }}" class="form-control" name="created_start" aria-label="created_start" value="{{ $template->textValue('created_start', old('created_start')) }}">--}}
-                        {{--            <span class="input-group-addon"> - </span>--}}
-                        {{--            <input type="text" placeholder="{{ trans('general.select_date') }}" class="form-control" name="created_end" aria-label="created_end" value="{{ $template->textValue('created_end', old('created_end')) }}">--}}
-                        {{--        </div>--}}
+                            <!-- Min. Quantity -->
+                            <div class="form-group min_quantity-range{{ ($errors->has('min_quantity_cost_start') || $errors->has('min_quantity_cost_end')) ? ' has-error' : '' }}">
+                                <label for="min_quantity_cost_start" class="col-md-3 control-label">{{ trans('mail.min_QTY') }}</label>
+                                <div class="input-group col-md-7">
+                                    <input type="number" min="0" class="form-control" name="min_quantity_cost_start" aria-label="min_quantity_cost_start" value="{{ $template->textValue('min_quantity_cost_start', old('min_quantity_cost_start')) }}">
+                                    <span class="input-group-addon"> - </span>
+                                    <input type="number" min="0" class="form-control" name="min_quantity_cost_end" aria-label="min_quantity_cost_end" value="{{ $template->textValue('min_quantity_cost_end', old('min_quantity_cost_end')) }}">
+                                </div>
 
-                        {{--        @if ($errors->has('created_start') || $errors->has('created_end'))--}}
-                        {{--            <div class="col-md-9 col-lg-offset-3">--}}
-                        {{--                {!! $errors->first('created_start', '<span class="alert-msg" aria-hidden="true"><i class="fas fa-times" aria-hidden="true"></i> :message</span>') !!}--}}
-                        {{--                {!! $errors->first('created_end', '<span class="alert-msg" aria-hidden="true"><i class="fas fa-times" aria-hidden="true"></i> :message</span>') !!}--}}
-                        {{--            </div>--}}
-                        {{--        @endif--}}
-                        {{--    </div>--}}
+                                @if ($errors->has('min_quantity_cost_start') || $errors->has('min_quantity_cost_end'))
+                                    <div class="col-md-9 col-lg-offset-3">
+                                        {!! $errors->first('min_quantity_cost_start', '<span class="alert-msg" aria-hidden="true"><i class="fas fa-times" aria-hidden="true"></i> :message</span>') !!}
+                                        {!! $errors->first('min_quantity_cost_end', '<span class="alert-msg" aria-hidden="true"><i class="fas fa-times" aria-hidden="true"></i> :message</span>') !!}
+                                    </div>
+                                @endif
+                            </div>
 
-                        {{--    <!-- Checkout Date -->--}}
-                        {{--    <div class="form-group checkout-range{{ ($errors->has('checkout_date_start') || $errors->has('checkout_date_end')) ? ' has-error' : '' }}">--}}
-                        {{--        <label for="checkout_date" class="col-md-3 control-label">{{ trans('general.checkout') }} </label>--}}
-                        {{--        <div class="input-daterange input-group col-md-7" id="checkout-range-datepicker">--}}
-                        {{--            <input type="text" placeholder="{{ trans('general.select_date') }}"  class="form-control" name="checkout_date_start" aria-label="checkout_date_start" value="{{ $template->textValue('checkout_date_start', old('checkout_date_start')) }}">--}}
-                        {{--            <span class="input-group-addon"> - </span>--}}
-                        {{--            <input type="text" placeholder="{{ trans('general.select_date') }}" class="form-control" name="checkout_date_end" aria-label="checkout_date_end" value="{{ $template->textValue('checkout_date_end', old('checkout_date_end')) }}">--}}
-                        {{--        </div>--}}
+                            <!-- Checkout Date -->
+                            <div class="form-group checkout-range{{ ($errors->has('checkout_date_start') || $errors->has('checkout_date_end')) ? ' has-error' : '' }}">
+                                <label for="checkout_date" class="col-md-3 control-label">{{ trans('general.checkout') }} </label>
+                                <div class="input-daterange input-group col-md-7" id="checkout-range-datepicker">
+                                    <input type="text" placeholder="{{ trans('general.select_date') }}"  class="form-control" name="checkout_date_start" aria-label="checkout_date_start" value="{{ $template->textValue('checkout_date_start', old('checkout_date_start')) }}">
+                                    <span class="input-group-addon"> - </span>
+                                    <input type="text" placeholder="{{ trans('general.select_date') }}" class="form-control" name="checkout_date_end" aria-label="checkout_date_end" value="{{ $template->textValue('checkout_date_end', old('checkout_date_end')) }}">
+                                </div>
 
-                        {{--        @if ($errors->has('checkout_date_start') || $errors->has('checkout_date_end'))--}}
-                        {{--            <div class="col-md-9 col-lg-offset-3">--}}
-                        {{--                {!! $errors->first('checkout_date_start', '<span class="alert-msg" aria-hidden="true"><i class="fas fa-times" aria-hidden="true"></i> :message</span>') !!}--}}
-                        {{--                {!! $errors->first('checkout_date_end', '<span class="alert-msg" aria-hidden="true"><i class="fas fa-times" aria-hidden="true"></i> :message</span>') !!}--}}
-                        {{--            </div>--}}
-                        {{--        @endif--}}
+                                @if ($errors->has('checkout_date_start') || $errors->has('checkout_date_end'))
+                                    <div class="col-md-9 col-lg-offset-3">
+                                        {!! $errors->first('checkout_date_start', '<span class="alert-msg" aria-hidden="true"><i class="fas fa-times" aria-hidden="true"></i> :message</span>') !!}
+                                        {!! $errors->first('checkout_date_end', '<span class="alert-msg" aria-hidden="true"><i class="fas fa-times" aria-hidden="true"></i> :message</span>') !!}
+                                    </div>
+                                @endif
+                            </div>
 
-                        {{--    </div>--}}
+                            <!-- Created Date -->
+                            <div class="form-group created-range{{ ($errors->has('created_start') || $errors->has('created_end')) ? ' has-error' : '' }}">
+                                <label for="created_start" class="col-md-3 control-label">{{ trans('general.created_at') }} </label>
+                                <div class="input-daterange input-group col-md-7" id="created-range-datepicker">
+                                    <input type="text" placeholder="{{ trans('general.select_date') }}" class="form-control" name="created_start" aria-label="created_start" value="{{ $template->textValue('created_start', old('created_start')) }}">
+                                    <span class="input-group-addon"> - </span>
+                                    <input type="text" placeholder="{{ trans('general.select_date') }}" class="form-control" name="created_end" aria-label="created_end" value="{{ $template->textValue('created_end', old('created_end')) }}">
+                                </div>
 
-                        {{--    <!-- Last Checkin Date -->--}}
-                        {{--    <div class="form-group checkin-range{{ ($errors->has('checkin_date_start') || $errors->has('checkin_date_end')) ? ' has-error' : '' }}">--}}
-                        {{--        <label for="checkin_date" class="col-md-3 control-label">{{ trans('admin/hardware/table.last_checkin_date') }}</label>--}}
-                        {{--        <div class="input-daterange input-group col-md-7" id="checkin-range-datepicker">--}}
-                        {{--            <input type="text" placeholder="{{ trans('general.select_date') }}" class="form-control" name="checkin_date_start" aria-label="checkin_date_start" value="{{ $template->textValue('checkin_date_start', old('checkin_date_start')) }}">--}}
-                        {{--            <span class="input-group-addon"> - </span>--}}
-                        {{--            <input type="text" placeholder="{{ trans('general.select_date') }}" class="form-control" name="checkin_date_end" aria-label="checkin_date_end" value="{{ $template->textValue('checkin_date_end', old('checkin_date_end')) }}">--}}
-                        {{--        </div>--}}
+                                @if ($errors->has('created_start') || $errors->has('created_end'))
+                                    <div class="col-md-9 col-lg-offset-3">
+                                        {!! $errors->first('created_start', '<span class="alert-msg" aria-hidden="true"><i class="fas fa-times" aria-hidden="true"></i> :message</span>') !!}
+                                        {!! $errors->first('created_end', '<span class="alert-msg" aria-hidden="true"><i class="fas fa-times" aria-hidden="true"></i> :message</span>') !!}
+                                    </div>
+                                @endif
+                            </div>
 
-                        {{--        @if ($errors->has('checkin_date_start') || $errors->has('checkin_date_end'))--}}
-                        {{--            <div class="col-md-9 col-lg-offset-3">--}}
-                        {{--                {!! $errors->first('checkin_date_start', '<span class="alert-msg" aria-hidden="true"><i class="fas fa-times" aria-hidden="true"></i> :message</span>') !!}--}}
-                        {{--                {!! $errors->first('checkin_date_end', '<span class="alert-msg" aria-hidden="true"><i class="fas fa-times" aria-hidden="true"></i> :message</span>') !!}--}}
-                        {{--            </div>--}}
-                        {{--        @endif--}}
-                        {{--    </div>--}}
+                            <!-- Last updated Date -->
+                            <div class="form-group last_updated-range{{ ($errors->has('last_updated_start') || $errors->has('last_updated_end')) ? ' has-error' : '' }}">
+                                <label for="last_updated_start" class="col-md-3 control-label">{{ trans('general.updated_at') }}</label>
+                                <div class="input-daterange input-group col-md-7" id="last_updated-range-datepicker">
+                                    <input type="text" placeholder="{{ trans('general.select_date') }}"  class="form-control" name="last_updated_start" aria-label="last_updated_start" value="{{ $template->textValue('last_updated_start', old('last_updated_start')) }}">
+                                    <span class="input-group-addon"> - </span>
+                                    <input type="text" placeholder="{{ trans('general.select_date') }}"  class="form-control" name="last_updated_end" aria-label="last_updated_end" value="{{ $template->textValue('last_updated_end', old('last_updated_end')) }}">
+                                </div>
 
-                        {{--    <!-- Expected Checkin Date -->--}}
-                        {{--    <div class="form-group expected_checkin-range{{ ($errors->has('expected_checkin_start') || $errors->has('expected_checkin_end')) ? ' has-error' : '' }}">--}}
-                        {{--        <label for="expected_checkin_start" class="col-md-3 control-label">{{ trans('admin/hardware/form.expected_checkin') }}</label>--}}
-                        {{--        <div class="input-daterange input-group col-md-7" id="expected_checkin-range-datepicker">--}}
-                        {{--            <input type="text" placeholder="{{ trans('general.select_date') }}" class="form-control" name="expected_checkin_start" aria-label="expected_checkin_start" value="{{ $template->textValue('expected_checkin_start', old('expected_checkin_start')) }}">--}}
-                        {{--            <span class="input-group-addon"> - </span>--}}
-                        {{--            <input type="text" placeholder="{{ trans('general.select_date') }}" class="form-control" name="expected_checkin_end" aria-label="expected_checkin_end" value="{{ $template->textValue('expected_checkin_end', old('expected_checkin_end')) }}">--}}
-                        {{--        </div>--}}
+                                @if ($errors->has('last_updated_start') || $errors->has('last_updated_end'))
+                                    <div class="col-md-9 col-lg-offset-3">
+                                        {!! $errors->first('last_updated_start', '<span class="alert-msg" aria-hidden="true"><i class="fas fa-times" aria-hidden="true"></i> :message</span>') !!}
+                                        {!! $errors->first('last_updated_end', '<span class="alert-msg" aria-hidden="true"><i class="fas fa-times" aria-hidden="true"></i> :message</span>') !!}
+                                    </div>
+                                @endif
+                            </div>
 
-                        {{--        @if ($errors->has('expected_checkin_start') || $errors->has('expected_checkin_end'))--}}
-                        {{--            <div class="col-md-9 col-lg-offset-3">--}}
-                        {{--                {!! $errors->first('expected_checkin_start', '<span class="alert-msg" aria-hidden="true"><i class="fas fa-times" aria-hidden="true"></i> :message</span>') !!}--}}
-                        {{--                {!! $errors->first('expected_checkin_end', '<span class="alert-msg" aria-hidden="true"><i class="fas fa-times" aria-hidden="true"></i> :message</span>') !!}--}}
-                        {{--            </div>--}}
-                        {{--        @endif--}}
+                            <!-- Last Updated before -->
+                            <div class="form-group">
+                                <label for="last_updated_before" class="col-md-3 control-label">{{ trans('general.updated_before') }}</label>
+                                <div class="input-group col-md-2">
+                                    <input class="form-control input-group" type="number" min="0" name="last_updated_before" value="{{ $template->textValue('last_updated_before', old('last_updated_before')) }}" aria-label="last_updated_before">
+                                    {{ trans('general.days_ago') }}
+                                </div>
 
-                        {{--    </div>--}}
+                                @if ($errors->has('last_updated_before'))
+                                    <div class="col-md-9 col-lg-offset-3">
+                                        {!! $errors->first('last_updated_before', '<span class="alert-msg" aria-hidden="true"><i class="fas fa-times" aria-hidden="true"></i> :message</span>') !!}
+                                    </div>
+                                @endif
+                            </div>
 
-                        {{--    <!-- EoL Date -->--}}
-                        {{--    <div class="form-group asset_eol_date-range {{ ($errors->has('asset_eol_date_start') || $errors->has('asset_eol_date_end')) ? ' has-error' : '' }}">--}}
-                        {{--        <label for="asset_eol_date" class="col-md-3 control-label">{{ trans('admin/hardware/form.eol_date') }}</label>--}}
-                        {{--        <div class="input-daterange input-group col-md-7" id="asset_eol_date-range-datepicker">--}}
-                        {{--            <input type="text" placeholder="{{ trans('general.select_date') }}" class="form-control" name="asset_eol_date_start" aria-label="asset_eol_date_start" value="{{ $template->textValue('asset_eol_date_start', old('asset_eol_date_start')) }}">--}}
-                        {{--            <span class="input-group-addon"> - </span>--}}
-                        {{--            <input type="text" placeholder="{{ trans('general.select_date') }}" class="form-control" name="asset_eol_date_end" aria-label="asset_eol_date_end" value="{{ $template->textValue('asset_eol_date_end', old('asset_eol_date_end')) }}">--}}
-                        {{--        </div>--}}
+                            <div class="col-md-9 col-md-offset-3">
+                                <label class="form-control">
+                                    <input type="checkbox" name="exclude_archived" value="1" @checked($template->checkmarkValue('exclude_archived', '0')) />
+                                    {{ trans('general.exclude_archived') }}
+                                </label>
+                            </div>
+                            <div class="col-md-9 col-md-offset-3">
+                                <label class="form-control">
+                                    <input type="checkbox" name="use_bom" value="1" @checked($template->checkmarkValue('use_bom', '0')) />
+                                    {{ trans('general.bom_remark') }}
+                                </label>
+                            </div>
 
-                        {{--        @if ($errors->has('asset_eol_date_start') || $errors->has('asset_eol_date_end'))--}}
-                        {{--            <div class="col-md-9 col-lg-offset-3">--}}
-                        {{--                {!! $errors->first('asset_eol_date_start', '<span class="alert-msg" aria-hidden="true"><i class="fas fa-times" aria-hidden="true"></i> :message</span>') !!}--}}
-                        {{--                {!! $errors->first('asset_eol_date_end', '<span class="alert-msg" aria-hidden="true"><i class="fas fa-times" aria-hidden="true"></i> :message</span>') !!}--}}
-                        {{--            </div>--}}
-                        {{--        @endif--}}
-                        {{--    </div>--}}
-
-                        {{--    <!-- Last Audit Date -->--}}
-                        {{--    <div class="form-group last_audit-range{{ ($errors->has('last_audit_start') || $errors->has('last_audit_end')) ? ' has-error' : '' }}">--}}
-                        {{--        <label for="last_audit_start" class="col-md-3 control-label">{{ trans('general.last_audit') }}</label>--}}
-                        {{--        <div class="input-daterange input-group col-md-7" id="last_audit-range-datepicker">--}}
-                        {{--            <input type="text" placeholder="{{ trans('general.select_date') }}"  class="form-control" name="last_audit_start" aria-label="last_audit_start" value="{{ $template->textValue('last_audit_start', old('last_audit_start')) }}">--}}
-                        {{--            <span class="input-group-addon"> - </span>--}}
-                        {{--            <input type="text" placeholder="{{ trans('general.select_date') }}"  class="form-control" name="last_audit_end" aria-label="last_audit_end" value="{{ $template->textValue('last_audit_end', old('last_audit_end')) }}">--}}
-                        {{--        </div>--}}
-
-                        {{--        @if ($errors->has('last_audit_start') || $errors->has('last_audit_end'))--}}
-                        {{--            <div class="col-md-9 col-lg-offset-3">--}}
-                        {{--                {!! $errors->first('last_audit_start', '<span class="alert-msg" aria-hidden="true"><i class="fas fa-times" aria-hidden="true"></i> :message</span>') !!}--}}
-                        {{--                {!! $errors->first('last_audit_end', '<span class="alert-msg" aria-hidden="true"><i class="fas fa-times" aria-hidden="true"></i> :message</span>') !!}--}}
-                        {{--            </div>--}}
-                        {{--        @endif--}}
-                        {{--    </div>--}}
-
-                        {{--    <!-- Next Audit Date -->--}}
-                        {{--    <div class="form-group next_audit-range{{ ($errors->has('next_audit_start') || $errors->has('next_audit_end')) ? ' has-error' : '' }}">--}}
-                        {{--        <label for="next_audit_start" class="col-md-3 control-label">{{ trans('general.next_audit_date') }}</label>--}}
-                        {{--        <div class="input-daterange input-group col-md-7" id="next_audit-range-datepicker">--}}
-                        {{--            <input type="text" placeholder="{{ trans('general.select_date') }}"  class="form-control" name="next_audit_start" aria-label="next_audit_start" value="{{ $template->textValue('next_audit_start', old('next_audit_start')) }}">--}}
-                        {{--            <span class="input-group-addon"> - </span>--}}
-                        {{--            <input type="text" placeholder="{{ trans('general.select_date') }}"  class="form-control" name="next_audit_end" aria-label="next_audit_end" value="{{ $template->textValue('next_audit_end', old('next_audit_end')) }}">--}}
-                        {{--        </div>--}}
-
-                        {{--        @if ($errors->has('next_audit_start') || $errors->has('next_audit_end'))--}}
-                        {{--            <div class="col-md-9 col-lg-offset-3">--}}
-                        {{--                {!! $errors->first('next_audit_start', '<span class="alert-msg" aria-hidden="true"><i class="fas fa-times" aria-hidden="true"></i> :message</span>') !!}--}}
-                        {{--                {!! $errors->first('next_audit_end', '<span class="alert-msg" aria-hidden="true"><i class="fas fa-times" aria-hidden="true"></i> :message</span>') !!}--}}
-                        {{--            </div>--}}
-                        {{--        @endif--}}
-                        {{--    </div>--}}
-
-                        {{--    <!-- Last updated Date -->--}}
-                        {{--    <div class="form-group last_updated-range{{ ($errors->has('last_updated_start') || $errors->has('last_updated_end')) ? ' has-error' : '' }}">--}}
-                        {{--        <label for="last_updated_start" class="col-md-3 control-label">{{ trans('general.updated_at') }}</label>--}}
-                        {{--        <div class="input-daterange input-group col-md-7" id="last_updated-range-datepicker">--}}
-                        {{--            <input type="text" placeholder="{{ trans('general.select_date') }}"  class="form-control" name="last_updated_start" aria-label="last_updated_start" value="{{ $template->textValue('last_updated_start', old('last_updated_start')) }}">--}}
-                        {{--            <span class="input-group-addon"> - </span>--}}
-                        {{--            <input type="text" placeholder="{{ trans('general.select_date') }}"  class="form-control" name="last_updated_end" aria-label="last_updated_end" value="{{ $template->textValue('last_updated_end', old('last_updated_end')) }}">--}}
-                        {{--        </div>--}}
-
-                        {{--        @if ($errors->has('last_updated_start') || $errors->has('last_updated_end'))--}}
-                        {{--            <div class="col-md-9 col-lg-offset-3">--}}
-                        {{--                {!! $errors->first('last_updated_start', '<span class="alert-msg" aria-hidden="true"><i class="fas fa-times" aria-hidden="true"></i> :message</span>') !!}--}}
-                        {{--                {!! $errors->first('last_updated_end', '<span class="alert-msg" aria-hidden="true"><i class="fas fa-times" aria-hidden="true"></i> :message</span>') !!}--}}
-                        {{--            </div>--}}
-                        {{--        @endif--}}
-                        {{--    </div>--}}
-
-                        {{--    <!-- Last Updated before -->--}}
-                        {{--    <div class="form-group">--}}
-                        {{--        <label for="last_updated_before" class="col-md-3 control-label">{{ trans('general.updated_before') }}</label>--}}
-                        {{--        <div class="input-group col-md-2">--}}
-                        {{--            <input class="form-control input-group" type="number" min="0" name="last_updated_before" value="{{ $template->textValue('last_updated_before', old('last_updated_before')) }}" aria-label="last_updated_before">--}}
-                        {{--            {{ trans('general.days_ago') }}--}}
-                        {{--        </div>--}}
-
-                        {{--        @if ($errors->has('last_updated_before'))--}}
-                        {{--            <div class="col-md-9 col-lg-offset-3">--}}
-                        {{--                {!! $errors->first('last_updated_before', '<span class="alert-msg" aria-hidden="true"><i class="fas fa-times" aria-hidden="true"></i> :message</span>') !!}--}}
-                        {{--            </div>--}}
-                        {{--        @endif--}}
-                        {{--    </div>--}}
-
-                        {{--    <div class="col-md-9 col-md-offset-3">--}}
-                        {{--        <label class="form-control">--}}
-                        {{--            <input type="checkbox" name="exclude_archived" value="1" @checked($template->checkmarkValue('exclude_archived', '0')) />--}}
-                        {{--            {{ trans('general.exclude_archived') }}--}}
-                        {{--        </label>--}}
-                        {{--    </div>--}}
-                        {{--    <div class="col-md-9 col-md-offset-3">--}}
-                        {{--        <label class="form-control">--}}
-                        {{--            <input type="checkbox" name="use_bom" value="1" @checked($template->checkmarkValue('use_bom', '0')) />--}}
-                        {{--            {{ trans('general.bom_remark') }}--}}
-                        {{--        </label>--}}
-                        {{--    </div>--}}
-
-                        {{--    <div class="col-md-9 col-md-offset-3">--}}
-                        {{--        <label class="form-control">--}}
-                        {{--            <input--}}
-                        {{--                name="deleted_assets"--}}
-                        {{--                id="deleted_assets_exclude_deleted"--}}
-                        {{--                type="radio"--}}
-                        {{--                value="exclude_deleted"--}}
-                        {{--                @checked($template->radioValue('deleted_assets', 'exclude_deleted', true))--}}
-                        {{--                aria-label="deleted_assets"--}}
-                        {{--            >--}}
-                        {{--            {{ trans('general.exclude_deleted') }}--}}
-                        {{--        </label>--}}
-                        {{--        <label class="form-control">--}}
-                        {{--            <input--}}
-                        {{--                name="deleted_assets"--}}
-                        {{--                id="deleted_assets_include_deleted"--}}
-                        {{--                type="radio"--}}
-                        {{--                value="include_deleted"--}}
-                        {{--                @checked($template->radioValue('deleted_assets', 'include_deleted'))--}}
-                        {{--                aria-label="deleted_assets"--}}
-                        {{--            >--}}
-                        {{--            {{ trans('general.include_deleted') }}--}}
-                        {{--        </label>--}}
-                        {{--        <label class="form-control">--}}
-                        {{--            <input--}}
-                        {{--                name="deleted_assets"--}}
-                        {{--                type="radio"--}}
-                        {{--                id="deleted_assets_only_deleted"--}}
-                        {{--                value="only_deleted"--}}
-                        {{--                @checked($template->radioValue('deleted_assets', 'only_deleted'))--}}
-                        {{--                aria-label="deleted_assets"--}}
-                        {{--            >--}}
-                        {{--            {{ trans('general.only_deleted') }}--}}
-                        {{--        </label>--}}
-                        {{--    </div>--}}
+                            <div class="col-md-9 col-md-offset-3">
+                                <label class="form-control">
+                                    <input
+                                        name="deleted_assets"
+                                        id="deleted_assets_exclude_deleted"
+                                        type="radio"
+                                        value="exclude_deleted"
+                                        @checked($template->radioValue('deleted_assets', 'exclude_deleted', true))
+                                        aria-label="deleted_assets"
+                                    >
+                                    {{ trans('general.exclude_deleted') }}
+                                </label>
+                                <label class="form-control">
+                                    <input
+                                        name="deleted_assets"
+                                        id="deleted_assets_include_deleted"
+                                        type="radio"
+                                        value="include_deleted"
+                                        @checked($template->radioValue('deleted_assets', 'include_deleted'))
+                                        aria-label="deleted_assets"
+                                    >
+                                    {{ trans('general.include_deleted') }}
+                                </label>
+                                <label class="form-control">
+                                    <input
+                                        name="deleted_assets"
+                                        type="radio"
+                                        id="deleted_assets_only_deleted"
+                                        value="only_deleted"
+                                        @checked($template->radioValue('deleted_assets', 'only_deleted'))
+                                        aria-label="deleted_assets"
+                                    >
+                                    {{ trans('general.only_deleted') }}
+                                </label>
+                            </div>
                         </div>
 
                     </div> <!-- /.box-body-->
