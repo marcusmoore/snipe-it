@@ -484,12 +484,6 @@
 
                             <div class="col-md-9 col-md-offset-3">
                                 <label class="form-control">
-                                    <input type="checkbox" name="exclude_archived" value="1" @checked($template->checkmarkValue('exclude_archived', '0')) />
-                                    {{ trans('general.exclude_archived') }}
-                                </label>
-                            </div>
-                            <div class="col-md-9 col-md-offset-3">
-                                <label class="form-control">
                                     <input type="checkbox" name="use_bom" value="1" @checked($template->checkmarkValue('use_bom', '0')) />
                                     {{ trans('general.bom_remark') }}
                                 </label>
@@ -498,36 +492,36 @@
                             <div class="col-md-9 col-md-offset-3">
                                 <label class="form-control">
                                     <input
-                                        name="deleted_assets"
-                                        id="deleted_assets_exclude_deleted"
+                                        name="deleted_accessories"
+                                        id="deleted_accessories_exclude_deleted"
                                         type="radio"
                                         value="exclude_deleted"
-                                        @checked($template->radioValue('deleted_assets', 'exclude_deleted', true))
-                                        aria-label="deleted_assets"
+                                        @checked($template->radioValue('deleted_accessories', 'exclude_deleted', true))
+                                        aria-label="deleted_accessories"
                                     >
-                                    {{ trans('general.exclude_deleted') }}
+                                    Exclude Deleted Accessories
                                 </label>
                                 <label class="form-control">
                                     <input
-                                        name="deleted_assets"
-                                        id="deleted_assets_include_deleted"
+                                        name="deleted_accessories"
+                                        id="deleted_accessories_include_deleted"
                                         type="radio"
                                         value="include_deleted"
-                                        @checked($template->radioValue('deleted_assets', 'include_deleted'))
-                                        aria-label="deleted_assets"
+                                        @checked($template->radioValue('deleted_accessories', 'include_deleted'))
+                                        aria-label="deleted_accessories"
                                     >
-                                    {{ trans('general.include_deleted') }}
+                                    Include Deleted Accessories
                                 </label>
                                 <label class="form-control">
                                     <input
-                                        name="deleted_assets"
+                                        name="deleted_accessories"
                                         type="radio"
-                                        id="deleted_assets_only_deleted"
+                                        id="deleted_accessories_only_deleted"
                                         value="only_deleted"
-                                        @checked($template->radioValue('deleted_assets', 'only_deleted'))
-                                        aria-label="deleted_assets"
+                                        @checked($template->radioValue('deleted_accessories', 'only_deleted'))
+                                        aria-label="deleted_accessories"
                                     >
-                                    {{ trans('general.only_deleted') }}
+                                    Only Deleted Accessories
                                 </label>
                             </div>
                         </div>
