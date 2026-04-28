@@ -30,5 +30,9 @@ class CustomAccessoryReportController extends Controller
         ]);
     }
 
-    public function run() {}
+    public function run()
+    {
+        ini_set('max_execution_time', env('REPORT_TIME_LIMIT', 12000)); // 12000 seconds = 200 minutes
+        $this->authorize('reports.view');
+    }
 }
