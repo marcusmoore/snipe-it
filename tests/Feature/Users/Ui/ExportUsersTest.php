@@ -54,6 +54,7 @@ class ExportUsersTest extends TestCase
             ->assertOk()
             ->assertCsvHeader()
             ->assertSeePairsInStreamedResponse([
+                'id' => (string) $luke->id,
                 'First Name' => 'Luke',
                 'Last Name' => 'Skywalker',
                 'Username' => 'lskywalker',
