@@ -53,24 +53,6 @@ class ExportUsersTest extends TestCase
             ->get(route('users.export'))
             ->assertOk()
             ->assertCsvHeader()
-            ->assertSeeTextInStreamedResponse([
-                'Jedi',
-                'Jedi Master',
-                '789',
-                'Luke',
-                'Skywalker',
-                'Luke Skywalker',
-                'lskywalker',
-                'skywalker@jedi.com',
-                'Ben Kenobi',
-                'Space',
-                'Lightsaber Fighting Dept',
-                '2',
-                'Jedi, Jedi Dance Crew',
-                trans('general.user'),
-                'Nice guy...',
-                trans('general.yes'),
-            ])
             ->assertSeePairsInStreamedResponse([
                 'First Name' => 'Luke',
                 'Last Name' => 'Skywalker',
