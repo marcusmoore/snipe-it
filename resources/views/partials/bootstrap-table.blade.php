@@ -1028,6 +1028,17 @@
                 @endif
             }
         },
+
+        btnExport: {
+            text: '{{ trans('general.export_all_to_csv') }}',
+            icon: 'fa-solid fa-file-csv',
+            event () {
+                window.location.href = '{{ route('components.export') }}';
+            },
+            attributes: {
+                title: '{{ trans('general.export_all_to_csv') }}',
+            }
+        },
     });
     @endcan
 

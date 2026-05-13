@@ -262,4 +262,14 @@ class ComponentsController extends Controller
             ->with('item', $cloned_component)
             ->with('component', $cloned_component);
     }
+
+    public function getExportUserCsv()
+    {
+        $this->authorize('view', Component::class);
+
+        $this->disableDebugbar();
+
+        // todo:
+
+    }
 }
