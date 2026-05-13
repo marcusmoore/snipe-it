@@ -13,6 +13,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
  * This class controls all actions related to Components for
@@ -269,7 +270,41 @@ class ComponentsController extends Controller
 
         $this->disableDebugbar();
 
-        // todo:
+        return new StreamedResponse(function () {
+            // Open output stream
+            $handle = fopen('php://output', 'w');
+
+            $headers = [
+                // strtolower to prevent Excel from trying to open it as a SYLK file
+                strtolower(trans('general.id')),
+                trans('general.id'),
+                trans('general.company'),
+                trans('general.name'),
+                trans('admin/hardware/form.serial'),
+                trans('general.category'),
+                trans('general.supplier'),
+                trans('admin/models/table.modelnumber'),
+                trans('general.manufacturer'),
+                trans('general.location'),
+                trans('general.order_number'),
+                trans('general.purchase_date'),
+                trans('general.min_amt'),
+                trans('admin/components/general.total'),
+                trans('admin/components/general.remaining'),
+                trans('general.unit_cost'),
+                trans('general.notes'),
+                trans('general.created_at'),
+                trans('general.updated_at'),
+            ];
+
+            fputcsv($handle, $headers);
+
+            // Close the output stream
+            fclose($handle);
+        }, 200, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="users-'.date('Y-m-d-his').'.csv"',
+        ]);
 
     }
 }
