@@ -29,7 +29,7 @@ Route::group(['prefix' => 'components', 'middleware' => ['auth']], function () {
         [Components\ComponentsController::class, 'getClone']
     )->name('components.clone.create');
 
-    Route::get('export', [Components\ComponentsController::class, 'getExportUserCsv']
+    Route::get('export', [Components\ComponentsController::class, 'getExportComponentCsv']
     )->name('components.export');
 
 });

@@ -10,9 +10,11 @@ use App\Models\Component;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
+use League\Csv\EscapeFormula;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
@@ -264,7 +266,7 @@ class ComponentsController extends Controller
             ->with('component', $cloned_component);
     }
 
-    public function getExportUserCsv()
+    public function getExportComponentCsv()
     {
         $this->authorize('view', Component::class);
 
@@ -277,7 +279,6 @@ class ComponentsController extends Controller
             $headers = [
                 // strtolower to prevent Excel from trying to open it as a SYLK file
                 strtolower(trans('general.id')),
-                trans('general.id'),
                 trans('general.company'),
                 trans('general.name'),
                 trans('admin/hardware/form.serial'),
@@ -292,6 +293,7 @@ class ComponentsController extends Controller
                 trans('admin/components/general.total'),
                 trans('admin/components/general.remaining'),
                 trans('general.unit_cost'),
+                trans('general.total_cost'),
                 trans('general.notes'),
                 trans('general.created_at'),
                 trans('general.updated_at'),
@@ -299,11 +301,50 @@ class ComponentsController extends Controller
 
             fputcsv($handle, $headers);
 
+            Component::with([])->orderBy('created_at', 'DESC')
+                ->chunk(500, function ($components) use ($handle) {
+
+                    $formatter = new EscapeFormula('`');
+
+                    foreach ($components as $component) {
+                        // Add a new row with data
+                        $values = [
+                            $component->id,
+                            $component?->company?->name,
+                            $component->name,
+                            $component->serial,
+                            $component?->category?->name,
+                            $component?->supplier?->name,
+                            $component->model_number,
+                            $component?->manufacturer?->name,
+                            $component?->location?->name,
+                            $component->order_number,
+                            $component->purchase_date ? Carbon::make($component->purchase_date)->format('Y-m-d') : '',
+                            $component->min_amt,
+                            $component->qty,
+                            (int) $component->numRemaining(),
+                            $component->purchase_cost,
+                            Helper::formatCurrencyOutput($component->totalCostSum()),
+                            $component->notes,
+                            $component->created_at,
+                            $component->updated_at,
+                        ];
+
+                        // CSV_ESCAPE_FORMULAS is set to false in the .env
+                        if (config('app.escape_formulas') === false) {
+                            fputcsv($handle, $values);
+
+                            // CSV_ESCAPE_FORMULAS is set to true or is not set in the .env
+                        } else {
+                            fputcsv($handle, $formatter->escapeRecord($values));
+                        }
+                    }
+                });
             // Close the output stream
             fclose($handle);
         }, 200, [
             'Content-Type' => 'text/csv; charset=UTF-8',
-            'Content-Disposition' => 'attachment; filename="users-'.date('Y-m-d-his').'.csv"',
+            'Content-Disposition' => 'attachment; filename="components-'.date('Y-m-d-his').'.csv"',
         ]);
 
     }
