@@ -149,6 +149,9 @@ class AcceptanceController extends Controller
 
         $item = $acceptance->checkoutable_type::find($acceptance->checkoutable_id);
 
+        $username_slug = Str::slug($assignedUser->username);
+        $asset_tag_slug = ($item instanceof Asset && $item->asset_tag) ? '-'.Str::slug($item->asset_tag) : '';
+
         // If signatures are required, make sure we have one
         if ($requiresSignature) {
 
@@ -234,7 +237,7 @@ class AcceptanceController extends Controller
 
         if ($request->input('asset_acceptance') === 'accepted') {
 
-            $pdf_filename = 'accepted-'.$acceptance->checkoutable_id.'-'.$acceptance->display_checkoutable_type.'-eula-'.date('Y-m-d-h-i-s').'.pdf';
+            $pdf_filename = 'accepted-'.$username_slug.$asset_tag_slug.'-'.date('Y-m-d-h-i-s').'.pdf';
 
             // Generate the PDF content
             $pdf_content = $acceptance->generateAcceptancePdf($data, $acceptance);

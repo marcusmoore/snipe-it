@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Importing\Api;
 
+use App\Models\Actionlog as ActionLog;
 use App\Models\Asset;
 use App\Models\Import;
 use App\Models\Location;
@@ -258,6 +259,48 @@ class ImportUsersTest extends ImportDataTestCase implements TestsPermissionsRequ
             Arr::except($user->attributesToArray(), $updatedAttributes),
             Arr::except($updatedUser->attributesToArray(), $updatedAttributes),
         );
+    }
+
+    #[Test]
+    public function update_mode_logs_user_update_in_actionlog(): void
+    {
+        $this->actingAsForApi(User::factory()->superuser()->create());
+
+        $initialFile = ImportFileBuilder::new();
+        $initialRow = $initialFile->firstRow();
+        $initialImport = Import::factory()->users()->create([
+            'file_path' => $initialFile->saveToImportsDirectory(),
+        ]);
+
+        $this->importFileResponse(['import' => $initialImport->id])->assertOk();
+
+        $user = User::query()->where('username', $initialRow['username'])->sole();
+
+        $updatedRow = array_merge($initialRow, [
+            'position' => $initialRow['position'].' Updated',
+        ]);
+
+        $updateFile = new ImportFileBuilder([$updatedRow]);
+        $updateImport = Import::factory()->users()->create([
+            'file_path' => $updateFile->saveToImportsDirectory(),
+        ]);
+
+        $this->importFileResponse([
+            'import' => $updateImport->id,
+            'import-update' => true,
+        ])->assertOk();
+
+        $user->refresh();
+        $this->assertEquals($updatedRow['position'], $user->jobtitle);
+
+        $updateLog = ActionLog::query()
+            ->where('item_type', User::class)
+            ->where('item_id', $user->id)
+            ->where('action_type', 'update')
+            ->latest('id')
+            ->first();
+
+        $this->assertNotNull($updateLog, 'Expected an update action log entry after user importer update mode.');
     }
 
     /**

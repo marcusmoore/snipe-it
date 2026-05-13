@@ -13,9 +13,9 @@
     <div class="row" style="padding-bottom: 10px;">
 
         <div class="col-md-3 col-sm-6">
-            <span href="{{ route('reports.activity') }}" class="btn btn-theme btn-block" style="margin-bottom: 10px; white-space: normal;">
+            <a href="{{ route('reports.activity') }}" class="btn btn-theme btn-block" style="margin-bottom: 10px; white-space: normal;">
                 <x-icon type="reports"/> {{ trans('general.activity_report') }}
-            </span>
+            </a>
         </div>
 
         <div class="col-md-3 col-sm-6">

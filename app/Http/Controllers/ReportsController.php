@@ -1236,6 +1236,9 @@ class ReportsController extends Controller
     public function getAssetAcceptanceReport($deleted = false): View
     {
         $this->authorize('reports.view');
+
+        $this->disableDebugbar();
+
         $showDeleted = $deleted == 'deleted';
 
         $query = CheckoutAcceptance::Pending()

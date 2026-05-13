@@ -534,6 +534,33 @@ class UsersController extends Controller
             // Open output stream
             $handle = fopen('php://output', 'w');
 
+            $headers = [
+                // strtolower to prevent Excel from trying to open it as a SYLK file
+                strtolower(trans('general.id')),
+                trans('admin/companies/table.title'),
+                trans('admin/users/table.title'),
+                trans('general.employee_number'),
+                trans('admin/users/table.first_name'),
+                trans('admin/users/table.last_name'),
+                trans('admin/users/table.name'),
+                trans('admin/users/table.username'),
+                trans('admin/users/table.email'),
+                trans('admin/users/table.manager'),
+                trans('admin/users/table.location'),
+                trans('general.department'),
+                trans('general.assets'),
+                trans('general.licenses'),
+                trans('general.accessories'),
+                trans('general.consumables'),
+                trans('general.groups'),
+                trans('general.permissions'),
+                trans('general.notes'),
+                trans('admin/users/table.activated'),
+                trans('general.created_at'),
+            ];
+
+            fputcsv($handle, $headers);
+
             $users = User::with(
                 'assets',
                 'accessories',
@@ -546,42 +573,10 @@ class UsersController extends Controller
                 'company'
             )->orderBy('created_at', 'DESC')
                 ->chunk(500, function ($users) use ($handle) {
-                    $headers = [
-                        // strtolower to prevent Excel from trying to open it as a SYLK file
-                        strtolower(trans('general.id')),
-                        trans('admin/companies/table.title'),
-                        trans('admin/users/table.title'),
-                        trans('general.employee_number'),
-                        trans('admin/users/table.first_name'),
-                        trans('admin/users/table.last_name'),
-                        trans('admin/users/table.name'),
-                        trans('admin/users/table.username'),
-                        trans('admin/users/table.email'),
-                        trans('admin/users/table.manager'),
-                        trans('admin/users/table.location'),
-                        trans('general.department'),
-                        trans('general.assets'),
-                        trans('general.licenses'),
-                        trans('general.accessories'),
-                        trans('general.consumables'),
-                        trans('general.groups'),
-                        trans('general.permissions'),
-                        trans('general.notes'),
-                        trans('admin/users/table.activated'),
-                        trans('general.created_at'),
-                    ];
-
-                    fputcsv($handle, $headers);
 
                     $formatter = new EscapeFormula('`');
 
                     foreach ($users as $user) {
-                        $user_groups = '';
-
-                        foreach ($user->groups as $user_group) {
-                            $user_groups .= $user_group->name.', ';
-                        }
-
                         $permissionstring = '';
 
                         if ($user->isSuperUser()) {
@@ -610,7 +605,7 @@ class UsersController extends Controller
                             $user->licenses->count(),
                             $user->accessories->count(),
                             $user->consumables->count(),
-                            $user_groups,
+                            $user->groups->pluck('name')->implode(', '),
                             $permissionstring,
                             $user->notes,
                             ($user->activated == '1') ? trans('general.yes') : trans('general.no'),
