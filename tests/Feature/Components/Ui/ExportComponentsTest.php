@@ -31,7 +31,7 @@ class ExportComponentsTest extends TestCase
             ->assertOk()
             ->assertCsvHeader()
             ->assertSeeTextInStreamedResponse([
-                trans('general.id'),
+                'id',
                 trans('general.company'),
                 trans('general.name'),
                 trans('admin/hardware/form.serial'),
