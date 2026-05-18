@@ -181,6 +181,10 @@ Route::resource('maintenances',
     ['middleware' => ['auth'],
     ])->parameters(['maintenance' => 'maintenance', 'asset' => 'asset_id']);
 
+Route::post('maintenances/{maintenance}/complete',
+    [MaintenancesController::class, 'complete']
+)->name('maintenances.complete')->middleware(['auth']);
+
 Route::get('ht/{any?}',
     [AssetsController::class, 'getAssetByTag'])
     ->where('any', '.*')

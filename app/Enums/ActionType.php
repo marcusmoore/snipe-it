@@ -31,6 +31,9 @@ enum ActionType: string
     case DeleteSeats = 'delete seats';
     case AddSeats = 'add seats';
 
+    // Maintenances
+    case MaintenanceComplete = 'completed';
+
     // File Uploads
     case Uploaded = 'uploaded';
     case UploadDeleted = 'upload deleted';

@@ -195,6 +195,12 @@
                                             <br>
                                         @endif
 
+                                        @if ((string) $snipeSettings->require_accept_signature === '1')
+                                            <x-icon type="edit"/>
+                                            {{ trans('admin/categories/general.required_signature') }}
+                                            <br>
+                                        @endif
+
                                         @if ($asset->getEula())
                                             <x-icon type="email"/>
                                             {{ trans('admin/categories/general.required_eula') }}

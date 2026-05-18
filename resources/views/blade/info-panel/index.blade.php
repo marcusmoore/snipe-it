@@ -274,7 +274,7 @@
 
 
         <x-info-panel.supplier :infoPanelObj="$infoPanelObj"/>
-        <x-info-panel.manufacturer :asset="$infoPanelObj" :manufacturer="($infoPanelObj->manufacturer ?? $infoPanelObj->model?->manufacturer)"/>
+        <x-info-panel.manufacturer :infoPanelObj="$infoPanelObj" :manufacturer="($infoPanelObj->manufacturer ?? $infoPanelObj->model?->manufacturer)"/>
 
         @if ((isset($infoPanelObj->parent)) && ($infoPanelObj->parent))
             @php

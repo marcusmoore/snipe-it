@@ -52,10 +52,14 @@
         <!-- Custom Tabs -->
       <div class="nav-tabs-custom">
         <ul class="nav nav-tabs">
-          <li class="active"><a href="#info" data-toggle="tab">{{ trans('general.information') }} </a></li>
-            @can('admin')
-                <li><a href="#permissions" data-toggle="tab">{{ trans('general.permissions') }} </a></li>
-            @endcan
+            <li class="active">
+                <a href="#info" data-toggle="tab">{{ trans('general.information') }} </a>
+            </li>
+
+            <li>
+                <a href="#permissions" data-toggle="tab">{{ trans('general.permissions') }} </a>
+            </li>
+
         </ul>
 
         <div class="tab-content">
@@ -641,28 +645,35 @@
             </div>
           </div><!-- /.tab-pane -->
 
-          @can('admin')
+
           <div class="tab-pane" id="permissions">
-                  @if (!Auth::user()->isSuperUser())
-                    <p class="alert alert-warning">{{ trans('admin/users/general.superadmin_permission_warning') }}</p>
-                  @endif
 
-                  @if (!Auth::user()->hasAccess('admin'))
-                    <p class="alert alert-warning">{{ trans('admin/users/general.admin_permission_warning') }}</p>
-                  @endif
+              <x-form.legend help_text="{{ trans('permissions.use_groups') }}"/>
 
+              @if (auth()->user()->isAdmin() && !auth()->user()->isSuperUser())
                   <p class="alert alert-info">
-                      {{ trans('permissions.use_groups') }}
+                      <x-icon type="info"/>
+                      {{ trans('admin/users/general.superadmin_permission_warning') }}
                   </p>
+              @elseif (!auth()->user()->isAdmin() && !auth()->user()->isSuperUser() && auth()->id() === $user->id)
+                  <p class="alert alert-danger">
+                      <x-icon type="alert"/>
+                      {{ trans('admin/users/general.self_permission_warning') }}
+                  </p>
+              @elseif (!auth()->user()->isAdmin() && !auth()->user()->isSuperUser() && auth()->id() !== $user->id)
+                  <p class="alert alert-danger">
+                      <x-icon type="warning"/>
+                      {{ trans('admin/users/general.admin_permission_warning') }}
+                  </p>
+              @endif
 
+              @if (auth()->user()->isSuperUser() || auth()->user()->isAdmin() || (auth()->id() !== $user->id && !$user->isSuperUser()))
                   <div class="col-md-12">
-                    @include('partials.forms.edit.permissions-base', ['use_inherit' => true, 'groupPermissions' => $userPermissions])
+                      @include('partials.forms.edit.permissions-base', ['use_inherit' => true, 'groupPermissions' => $userPermissions])
                   </div>
-
-
+              @endif
 
           </div><!-- /.tab-pane -->
-          @endcan
         </div><!-- /.tab-content -->
           <x-redirect_submit_options
                   index_route="users.index"

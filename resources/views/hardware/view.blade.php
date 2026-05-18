@@ -299,7 +299,7 @@
                             <x-well class="well-sm">
                                 <div class="well-display">
                                     <x-data-row icon_type="maintenances" label="Active Maintenances" align="right">
-                                        {{ $asset->maintenances->whereNull('completion_date')->count() }}
+                                        {{ $asset->maintenances()->active()->count() }}
                                     </x-data-row>
 
                                     <x-data-row icon_type="checkout" :label="trans('general.checkouts_count')" align="right">

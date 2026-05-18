@@ -532,6 +532,9 @@
                     'columns',
                     'btnAdd',
                     'btnShowDeleted',
+                    'btnToggleCompleted',
+                    'btnDue',
+                    'btnOverdue',
                     'btnShowAdmins',
                     'btnShowExpiring',
                     'btnShowInactive',
@@ -1172,6 +1175,44 @@
                 @endif
             }
         },
+        btnToggleCompleted: {
+            text: '{{ request()->input('completed', 'false') === 'true' ? trans('admin/maintenances/general.show_active') : trans('admin/maintenances/general.show_completed') }}',
+            icon: 'fa-regular fa-square-check',
+            event() {
+                var isShowingCompleted = '{{ request()->input('completed', 'false') }}' === 'true';
+                window.location.href = '{{ route('maintenances.index') }}?completed=' + (isShowingCompleted ? 'false' : 'true');
+            },
+            attributes: {
+                class: '{{ request()->input('completed', 'false') === 'true' ? 'btn-selected' : '' }}',
+                title: '{{ request()->input('completed', 'false') === 'true' ? trans('admin/maintenances/general.show_active') : trans('admin/maintenances/general.show_completed') }}',
+            },
+        },
+
+        btnDue: {
+            text: '{{ trans('admin/maintenances/general.due') }}',
+            icon: 'fa-regular fa-clock',
+            event() {
+                var isActive = '{{ request()->input('upcoming_status') }}' === 'due';
+                window.location.href = '{{ route('maintenances.index') }}' + (isActive ? '' : '?upcoming_status=due');
+            },
+            attributes: {
+                class: '{{ request()->input('upcoming_status') === 'due' ? 'btn-selected' : '' }}',
+                title: '{{ trans('admin/maintenances/general.due') }}',
+            },
+        },
+
+        btnOverdue: {
+            text: '{{ trans('admin/maintenances/general.overdue') }}',
+            icon: 'fa-solid fa-triangle-exclamation',
+            event() {
+                var isActive = '{{ request()->input('upcoming_status') }}' === 'overdue';
+                window.location.href = '{{ route('maintenances.index') }}' + (isActive ? '' : '?upcoming_status=overdue');
+            },
+            attributes: {
+                class: '{{ request()->input('upcoming_status') === 'overdue' ? 'btn-selected' : '' }}',
+                title: '{{ trans('admin/maintenances/general.overdue') }}',
+            },
+        },
     });
     @endcan
 
@@ -1775,7 +1816,7 @@
         } else
             // The user is allowed to check the license seat out and it's available
         if ((row.available_actions.checkout === true) && (row.user_can_checkout === true) && (row.disabled === false)) {
-            return '<a href="{{ config('app.url') }}/licenses/' + row.id + '/checkout/" class="btn btn-sm bg-maroon btn-checkout" data-tooltip="true" title="{{ trans('general.checkout_tooltip') }}">{{ trans('general.checkout') }}</a>';
+            return '<a href="{{ config('app.url') }}/licenses/' + row.id + '/checkout" class="btn btn-sm bg-maroon btn-checkout" data-tooltip="true" title="{{ trans('general.checkout_tooltip') }}">{{ trans('general.checkout') }}</a>';
         }
     }
     // We need a special formatter for license seats, since they don't work exactly the same
@@ -1795,7 +1836,7 @@
 
         // The user is allowed to check the license seat in and it's available
         if ((row.available_actions.checkin === true) && ((row.assigned_asset) || (row.assigned_user))) {
-            return '<a href="{{ config('app.url') }}/licenses/' + row.id + '/checkin/" class="btn btn-sm bg-purple btn-checkin" data-tooltip="true" title="{{ trans('general.checkin_tooltip') }}">{{ trans('general.checkin') }}</a>';
+            return '<a href="{{ config('app.url') }}/licenses/' + row.id + '/checkin" class="btn btn-sm bg-purple btn-checkin" data-tooltip="true" title="{{ trans('general.checkin_tooltip') }}">{{ trans('general.checkin') }}</a>';
         }
 
     }

@@ -569,6 +569,7 @@ class UsersController extends Controller
                     requestedPermissions: NormalizePermissionsPayloadAction::run($request->input('permissions')),
                     authenticatedUser: $authenticatedUser,
                     originalPermissions: NormalizePermissionsPayloadAction::run($user->decodePermissions()),
+                    targetUser: $user,
                 ));
             }
 

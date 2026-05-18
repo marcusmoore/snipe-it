@@ -5,6 +5,7 @@ namespace Tests\Feature\Maintenances\Ui;
 use App\Models\Actionlog;
 use App\Models\Asset;
 use App\Models\Maintenance;
+use App\Models\MaintenanceType;
 use App\Models\Supplier;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
@@ -34,13 +35,14 @@ class CreateMaintenanceTest extends TestCase
         $actor = User::factory()->superuser()->create();
         $asset = Asset::factory()->create();
         $supplier = Supplier::factory()->create();
+        $type = MaintenanceType::factory()->create();
 
         $this->actingAs($actor)
             ->post(route('maintenances.store'), [
                 'name' => 'Test Maintenance',
                 'selected_assets' => [$asset->id],
                 'supplier_id' => $supplier->id,
-                'asset_maintenance_type' => 'Maintenance',
+                'maintenance_type_id' => $type->id,
                 'start_date' => '2021-01-01',
                 'completion_date' => '2021-01-10',
                 'is_warranty' => '1',
@@ -72,12 +74,12 @@ class CreateMaintenanceTest extends TestCase
         $this->assertDatabaseHas('maintenances', [
             'asset_id' => $asset->id,
             'supplier_id' => $supplier->id,
-            'asset_maintenance_type' => 'Maintenance',
+            'maintenance_type_id' => $type->id,
+            'asset_maintenance_type' => $type->name,
             'name' => 'Test Maintenance',
             'is_warranty' => 1,
             'start_date' => '2021-01-01',
             'completion_date' => '2021-01-10',
-            'asset_maintenance_time' => '9',
             'notes' => 'A note',
             'url' => 'https://snipeitapp.com',
             'cost' => '100.00',

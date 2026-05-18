@@ -164,7 +164,7 @@ class UsersController extends Controller
 
             }
 
-            if (auth()->user()->can('canEditAuthFields', $user) && auth()->user()->can('editableOnDemo')) {
+            if (auth()->user()->isSuperUser() && auth()->user()->can('editableOnDemo')) {
                 $user->groups()->sync($request->input('groups'));
             }
 
@@ -311,11 +311,14 @@ class UsersController extends Controller
                 $user->password = bcrypt($request->input('password'));
             }
 
-            $user->permissions = json_encode(PreserveUnauthorizedPrivilegedPermissionsAction::run(
-                requestedPermissions: NormalizePermissionsPayloadAction::run($request->input('permission')),
-                authenticatedUser: $authenticatedUser,
-                originalPermissions: $orig_permissions_array,
-            ));
+            if ($request->has('permission')) {
+                $user->permissions = json_encode(PreserveUnauthorizedPrivilegedPermissionsAction::run(
+                    requestedPermissions: NormalizePermissionsPayloadAction::run($request->input('permission')),
+                    authenticatedUser: $authenticatedUser,
+                    originalPermissions: $orig_permissions_array,
+                    targetUser: $user,
+                ));
+            }
 
             // Only save groups if the user is a superuser
             if (auth()->user()->isSuperUser()) {
@@ -543,8 +546,17 @@ class UsersController extends Controller
                 trans('admin/users/table.first_name'),
                 trans('admin/users/table.last_name'),
                 trans('admin/users/table.name'),
+                trans('admin/users/table.display_name'),
                 trans('admin/users/table.username'),
                 trans('admin/users/table.email'),
+                trans('admin/users/table.phone'),
+                trans('admin/users/table.mobile'),
+                trans('general.website'),
+                trans('general.address'),
+                trans('general.city'),
+                trans('general.state'),
+                trans('general.country'),
+                trans('general.zip'),
                 trans('admin/users/table.manager'),
                 trans('admin/users/table.location'),
                 trans('general.department'),
@@ -557,6 +569,22 @@ class UsersController extends Controller
                 trans('general.notes'),
                 trans('admin/users/table.activated'),
                 trans('general.created_at'),
+                trans('general.importer.vip'),
+                trans('admin/users/general.remote'),
+                trans('general.language'),
+                trans('general.autoassign_licenses'),
+                trans('general.ldap_sync'),
+                trans('admin/users/general.two_factor_enrolled'),
+                trans('admin/users/general.two_factor_active'),
+                trans('admin/users/table.managed_users'),
+                trans('admin/users/table.managed_locations'),
+                trans('admin/users/general.department_manager'),
+                trans('general.created_by'),
+                trans('general.updated_at'),
+                trans('general.start_date'),
+                trans('general.end_date'),
+                trans('admin/users/table.last_login'),
+                trans('admin/licenses/table.deleted_at'),
             ];
 
             fputcsv($handle, $headers);
@@ -565,13 +593,15 @@ class UsersController extends Controller
                 'assets',
                 'accessories',
                 'consumables',
-                'department',
+                'department.manager',
                 'licenses',
                 'manager',
                 'groups',
                 'userloc',
-                'company'
-            )->orderBy('created_at', 'DESC')
+                'company',
+                'createdBy'
+            )->withCount(['managesUsers as manages_users_count', 'managedLocations as manages_locations_count'])
+                ->orderBy('created_at', 'DESC')
                 ->chunk(500, function ($users) use ($handle) {
 
                     $formatter = new EscapeFormula('`');
@@ -595,9 +625,18 @@ class UsersController extends Controller
                             $user->employee_num,
                             $user->first_name,
                             $user->last_name,
-                            $user->display_name,
+                            $user->getFullNameAttribute(),
+                            $user->getRawOriginal('display_name'),
                             $user->username,
                             $user->email,
+                            $user->phone,
+                            $user->mobile,
+                            $user->website,
+                            $user->address,
+                            $user->city,
+                            $user->state,
+                            $user->country,
+                            $user->zip,
                             ($user->manager) ? $user->manager->display_name : '',
                             ($user->userloc) ? $user->userloc->name : '',
                             ($user->department) ? $user->department->name : '',
@@ -610,6 +649,22 @@ class UsersController extends Controller
                             $user->notes,
                             ($user->activated == '1') ? trans('general.yes') : trans('general.no'),
                             $user->created_at,
+                            ($user->vip == '1') ? trans('general.yes') : trans('general.no'),
+                            ($user->remote == '1') ? trans('general.yes') : trans('general.no'),
+                            $user->locale,
+                            ($user->autoassign_licenses == '1') ? trans('general.yes') : trans('general.no'),
+                            ($user->ldap_import == '1') ? trans('general.yes') : trans('general.no'),
+                            ($user->two_factor_active_and_enrolled()) ? trans('general.yes') : trans('general.no'),
+                            ($user->two_factor_active()) ? trans('general.yes') : trans('general.no'),
+                            $user->manages_users_count,
+                            $user->manages_locations_count,
+                            ($user->department && $user->department->manager) ? $user->department->manager->display_name : '',
+                            ($user->createdBy) ? $user->createdBy->display_name : '',
+                            $user->updated_at,
+                            $user->start_date,
+                            $user->end_date,
+                            $user->last_login,
+                            $user->deleted_at,
                         ];
 
                         // CSV_ESCAPE_FORMULAS is set to false in the .env

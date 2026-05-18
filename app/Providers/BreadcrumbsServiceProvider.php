@@ -356,9 +356,18 @@ class BreadcrumbsServiceProvider extends ServiceProvider
         /**
          * Maintenances Breadcrumbs
          */
-        Breadcrumbs::for('maintenances.index', fn (Trail $trail) => $trail->parent('hardware.index', route('hardware.index'))
-            ->push(trans('general.maintenances'), route('maintenances.index'))
-        );
+        Breadcrumbs::for('maintenances.index', function (Trail $trail) {
+            $trail->parent('hardware.index', route('hardware.index'))
+                ->push(trans('general.maintenances'), route('maintenances.index'));
+
+            if (request()->input('upcoming_status') === 'due') {
+                $trail->push(trans('admin/maintenances/general.due'));
+            } elseif (request()->input('upcoming_status') === 'overdue') {
+                $trail->push(trans('admin/maintenances/general.overdue'));
+            } elseif (request()->input('completed') === 'true') {
+                $trail->push(trans('admin/maintenances/general.completed'));
+            }
+        });
 
         Breadcrumbs::for('maintenances.create', fn (Trail $trail) => $trail->parent('maintenances.index', route('maintenances.index'))
             ->push(trans('general.create'), route('maintenances.create'))

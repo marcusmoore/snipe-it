@@ -4,11 +4,11 @@ namespace App\Http\Controllers\Api;
 
 use App\Events\CheckoutableCheckedOut;
 use App\Helpers\Helper;
-use App\Http\Controllers\CheckInOutRequest;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\AccessoryCheckoutRequest;
 use App\Http\Requests\ImageUploadRequest;
 use App\Http\Requests\StoreAccessoryRequest;
+use App\Http\Traits\CheckInOutTrait;
 use App\Http\Transformers\AccessoriesTransformer;
 use App\Http\Transformers\ActionlogsTransformer;
 use App\Http\Transformers\SelectlistTransformer;
@@ -25,7 +25,7 @@ use Illuminate\Support\Facades\DB;
 
 class AccessoriesController extends Controller
 {
-    use CheckInOutRequest;
+    use CheckInOutTrait;
 
     /**
      * Display a listing of the resource.

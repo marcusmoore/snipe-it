@@ -625,6 +625,18 @@ Route::group(['prefix' => 'v1', 'middleware' => ['api', 'api-throttle:api']], fu
         ]
     )->name('api.maintenances.history')->withTrashed();
 
+    Route::get('/maintenances/{maintenance}/notes',
+        [Api\MaintenancesController::class, 'notesIndex']
+    )->name('api.maintenances.notes.index');
+
+    Route::post('/maintenances/{maintenance}/notes',
+        [Api\MaintenancesController::class, 'notesStore']
+    )->name('api.maintenances.notes.store');
+
+    Route::post('/maintenances/{maintenance}/complete',
+        [Api\MaintenancesController::class, 'complete']
+    )->name('api.maintenances.complete');
+
     Route::resource('maintenances',
         Api\MaintenancesController::class,
         ['names' => [
@@ -638,6 +650,23 @@ Route::group(['prefix' => 'v1', 'middleware' => ['api', 'api-throttle:api']], fu
             'parameters' => ['maintenance' => 'maintenance_id'],
         ]
     ); // end assets API routes
+
+    /**
+     * Maintenance types API routes
+     */
+    Route::resource('maintenance-types',
+        Api\MaintenanceTypesController::class,
+        ['names' => [
+            'index' => 'api.maintenance-types.index',
+            'show' => 'api.maintenance-types.show',
+            'store' => 'api.maintenance-types.store',
+            'update' => 'api.maintenance-types.update',
+            'destroy' => 'api.maintenance-types.destroy',
+        ],
+            'except' => ['create', 'edit'],
+            'parameters' => ['maintenance-type' => 'maintenanceType'],
+        ]
+    );
 
     /**
      * Imports API routes

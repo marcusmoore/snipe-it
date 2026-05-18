@@ -1,13 +1,13 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Traits;
 
 use App\Models\Asset;
 use App\Models\Location;
 use App\Models\SnipeModel;
 use App\Models\User;
 
-trait CheckInOutRequest
+trait CheckInOutTrait
 {
     /**
      * Find target for checkout

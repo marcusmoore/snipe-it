@@ -116,10 +116,10 @@ class ActionlogsTransformer
                                         $clean_meta[$fieldname]['old'] = '************';
                                         $clean_meta[$fieldname]['new'] = '************';
 
-                                        // Display the changes if the user is an admin or superadmin
-                                        if (Gate::allows('admin')) {
-                                            $clean_meta[$fieldname]['old'] = ($enc_old) ? unserialize($enc_old, ['allowed_classes' => false]) : '';
-                                            $clean_meta[$fieldname]['new'] = ($enc_new) ? unserialize($enc_new, ['allowed_classes' => false]) : '';
+                                        // Display the changes if the user has permission to view encrypted custom fields
+                                        if (Gate::allows('assets.view.encrypted_custom_fields')) {
+                                            $clean_meta[$fieldname]['old'] = ($enc_old) ? e(unserialize($enc_old, ['allowed_classes' => false])) : '';
+                                            $clean_meta[$fieldname]['new'] = ($enc_new) ? e(unserialize($enc_new, ['allowed_classes' => false])) : '';
                                         }
 
                                     }

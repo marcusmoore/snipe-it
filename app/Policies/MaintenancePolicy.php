@@ -94,4 +94,9 @@ final class MaintenancePolicy
             || Gate::allows('view', $maintenance)
             || $user->hasAccess('activity.view');
     }
+
+    public function journal(User $user, Maintenance $maintenance): bool
+    {
+        return Gate::allows('view', $maintenance) || $user->hasAccess('activity.view');
+    }
 }

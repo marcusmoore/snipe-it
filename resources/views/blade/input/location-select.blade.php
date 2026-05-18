@@ -42,6 +42,7 @@
                 multiple
             @endif
         >
+            <option value=""></option>
             @if ($selected)
                 @foreach(Arr::wrap($selected) as $value)
                     <option value="{{ $value }}" selected="selected" role="option" aria-selected="true"  role="option">

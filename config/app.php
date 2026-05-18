@@ -12,7 +12,6 @@ use App\Providers\RouteServiceProvider;
 use App\Providers\SamlServiceProvider;
 use App\Providers\SettingsServiceProvider;
 use App\Providers\SnipeTranslationServiceProvider;
-use Elibyy\TCPDF\Facades\TCPDF;
 use Illuminate\Auth\AuthServiceProvider;
 use Illuminate\Auth\Passwords\PasswordResetServiceProvider;
 use Illuminate\Broadcasting\BroadcastServiceProvider;
@@ -400,8 +399,6 @@ return [
         DumbPasswordServiceProvider::class,
         Eduardokum\LaravelMailAutoEmbed\ServiceProvider::class,
         SocialiteServiceProvider::class,
-        Elibyy\TCPDF\ServiceProvider::class,
-
         /*
         * Application Service Providers...
         */
@@ -456,7 +453,6 @@ return [
         'Mail' => Mail::class,
         'Notification' => Notification::class,
         'Password' => Password::class,
-        'PDF' => TCPDF::class,
         'Queue' => Queue::class,
         'Redirect' => Redirect::class,
         'Redis' => Redis::class,

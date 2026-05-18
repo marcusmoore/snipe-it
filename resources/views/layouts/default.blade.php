@@ -2344,6 +2344,16 @@
                 email: "{{ trans('validation.generic.email') }}"
             });
 
+            $.validator.addMethod('pattern', function(value, element, param) {
+                if (this.optional(element)) {
+                    return true;
+                }
+                if (typeof param === 'string') {
+                    param = new RegExp('^(?:' + param + ')$');
+                }
+                return param.test(value);
+            }, '{{ trans('validation.generic.invalid_value_in_field') }}');
+
 
             function showHideEncValue(e) {
                 // Use element id to find the text element to hide / show

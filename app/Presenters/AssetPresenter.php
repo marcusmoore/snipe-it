@@ -461,6 +461,15 @@ class AssetPresenter extends Presenter
         }
     }
 
+    public function formattedNameLink()
+    {
+        if (auth()->user()->can('view', ['\App\Models\Asset', $this])) {
+            return '<a href="'.route('hardware.show', e($this->id)).'" class="'.(($this->deleted_at != '') ? 'deleted' : '').'">'.e($this->display_name).'</a>';
+        }
+
+        return '<span class="'.(($this->deleted_at != '') ? 'deleted' : '').'">'.e($this->display_name).'</span>';
+    }
+
     public function modelUrl()
     {
         if ($this->model->model) {
