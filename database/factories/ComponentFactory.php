@@ -127,4 +127,18 @@ class ComponentFactory extends Factory
             ]);
         });
     }
+
+    public function checkedOutToAssets(iterable $assets)
+    {
+        return $this->afterCreating(function (Component $component) use ($assets) {
+            foreach ($assets as $asset) {
+                $component->assets()->attach($component->id, [
+                    'component_id' => $component->id,
+                    'created_at' => Carbon::now(),
+                    'created_by' => 1,
+                    'asset_id' => $asset->id,
+                ]);
+            }
+        });
+    }
 }

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Components\Ui;
 
+use App\Models\Asset;
 use App\Models\Component;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
@@ -96,6 +97,51 @@ class ExportComponentsTest extends TestCase
                 'Unit Cost' => '999.99',
                 'Notes' => 'Rare...be careful',
             ]);
+    }
+
+    public function test_includes_checkouts_in_csv()
+    {
+        $assets = Asset::factory()
+            ->count(2)
+            ->sequence(
+                ['asset_tag' => 'LS-01', 'name' => "Obi Wan's lightsaber"],
+                ['asset_tag' => 'LS-02', 'name' => "Anakin's lightsaber"],
+            )
+            ->create();
+
+        $component = Component::factory()
+            ->checkedOutToAssets($assets)
+            ->create([
+                'name' => 'Kyber Crystal',
+                'serial' => 'SN-12345',
+                'model_number' => 'KC-001',
+                'order_number' => '12345',
+                'purchase_date' => '2026-05-13',
+                'min_amt' => 3,
+                'qty' => 6,
+                'purchase_cost' => '999.99',
+            ]);
+
+        $this->assertEquals(2, $component->assets->count());
+
+        $this->actingAs(User::factory()->viewComponents()->create())
+            ->get(route('components.export'))
+            ->assertOk()
+            ->assertCsvHeader()
+            // todo: move assertions
+            ->assertSeeTextInStreamedResponse('LS-01')
+            ->assertSeeTextInStreamedResponse('LS-02')
+            ->assertSeePairsInStreamedResponse([
+                'id' => (string) $component->id,
+                'Name' => 'Kyber Crystal',
+                'Serial' => 'SN-12345',
+                'Min. QTY' => '3',
+                'Total' => '6',
+                'Remaining' => '4',
+                // todo: move assertion here
+            ]);
+
+        // todo: assert line count: 1 header + 2 checkouts = 3?
     }
 
     public function test_adheres_to_full_multiple_company_support()
