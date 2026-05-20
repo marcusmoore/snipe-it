@@ -283,6 +283,12 @@ class ComponentsController extends Controller
                 trans('admin/components/general.remaining'),
                 trans('general.unit_cost'),
                 trans('general.total_cost'),
+                // todo: translate
+                'Assigned Asset Tag',
+                // todo: translate
+                'Assigned Asset Name',
+                // todo: translate
+                'Assigned QTY',
                 trans('general.notes'),
                 trans('general.created_at'),
                 trans('general.updated_at'),
@@ -290,42 +296,51 @@ class ComponentsController extends Controller
 
             fputcsv($handle, $headers);
 
-            Component::with([])->orderBy('created_at', 'DESC')
+            Component::with(['assets'])->orderBy('created_at', 'DESC')
                 ->chunk(500, function ($components) use ($handle) {
-
                     $formatter = new EscapeFormula('`');
 
                     foreach ($components as $component) {
-                        // Add a new row with data
-                        $values = [
-                            $component->id,
-                            $component?->company?->name,
-                            $component->name,
-                            $component->serial,
-                            $component?->category?->name,
-                            $component?->supplier?->name,
-                            $component->model_number,
-                            $component?->manufacturer?->name,
-                            $component?->location?->name,
-                            $component->order_number,
-                            $component->purchase_date ? Carbon::make($component->purchase_date)->format('Y-m-d') : '',
-                            $component->min_amt,
-                            $component->qty,
-                            (int) $component->numRemaining(),
-                            $component->purchase_cost,
-                            Helper::formatCurrencyOutput($component->totalCostSum()),
-                            $component->notes,
-                            $component->created_at,
-                            $component->updated_at,
-                        ];
+                        $rowsToWrite = max([1, $component->assets->count()]);
 
-                        // CSV_ESCAPE_FORMULAS is set to false in the .env
-                        if (config('app.escape_formulas') === false) {
-                            fputcsv($handle, $values);
+                        // todo:
+                        // write once if only one (no assets)...otherwise loop like below...
 
-                            // CSV_ESCAPE_FORMULAS is set to true or is not set in the .env
-                        } else {
-                            fputcsv($handle, $formatter->escapeRecord($values));
+                        foreach ($component->assets as $asset) {
+                            // Add a new row with data
+                            $values = [
+                                $component->id,
+                                $component?->company?->name,
+                                $component->name,
+                                $component->serial,
+                                $component?->category?->name,
+                                $component?->supplier?->name,
+                                $component->model_number,
+                                $component?->manufacturer?->name,
+                                $component?->location?->name,
+                                $component->order_number,
+                                $component->purchase_date ? Carbon::make($component->purchase_date)->format('Y-m-d') : '',
+                                $component->min_amt,
+                                $component->qty,
+                                (int) $component->numRemaining(),
+                                $component->purchase_cost,
+                                Helper::formatCurrencyOutput($component->totalCostSum()),
+                                $asset->asset_tag,
+                                $asset->name,
+                                $asset->pivot->assigned_qty,
+                                $component->notes,
+                                $component->created_at,
+                                $component->updated_at,
+                            ];
+
+                            // CSV_ESCAPE_FORMULAS is set to false in the .env
+                            if (config('app.escape_formulas') === false) {
+                                fputcsv($handle, $values);
+
+                                // CSV_ESCAPE_FORMULAS is set to true or is not set in the .env
+                            } else {
+                                fputcsv($handle, $formatter->escapeRecord($values));
+                            }
                         }
                     }
                 });
