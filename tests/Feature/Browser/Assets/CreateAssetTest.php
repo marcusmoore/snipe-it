@@ -34,5 +34,6 @@ test('can create asset', function () {
 
     $page->debug();
 
-    // $page->click('#submit_button')
+    // Fails with "BadMethodCallException: Method Laravel\Passport\Guards\TokenGuard::viaRemember does not exist"
+    // $page->click('#submit_button');
 });
