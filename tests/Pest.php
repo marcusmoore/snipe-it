@@ -50,3 +50,12 @@ function something()
 {
     // ..
 }
+
+function select2($page, $selector, $value, $display)
+{
+    // https://select2.org/programmatic-control/add-select-clear-items#preselecting-options-in-an-remotely-sourced-ajax-select2
+    $page->script("
+        var option = new Option('{$display}', {$value}, true, true); 
+        $('{$selector}').append(option).trigger('change');
+    ");
+}
