@@ -13,9 +13,15 @@ use Tests\TestCase;
 
 class SendReacceptanceRequestsTest extends TestCase
 {
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        Mail::fake();
+    }
+
     public function test_regenerates_acceptance_for_previously_accepted_item_still_assigned(): void
     {
-        Mail::fake();
         $user = User::factory()->create();
         $acceptedAcceptance = $this->acceptedAssetFor($user);
         $asset = $acceptedAcceptance->checkoutable;
@@ -90,7 +96,6 @@ class SendReacceptanceRequestsTest extends TestCase
 
     public function test_sends_one_email_per_user_when_sending(): void
     {
-        Mail::fake();
         $user = User::factory()->create();
         $this->acceptedAssetFor($user);
 
@@ -105,7 +110,6 @@ class SendReacceptanceRequestsTest extends TestCase
 
     public function test_no_send_does_not_email(): void
     {
-        Mail::fake();
         $this->acceptedAssetFor(User::factory()->create());
 
         $this->artisan('snipeit:send-reacceptance-requests', [
@@ -119,7 +123,6 @@ class SendReacceptanceRequestsTest extends TestCase
 
     public function test_users_without_email_are_skipped_from_send_but_still_regenerated(): void
     {
-        Mail::fake();
         $user = User::factory()->create(['email' => null]);
         $acceptance = $this->acceptedAssetFor($user);
 
@@ -215,7 +218,6 @@ class SendReacceptanceRequestsTest extends TestCase
 
     public function test_dry_run_writes_nothing_and_sends_nothing(): void
     {
-        Mail::fake();
         $user = User::factory()->create();
         $acceptance = $this->acceptedAssetFor($user);
 
@@ -255,7 +257,6 @@ class SendReacceptanceRequestsTest extends TestCase
 
     public function test_interactive_confirm_then_send_regenerates_and_emails(): void
     {
-        Mail::fake();
         $user = User::factory()->create();
         $this->acceptedAssetFor($user);
 
