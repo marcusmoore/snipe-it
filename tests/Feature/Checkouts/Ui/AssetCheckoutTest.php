@@ -430,6 +430,8 @@ class AssetCheckoutTest extends TestCase
             ->first();
 
         $this->assertNotNull($acceptance);
+        $this->assertNull($acceptance->qty);
+        $this->assertDatabaseCount('checkout_acceptances', 1);
 
         $response->assertStatus(302)
             ->assertRedirect(route('account.accept.item', $acceptance));
