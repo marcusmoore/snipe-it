@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Consumables;
 
+use App\Actions\Acceptances\CreateCheckoutAcceptanceAction;
 use App\Events\CheckoutableCheckedOut;
 use App\Helpers\Helper;
 use App\Http\Controllers\Controller;
@@ -149,11 +150,7 @@ class ConsumableCheckoutController extends Controller
 
             // If requireAcceptance() is false the listener won't have created one; create it now.
             if (! $acceptance) {
-                $acceptance = new CheckoutAcceptance;
-                $acceptance->checkoutable()->associate($consumable);
-                $acceptance->assignedTo()->associate($user);
-                $acceptance->qty = $quantity;
-                $acceptance->save();
+                $acceptance = CreateCheckoutAcceptanceAction::run($consumable, $user, $quantity);
             }
 
             session([

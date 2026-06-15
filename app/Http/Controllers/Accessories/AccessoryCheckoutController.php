@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Accessories;
 
+use App\Actions\Acceptances\CreateCheckoutAcceptanceAction;
 use App\Events\CheckoutableCheckedOut;
 use App\Helpers\Helper;
 use App\Http\Controllers\Controller;
@@ -134,11 +135,7 @@ class AccessoryCheckoutController extends Controller
 
             // If requireAcceptance() is false the listener won't have created one; create it now.
             if (! $acceptance) {
-                $acceptance = new CheckoutAcceptance;
-                $acceptance->checkoutable()->associate($accessory);
-                $acceptance->assignedTo()->associate($targetUser);
-                $acceptance->qty = $accessory->checkout_qty;
-                $acceptance->save();
+                $acceptance = CreateCheckoutAcceptanceAction::run($accessory, $targetUser, $accessory->checkout_qty);
             }
 
             session([

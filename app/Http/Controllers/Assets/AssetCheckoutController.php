@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Assets;
 
+use App\Actions\Acceptances\CreateCheckoutAcceptanceAction;
 use App\Exceptions\CheckoutNotAllowed;
 use App\Helpers\Helper;
 use App\Http\Controllers\Controller;
@@ -153,10 +154,7 @@ class AssetCheckoutController extends Controller
 
                     // If requireAcceptance() is false the listener won't have created one; create it now.
                     if (! $acceptance) {
-                        $acceptance = new CheckoutAcceptance;
-                        $acceptance->checkoutable()->associate($asset);
-                        $acceptance->assignedTo()->associate($target);
-                        $acceptance->save();
+                        $acceptance = CreateCheckoutAcceptanceAction::run($asset, $target);
                     }
 
                     session([

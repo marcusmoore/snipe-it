@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Licenses;
 
+use App\Actions\Acceptances\CreateCheckoutAcceptanceAction;
 use App\Events\CheckoutableCheckedOut;
 use App\Helpers\Helper;
 use App\Http\Controllers\Controller;
@@ -165,10 +166,7 @@ class LicenseCheckoutController extends Controller
 
                 // If requireAcceptance() is false the listener won't have created one; create it now.
                 if (! $acceptance) {
-                    $acceptance = new CheckoutAcceptance;
-                    $acceptance->checkoutable()->associate($licenseSeat);
-                    $acceptance->assignedTo()->associate($checkoutTarget);
-                    $acceptance->save();
+                    $acceptance = CreateCheckoutAcceptanceAction::run($licenseSeat, $checkoutTarget);
                 }
 
                 session([
