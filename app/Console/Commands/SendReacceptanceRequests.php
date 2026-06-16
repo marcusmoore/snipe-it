@@ -87,13 +87,13 @@ class SendReacceptanceRequests extends Command
             return self::SUCCESS;
         }
 
-        $send = $this->resolveSendDecision($candidates->count(), $byUser->count());
-
-        if ($send === null) {
+        if (! $this->validateSendOptions()) {
             return self::FAILURE;
         }
 
-        if ($send === 'abort') {
+        $send = $this->resolveSendDecision($candidates->count(), $byUser->count());
+
+        if ($send === null) {
             $this->info('Aborted. Nothing was written.');
 
             return self::SUCCESS;
@@ -101,10 +101,7 @@ class SendReacceptanceRequests extends Command
 
         $createdByUser = $this->regenerate($byUser);
 
-        $notified = 0;
-        if ($send === true) {
-            $notified = $this->sendEmails($createdByUser);
-        }
+        $notified = $send ? $this->sendEmails($createdByUser) : 0;
 
         $this->report($candidates->count(), $notified, $noEmailUsers);
 
@@ -331,48 +328,58 @@ class SendReacceptanceRequests extends Command
     }
 
     /**
-     * Decide whether to send emails. Returns true/false to proceed, 'abort' to
-     * stop without writing, or null on a non-interactive misconfiguration (after
-     * printing an error).
+     * Validate the non-interactive send options. Interactive runs prompt instead,
+     * so they always pass. Prints an error and returns false on a bad combo.
      */
-    private function resolveSendDecision(int $count, int $userCount): bool|string|null
+    private function validateSendOptions(): bool
     {
         if ($this->input->isInteractive()) {
-            if (! $this->confirm("Regenerate {$count} acceptances for {$userCount} users?")) {
-                return 'abort';
-            }
-
-            if ($this->confirm('Send the re-acceptance emails now?', true)) {
-                return true;
-            }
-
-            $this->warn('These users will NOT be notified now. You can send the generic reminder later with `snipeit:acceptance-reminder` (which uses the old reminder wording, not the re-accept wording).');
-
-            return $this->confirm('Continue and create the acceptances WITHOUT sending emails?', false) ? false : 'abort';
+            return true;
         }
 
         if (! $this->option('force')) {
             $this->error('Non-interactive run: pass --force to skip the regenerate confirmation.');
 
-            return null;
+            return false;
         }
 
-        $send = $this->option('send');
-        $noSend = $this->option('no-send');
-
-        if ($send && $noSend) {
+        if ($this->option('send') && $this->option('no-send')) {
             $this->error('--send and --no-send cannot be used together.');
 
-            return null;
+            return false;
         }
 
-        if (! $send && ! $noSend) {
+        if (! $this->option('send') && ! $this->option('no-send')) {
             $this->error('Non-interactive run: pass --send or --no-send to choose the email behavior.');
 
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Decide whether to send emails.
+     *
+     * @return bool|null true = send emails, false = create without sending, null = user aborted
+     */
+    private function resolveSendDecision(int $count, int $userCount): ?bool
+    {
+        if (! $this->input->isInteractive()) {
+            return (bool) $this->option('send');
+        }
+
+        if (! $this->confirm("Regenerate {$count} acceptances for {$userCount} users?")) {
             return null;
         }
 
-        return (bool) $send;
+        if ($this->confirm('Send the re-acceptance emails now?', true)) {
+            return true;
+        }
+
+        $this->warn('These users will NOT be notified now. You can send the generic reminder later with `snipeit:acceptance-reminder` (which uses the old reminder wording, not the re-accept wording).');
+
+        return $this->confirm('Continue and create the acceptances WITHOUT sending emails?', false) ? false : null;
     }
 
     private function printPreview(Collection $candidates, Collection $byUser, Collection $noEmailUsers): void
