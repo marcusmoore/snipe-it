@@ -82,7 +82,11 @@ class SendReacceptanceRequests extends Command
         $this->printPreview($candidates, $byUser, $noEmailUsers);
 
         if ($this->option('dry-run')) {
-            $this->line('Dry run: nothing was written or sent. Run again with -v for the full per-user breakdown.');
+            $this->line('Dry run: nothing was written or sent.');
+
+            if (! $this->output->isVerbose()) {
+                $this->line('Run again with -v for the full per-user breakdown.');
+            }
 
             return self::SUCCESS;
         }
