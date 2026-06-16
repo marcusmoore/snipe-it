@@ -390,7 +390,7 @@ class SendReacceptanceRequests extends Command
 
         if ($noEmailUsers->isNotEmpty()) {
             $this->warn("{$noEmailUsers->count()} of these users have no email address and will not be notified:");
-            $this->table(['ID', 'Name'], $noEmailUsers->map(fn (User $user) => [$user->id, $user->display_name])->all());
+            $this->renderUsersTable($noEmailUsers);
         }
 
         if ($this->output->isVerbose()) {
@@ -410,7 +410,17 @@ class SendReacceptanceRequests extends Command
 
         if ($noEmailUsers->isNotEmpty()) {
             $this->warn("Skipped {$noEmailUsers->count()} users with no email address:");
-            $this->table(['ID', 'Name'], $noEmailUsers->map(fn (User $user) => [$user->id, $user->display_name])->all());
+            $this->renderUsersTable($noEmailUsers);
         }
+    }
+
+    /**
+     * Render an ID/Name console table for a collection of users.
+     *
+     * @param  Collection<int, User>  $users
+     */
+    private function renderUsersTable(Collection $users): void
+    {
+        $this->table(['ID', 'Name'], $users->map(fn (User $user) => [$user->id, $user->display_name])->all());
     }
 }
