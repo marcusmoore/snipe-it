@@ -3,8 +3,14 @@
 namespace Tests\Feature\Console;
 
 use App\Mail\ReacceptanceRequestMail;
+use App\Models\Accessory;
+use App\Models\AccessoryCheckout;
 use App\Models\Asset;
+use App\Models\AssetModel;
+use App\Models\Category;
 use App\Models\CheckoutAcceptance;
+use App\Models\Company;
+use App\Models\Consumable;
 use App\Models\License;
 use App\Models\LicenseSeat;
 use App\Models\User;
@@ -300,6 +306,259 @@ class SendReacceptanceRequestsTest extends TestCase
         $this->assertEquals($afterFirstRun, CheckoutAcceptance::count(), 'second run should not create more acceptances');
     }
 
+    public function test_regenerates_acceptance_for_accessory_still_assigned(): void
+    {
+        $user = User::factory()->create();
+        $acceptance = $this->acceptedAccessoryFor($user);
+
+        $this->artisan('snipeit:send-reacceptance-requests', [
+            '--no-interaction' => true,
+            '--force' => true,
+            '--no-send' => true,
+        ])->assertExitCode(0);
+
+        $newAcceptance = CheckoutAcceptance::where('checkoutable_type', Accessory::class)
+            ->where('checkoutable_id', $acceptance->checkoutable_id)
+            ->where('assigned_to_id', $user->id)
+            ->pending()
+            ->first();
+        $this->assertNotNull($newAcceptance);
+
+        $acceptance->refresh();
+        $this->assertEquals($newAcceptance->id, $acceptance->superseded_by_id);
+        $this->assertNotNull($acceptance->superseded_at);
+    }
+
+    public function test_regenerates_acceptance_for_consumable_still_assigned(): void
+    {
+        $user = User::factory()->create();
+        $acceptance = $this->acceptedConsumableFor($user);
+
+        $this->artisan('snipeit:send-reacceptance-requests', [
+            '--no-interaction' => true,
+            '--force' => true,
+            '--no-send' => true,
+        ])->assertExitCode(0);
+
+        $newAcceptance = CheckoutAcceptance::where('checkoutable_type', Consumable::class)
+            ->where('checkoutable_id', $acceptance->checkoutable_id)
+            ->where('assigned_to_id', $user->id)
+            ->pending()
+            ->first();
+        $this->assertNotNull($newAcceptance);
+
+        $acceptance->refresh();
+        $this->assertEquals($newAcceptance->id, $acceptance->superseded_by_id);
+        $this->assertNotNull($acceptance->superseded_at);
+    }
+
+    public function test_category_filter_limits_to_items_in_the_given_category(): void
+    {
+        $user = User::factory()->create();
+
+        // An asset whose model belongs to the wanted category.
+        $category = Category::factory()->create();
+        $model = AssetModel::factory()->create(['category_id' => $category->id]);
+        $wantedAsset = Asset::factory()->create(['model_id' => $model->id]);
+        $wantedAcceptance = CheckoutAcceptance::factory()
+            ->accepted()
+            ->for($wantedAsset, 'checkoutable')
+            ->for($user, 'assignedTo')
+            ->create();
+
+        // Control: a different (random) category.
+        $otherAcceptance = $this->acceptedAssetFor($user);
+
+        $this->artisan('snipeit:send-reacceptance-requests', [
+            '--category' => [$category->id],
+            '--no-interaction' => true,
+            '--force' => true,
+            '--no-send' => true,
+        ])->assertExitCode(0);
+
+        $wantedAcceptance->refresh();
+        $otherAcceptance->refresh();
+        $this->assertNotNull($wantedAcceptance->superseded_by_id);
+        $this->assertNull($otherAcceptance->superseded_by_id, 'asset in another category should be excluded by --category');
+    }
+
+    public function test_company_filter_limits_to_items_in_the_given_company(): void
+    {
+        $user = User::factory()->create();
+        $company = Company::factory()->create();
+
+        $inCompanyAsset = Asset::factory()->create(['company_id' => $company->id]);
+        $inCompanyAcceptance = CheckoutAcceptance::factory()
+            ->accepted()
+            ->for($inCompanyAsset, 'checkoutable')
+            ->for($user, 'assignedTo')
+            ->create();
+
+        // Control: a different company.
+        $otherAcceptance = $this->acceptedAssetFor($user);
+
+        $this->artisan('snipeit:send-reacceptance-requests', [
+            '--company' => $company->id,
+            '--no-interaction' => true,
+            '--force' => true,
+            '--no-send' => true,
+        ])->assertExitCode(0);
+
+        $inCompanyAcceptance->refresh();
+        $otherAcceptance->refresh();
+        $this->assertNotNull($inCompanyAcceptance->superseded_by_id);
+        $this->assertNull($otherAcceptance->superseded_by_id, 'asset in another company should be excluded by --company');
+    }
+
+    public function test_user_filter_limits_to_the_given_user(): void
+    {
+        $targetUser = User::factory()->create();
+        $otherUser = User::factory()->create();
+        $targetAcceptance = $this->acceptedAssetFor($targetUser);
+        $otherAcceptance = $this->acceptedAssetFor($otherUser);
+
+        $this->artisan('snipeit:send-reacceptance-requests', [
+            '--user' => $targetUser->id,
+            '--no-interaction' => true,
+            '--force' => true,
+            '--no-send' => true,
+        ])->assertExitCode(0);
+
+        $targetAcceptance->refresh();
+        $otherAcceptance->refresh();
+        $this->assertNotNull($targetAcceptance->superseded_by_id);
+        $this->assertNull($otherAcceptance->superseded_by_id, 'other user should be excluded by --user');
+    }
+
+    public function test_sends_one_email_per_user(): void
+    {
+        $userA = User::factory()->create();
+        $userB = User::factory()->create();
+        $this->acceptedAssetFor($userA);
+        $this->acceptedAssetFor($userB);
+
+        $this->artisan('snipeit:send-reacceptance-requests', [
+            '--no-interaction' => true,
+            '--force' => true,
+            '--send' => true,
+        ])->assertExitCode(0);
+
+        Mail::assertSent(ReacceptanceRequestMail::class, 2);
+        Mail::assertSent(ReacceptanceRequestMail::class, fn ($mail) => $mail->hasTo($userA->email));
+        Mail::assertSent(ReacceptanceRequestMail::class, fn ($mail) => $mail->hasTo($userB->email));
+    }
+
+    public function test_groups_multiple_items_for_one_user_into_a_single_email(): void
+    {
+        $user = User::factory()->create();
+        $this->acceptedAssetFor($user);
+        $this->acceptedAssetFor($user);
+
+        $this->artisan('snipeit:send-reacceptance-requests', [
+            '--no-interaction' => true,
+            '--force' => true,
+            '--send' => true,
+        ])->assertExitCode(0);
+
+        // One email for the user, carrying both new acceptances.
+        Mail::assertSent(ReacceptanceRequestMail::class, 1);
+        Mail::assertSent(ReacceptanceRequestMail::class, fn ($mail) => $mail->acceptances->count() === 2);
+    }
+
+    public function test_send_and_no_send_together_errors(): void
+    {
+        $this->acceptedAssetFor(User::factory()->create());
+
+        $this->artisan('snipeit:send-reacceptance-requests', [
+            '--no-interaction' => true,
+            '--force' => true,
+            '--send' => true,
+            '--no-send' => true,
+        ])->assertExitCode(1);
+
+        $this->assertEquals(0, CheckoutAcceptance::pending()->count());
+    }
+
+    public function test_no_candidates_reports_nothing_to_do(): void
+    {
+        $this->artisan('snipeit:send-reacceptance-requests', [
+            '--no-interaction' => true,
+            '--force' => true,
+            '--no-send' => true,
+        ])
+            ->expectsOutput('No items need re-acceptance.')
+            ->assertExitCode(0);
+    }
+
+    public function test_interactive_confirm_regenerate_decline_send_then_create_without_email(): void
+    {
+        $user = User::factory()->create();
+        $acceptance = $this->acceptedAssetFor($user);
+
+        $this->artisan('snipeit:send-reacceptance-requests')
+            ->expectsConfirmation('Regenerate 1 acceptances for 1 users?', 'yes')
+            ->expectsConfirmation('Send the re-acceptance emails now?', 'no')
+            ->expectsConfirmation('Continue and create the acceptances WITHOUT sending emails?', 'yes')
+            ->assertExitCode(0);
+
+        Mail::assertNothingSent();
+        $this->assertDatabaseHas('checkout_acceptances', [
+            'checkoutable_id' => $acceptance->checkoutable_id,
+            'assigned_to_id' => $user->id,
+            'accepted_at' => null,
+            'superseded_by_id' => null,
+        ]);
+    }
+
+    public function test_interactive_decline_send_and_decline_continue_aborts(): void
+    {
+        $acceptance = $this->acceptedAssetFor(User::factory()->create());
+
+        $this->artisan('snipeit:send-reacceptance-requests')
+            ->expectsConfirmation('Regenerate 1 acceptances for 1 users?', 'yes')
+            ->expectsConfirmation('Send the re-acceptance emails now?', 'no')
+            ->expectsConfirmation('Continue and create the acceptances WITHOUT sending emails?', 'no')
+            ->assertExitCode(0);
+
+        $this->assertEquals(0, CheckoutAcceptance::pending()->count());
+        $acceptance->refresh();
+        $this->assertNull($acceptance->superseded_by_id);
+    }
+
+    public function test_supersedes_all_prior_accepted_acceptances_for_the_same_item(): void
+    {
+        $user = User::factory()->create();
+        $first = $this->acceptedAssetFor($user, ['accepted_at' => now()->subYear()]);
+        $asset = $first->checkoutable;
+
+        // A second accepted acceptance for the SAME asset/user.
+        $second = CheckoutAcceptance::factory()
+            ->accepted()
+            ->for($asset, 'checkoutable')
+            ->for($user, 'assignedTo')
+            ->create(['accepted_at' => now()->subMonth()]);
+
+        $this->artisan('snipeit:send-reacceptance-requests', [
+            '--no-interaction' => true,
+            '--force' => true,
+            '--no-send' => true,
+        ])->assertExitCode(0);
+
+        // Exactly one new pending acceptance for the item/user.
+        $newPending = CheckoutAcceptance::where('checkoutable_type', Asset::class)
+            ->where('checkoutable_id', $asset->id)
+            ->where('assigned_to_id', $user->id)
+            ->pending()
+            ->get();
+        $this->assertCount(1, $newPending);
+
+        // Both prior accepted rows are superseded by that single new acceptance.
+        $first->refresh();
+        $second->refresh();
+        $this->assertEquals($newPending->first()->id, $first->superseded_by_id);
+        $this->assertEquals($newPending->first()->id, $second->superseded_by_id);
+    }
+
     private function acceptedAssetFor(User $user, array $attributes = []): CheckoutAcceptance
     {
         // The factory's afterCreating assigns the asset to the user, so it is
@@ -307,6 +566,39 @@ class SendReacceptanceRequestsTest extends TestCase
         return CheckoutAcceptance::factory()
             ->accepted()
             ->for(Asset::factory(), 'checkoutable')
+            ->for($user, 'assignedTo')
+            ->create($attributes);
+    }
+
+    private function acceptedAccessoryFor(User $user, array $attributes = []): CheckoutAcceptance
+    {
+        // Accessories are not auto-assigned by the factory, so check one out to
+        // the user explicitly to make it "still assigned" for the resolver.
+        $accessory = Accessory::factory()->create();
+
+        AccessoryCheckout::factory()->create([
+            'accessory_id' => $accessory->id,
+            'assigned_to' => $user->id,
+            'assigned_type' => User::class,
+        ]);
+
+        return CheckoutAcceptance::factory()
+            ->accepted()
+            ->for($accessory, 'checkoutable')
+            ->for($user, 'assignedTo')
+            ->create($attributes);
+    }
+
+    private function acceptedConsumableFor(User $user, array $attributes = []): CheckoutAcceptance
+    {
+        // Consumables are not auto-assigned by the factory, so attach the user
+        // explicitly to make it "still assigned" for the resolver.
+        $consumable = Consumable::factory()->create();
+        $consumable->users()->attach($user->id, ['created_by' => $user->id]);
+
+        return CheckoutAcceptance::factory()
+            ->accepted()
+            ->for($consumable, 'checkoutable')
             ->for($user, 'assignedTo')
             ->create($attributes);
     }
