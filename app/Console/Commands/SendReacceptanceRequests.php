@@ -56,9 +56,9 @@ class SendReacceptanceRequests extends Command
      */
     public function handle(): int
     {
-        $morphClasses = $this->resolveTypeFilter();
+        $filters = $this->buildFiltersFromOptions();
 
-        if ($morphClasses === null) {
+        if ($filters === null) {
             return self::FAILURE;
         }
 
@@ -66,7 +66,7 @@ class SendReacceptanceRequests extends Command
             $this->warn('No --accepted-before given: users who already re-accepted may be prompted again once they accept. Pass --accepted-before to scope to a smaller window of time.');
         }
 
-        $candidates = $this->resolveCandidates($morphClasses);
+        $candidates = $this->resolveCandidates($filters);
 
         if ($candidates->isEmpty()) {
             $this->info('No items need re-acceptance.');
@@ -148,6 +148,30 @@ class SendReacceptanceRequests extends Command
     }
 
     /**
+     * Build the filters array from the CLI options. Returns null when the --type
+     * tokens are invalid (resolveTypeFilter() already printed the error), so the
+     * caller can return self::FAILURE.
+     *
+     * @return array{types: string[], categories: int[], company: ?int, user: ?int, acceptedBefore: ?Carbon}|null
+     */
+    private function buildFiltersFromOptions(): ?array
+    {
+        $morphClasses = $this->resolveTypeFilter();
+
+        if ($morphClasses === null) {
+            return null;
+        }
+
+        return [
+            'types' => $morphClasses,
+            'categories' => $this->option('category'),
+            'company' => $this->option('company'),
+            'user' => $this->option('user'),
+            'acceptedBefore' => $this->option('accepted-before') ? Carbon::parse($this->option('accepted-before')) : null,
+        ];
+    }
+
+    /**
      * Resolve the previously-accepted candidates still assigned to the same user.
      *
      * Returns a collection of ['user' => User, 'checkoutable' => Model, 'qty' => ?int,
@@ -155,17 +179,19 @@ class SendReacceptanceRequests extends Command
      *
      * Future: an "all still-assigned" mode (never-accepted items) would plug in
      * here behind a --mode switch
+     *
+     * @param  array{types: string[], categories: int[], company: ?int, user: ?int, acceptedBefore: ?Carbon}  $filters
      */
-    private function resolveCandidates(array $morphClasses): Collection
+    private function resolveCandidates(array $filters): Collection
     {
-        $categories = $this->option('category');
-        $company = $this->option('company');
-        $acceptedBefore = $this->option('accepted-before') ? Carbon::parse($this->option('accepted-before')) : null;
-        $userId = $this->option('user');
+        $categories = $filters['categories'];
+        $company = $filters['company'];
+        $acceptedBefore = $filters['acceptedBefore'];
+        $userId = $filters['user'];
 
         $query = CheckoutAcceptance::accepted()
             ->notSuperseded()
-            ->whereIn('checkoutable_type', $morphClasses)
+            ->whereIn('checkoutable_type', $filters['types'])
             ->with([
                 'assignedTo',
                 'checkoutable' => function (MorphTo $morph) {
@@ -189,7 +215,7 @@ class SendReacceptanceRequests extends Command
         if (! empty($categories) || $company) {
             $query->whereHasMorph(
                 'checkoutable',
-                $morphClasses,
+                $filters['types'],
                 fn ($itemQuery, string $type) => $this->applyItemFilters($itemQuery, $type, $categories, $company)
             );
         }
