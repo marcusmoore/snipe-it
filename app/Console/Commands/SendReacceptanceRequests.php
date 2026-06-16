@@ -63,7 +63,7 @@ class SendReacceptanceRequests extends Command
         }
 
         if (! $this->option('accepted-before')) {
-            $this->warn('No --accepted-before given: users who already re-accepted may be prompted again once they accept. Pass --accepted-before to scope to a policy window.');
+            $this->warn('No --accepted-before given: users who already re-accepted may be prompted again once they accept. Pass --accepted-before to scope to a smaller window of time.');
         }
 
         $candidates = $this->resolveCandidates($morphClasses);
@@ -83,6 +83,15 @@ class SendReacceptanceRequests extends Command
 
         if ($this->option('dry-run')) {
             $this->line('Dry run: nothing was written or sent. Run again with -v for the full per-user breakdown.');
+
+            return self::SUCCESS;
+        }
+
+        if ($this->input->isInteractive()
+            && ! $this->option('accepted-before')
+            && ! $this->confirm('No --accepted-before was given, so users who already re-accepted may be prompted again. Continue?', false)
+        ) {
+            $this->info('Aborted. Nothing was written.');
 
             return self::SUCCESS;
         }

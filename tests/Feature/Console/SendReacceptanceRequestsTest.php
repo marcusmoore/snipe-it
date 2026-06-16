@@ -267,6 +267,7 @@ class SendReacceptanceRequestsTest extends TestCase
         $this->acceptedAssetFor($user);
 
         $this->artisan('snipeit:send-reacceptance-requests')
+            ->expectsConfirmation('No --accepted-before was given, so users who already re-accepted may be prompted again. Continue?', 'yes')
             ->expectsConfirmation('Regenerate 1 acceptances for 1 users?', 'yes')
             ->expectsConfirmation('Send the re-acceptance emails now?', 'yes')
             ->assertExitCode(0);
@@ -279,12 +280,74 @@ class SendReacceptanceRequestsTest extends TestCase
         $acceptance = $this->acceptedAssetFor(User::factory()->create());
 
         $this->artisan('snipeit:send-reacceptance-requests')
+            ->expectsConfirmation('No --accepted-before was given, so users who already re-accepted may be prompted again. Continue?', 'yes')
             ->expectsConfirmation('Regenerate 1 acceptances for 1 users?', 'no')
             ->assertExitCode(0);
 
         $this->assertEquals(0, CheckoutAcceptance::pending()->count());
         $acceptance->refresh();
         $this->assertNull($acceptance->superseded_by_id);
+    }
+
+    public function test_interactive_decline_accepted_before_guard_writes_nothing(): void
+    {
+        $user = User::factory()->create();
+        $acceptance = $this->acceptedAssetFor($user);
+
+        $this->artisan('snipeit:send-reacceptance-requests')
+            ->expectsConfirmation('No --accepted-before was given, so users who already re-accepted may be prompted again. Continue?', 'no')
+            ->assertExitCode(0);
+
+        Mail::assertNothingSent();
+        $this->assertEquals(0, CheckoutAcceptance::pending()->count());
+        $acceptance->refresh();
+        $this->assertNull($acceptance->superseded_by_id);
+        $this->assertDatabaseMissing('action_logs', ['action_type' => 'reacceptance requested']);
+    }
+
+    public function test_interactive_confirm_accepted_before_guard_then_proceeds(): void
+    {
+        $user = User::factory()->create();
+        $acceptance = $this->acceptedAssetFor($user);
+
+        $this->artisan('snipeit:send-reacceptance-requests')
+            ->expectsConfirmation('No --accepted-before was given, so users who already re-accepted may be prompted again. Continue?', 'yes')
+            ->expectsConfirmation('Regenerate 1 acceptances for 1 users?', 'yes')
+            ->expectsConfirmation('Send the re-acceptance emails now?', 'yes')
+            ->assertExitCode(0);
+
+        $acceptance->refresh();
+        $this->assertNotNull($acceptance->superseded_by_id);
+    }
+
+    public function test_interactive_with_accepted_before_does_not_show_guard_prompt(): void
+    {
+        $user = User::factory()->create();
+        $this->acceptedAssetFor($user, ['accepted_at' => now()->subYear()]);
+
+        $this->artisan('snipeit:send-reacceptance-requests', [
+            '--accepted-before' => now()->subMonth()->format('Y-m-d'),
+        ])
+            ->expectsConfirmation('Regenerate 1 acceptances for 1 users?', 'yes')
+            ->expectsConfirmation('Send the re-acceptance emails now?', 'yes')
+            ->assertExitCode(0);
+
+        Mail::assertSent(ReacceptanceRequestMail::class, fn ($mail) => $mail->hasTo($user->email));
+    }
+
+    public function test_non_interactive_without_accepted_before_does_not_block(): void
+    {
+        $user = User::factory()->create();
+        $acceptance = $this->acceptedAssetFor($user);
+
+        $this->artisan('snipeit:send-reacceptance-requests', [
+            '--no-interaction' => true,
+            '--force' => true,
+            '--no-send' => true,
+        ])->assertExitCode(0);
+
+        $acceptance->refresh();
+        $this->assertNotNull($acceptance->superseded_by_id);
     }
 
     public function test_re_run_is_idempotent_while_the_new_acceptance_is_pending(): void
@@ -496,6 +559,7 @@ class SendReacceptanceRequestsTest extends TestCase
         $acceptance = $this->acceptedAssetFor($user);
 
         $this->artisan('snipeit:send-reacceptance-requests')
+            ->expectsConfirmation('No --accepted-before was given, so users who already re-accepted may be prompted again. Continue?', 'yes')
             ->expectsConfirmation('Regenerate 1 acceptances for 1 users?', 'yes')
             ->expectsConfirmation('Send the re-acceptance emails now?', 'no')
             ->expectsConfirmation('Continue and create the acceptances WITHOUT sending emails?', 'yes')
@@ -515,6 +579,7 @@ class SendReacceptanceRequestsTest extends TestCase
         $acceptance = $this->acceptedAssetFor(User::factory()->create());
 
         $this->artisan('snipeit:send-reacceptance-requests')
+            ->expectsConfirmation('No --accepted-before was given, so users who already re-accepted may be prompted again. Continue?', 'yes')
             ->expectsConfirmation('Regenerate 1 acceptances for 1 users?', 'yes')
             ->expectsConfirmation('Send the re-acceptance emails now?', 'no')
             ->expectsConfirmation('Continue and create the acceptances WITHOUT sending emails?', 'no')
