@@ -85,8 +85,8 @@ class SendReacceptanceRequests extends Command
             $filters = $this->collectFiltersInteractively($filters);
         }
 
-        if (! $this->option('accepted-before')) {
-            $this->warn('No --accepted-before given: users who already re-accepted may be prompted again once they accept. Pass --accepted-before to scope to a smaller window of time.');
+        if (! $filters['acceptedBefore']) {
+            $this->warn('No accepted-before cutoff in effect: users who already re-accepted may be prompted again once they accept. Set a cutoff to scope to a smaller window of time.');
         }
 
         $candidates = $this->resolveCandidates($filters);
@@ -105,20 +105,19 @@ class SendReacceptanceRequests extends Command
         $this->printPreview($candidates, $byUser, $noEmailUsers);
 
         if ($this->option('dry-run')) {
+            $dryRun = true;
+        } elseif ($this->input->isInteractive()) {
+            $dryRun = confirm(label: 'Is this a dry run?', default: true);
+        } else {
+            $dryRun = false;
+        }
+
+        if ($dryRun) {
             $this->line('Dry run: nothing was written or sent.');
 
             if (! $this->output->isVerbose()) {
                 $this->line('Run again with -v for the full per-user breakdown.');
             }
-
-            return self::SUCCESS;
-        }
-
-        if ($this->input->isInteractive()
-            && ! $this->option('accepted-before')
-            && ! $this->confirm('No --accepted-before was given, so users who already re-accepted may be prompted again. Continue?', false)
-        ) {
-            $this->info('Aborted. Nothing was written.');
 
             return self::SUCCESS;
         }
@@ -632,6 +631,15 @@ class SendReacceptanceRequests extends Command
 
         if (! $this->confirm("Regenerate {$count} acceptances for {$userCount} users?")) {
             return null;
+        }
+
+        // A passed --send/--no-send flag skips the send prompt and is honored.
+        if ($this->option('send')) {
+            return true;
+        }
+
+        if ($this->option('no-send')) {
+            return false;
         }
 
         if ($this->confirm('Send the re-acceptance emails now?', true)) {

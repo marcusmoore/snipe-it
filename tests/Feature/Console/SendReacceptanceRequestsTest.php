@@ -278,7 +278,7 @@ class SendReacceptanceRequestsTest extends TestCase
         $this->acceptedAssetFor($user);
 
         $this->answerFilterPrompts($this->artisan('snipeit:send-reacceptance-requests'))
-            ->expectsConfirmation('No --accepted-before was given, so users who already re-accepted may be prompted again. Continue?', 'yes')
+            ->expectsConfirmation('Is this a dry run?', 'no')
             ->expectsConfirmation('Regenerate 1 acceptances for 1 users?', 'yes')
             ->expectsConfirmation('Send the re-acceptance emails now?', 'yes')
             ->assertExitCode(0);
@@ -291,7 +291,7 @@ class SendReacceptanceRequestsTest extends TestCase
         $acceptance = $this->acceptedAssetFor(User::factory()->create());
 
         $this->answerFilterPrompts($this->artisan('snipeit:send-reacceptance-requests'))
-            ->expectsConfirmation('No --accepted-before was given, so users who already re-accepted may be prompted again. Continue?', 'yes')
+            ->expectsConfirmation('Is this a dry run?', 'no')
             ->expectsConfirmation('Regenerate 1 acceptances for 1 users?', 'no')
             ->assertExitCode(0);
 
@@ -300,13 +300,13 @@ class SendReacceptanceRequestsTest extends TestCase
         $this->assertNull($acceptance->superseded_by_id);
     }
 
-    public function test_interactive_decline_accepted_before_guard_writes_nothing(): void
+    public function test_interactive_dry_run_confirm_writes_nothing(): void
     {
         $user = User::factory()->create();
         $acceptance = $this->acceptedAssetFor($user);
 
         $this->answerFilterPrompts($this->artisan('snipeit:send-reacceptance-requests'))
-            ->expectsConfirmation('No --accepted-before was given, so users who already re-accepted may be prompted again. Continue?', 'no')
+            ->expectsConfirmation('Is this a dry run?', 'yes')
             ->assertExitCode(0);
 
         Mail::assertNothingSent();
@@ -316,34 +316,64 @@ class SendReacceptanceRequestsTest extends TestCase
         $this->assertDatabaseMissing('action_logs', ['action_type' => 'reacceptance requested']);
     }
 
-    public function test_interactive_confirm_accepted_before_guard_then_proceeds(): void
+    public function test_interactive_send_flag_skips_send_prompt_and_emails(): void
+    {
+        $user = User::factory()->create();
+        $this->acceptedAssetFor($user);
+
+        // --send passed in an interactive run: the "Send…now?" confirm is skipped
+        // and the flag value is honored (the regenerate confirm still shows).
+        $this->answerFilterPrompts($this->artisan('snipeit:send-reacceptance-requests', ['--send' => true]))
+            ->expectsConfirmation('Is this a dry run?', 'no')
+            ->expectsConfirmation('Regenerate 1 acceptances for 1 users?', 'yes')
+            ->assertExitCode(0);
+
+        Mail::assertSent(ReacceptanceRequestMail::class, fn ($mail) => $mail->hasTo($user->email));
+    }
+
+    public function test_interactive_no_send_flag_skips_send_prompt_and_regenerates_without_email(): void
     {
         $user = User::factory()->create();
         $acceptance = $this->acceptedAssetFor($user);
 
-        $this->answerFilterPrompts($this->artisan('snipeit:send-reacceptance-requests'))
-            ->expectsConfirmation('No --accepted-before was given, so users who already re-accepted may be prompted again. Continue?', 'yes')
+        $this->answerFilterPrompts($this->artisan('snipeit:send-reacceptance-requests', ['--no-send' => true]))
+            ->expectsConfirmation('Is this a dry run?', 'no')
             ->expectsConfirmation('Regenerate 1 acceptances for 1 users?', 'yes')
-            ->expectsConfirmation('Send the re-acceptance emails now?', 'yes')
             ->assertExitCode(0);
 
+        Mail::assertNothingSent();
         $acceptance->refresh();
         $this->assertNotNull($acceptance->superseded_by_id);
     }
 
-    public function test_interactive_with_accepted_before_does_not_show_guard_prompt(): void
+    public function test_interactive_dry_run_flag_skips_dry_run_confirm_and_writes_nothing(): void
+    {
+        $user = User::factory()->create();
+        $acceptance = $this->acceptedAssetFor($user);
+
+        // --dry-run passed: the "Is this a dry run?" confirm is skipped (forced true).
+        $this->answerFilterPrompts($this->artisan('snipeit:send-reacceptance-requests', ['--dry-run' => true]))
+            ->assertExitCode(0);
+
+        Mail::assertNothingSent();
+        $this->assertEquals(0, CheckoutAcceptance::pending()->count());
+        $acceptance->refresh();
+        $this->assertNull($acceptance->superseded_by_id);
+    }
+
+    public function test_interactive_accepted_before_flag_skips_its_gate_and_proceeds(): void
     {
         $user = User::factory()->create();
         $this->acceptedAssetFor($user, ['accepted_at' => now()->subYear()]);
 
-        // --accepted-before passed: its wizard gate is skipped and the legacy guard
-        // does not fire (option present).
+        // --accepted-before passed: its wizard gate is skipped (option present).
         $this->answerFilterPrompts(
             $this->artisan('snipeit:send-reacceptance-requests', [
                 '--accepted-before' => now()->subMonth()->format('Y-m-d'),
             ]),
             skipAcceptedBeforeGate: true,
         )
+            ->expectsConfirmation('Is this a dry run?', 'no')
             ->expectsConfirmation('Regenerate 1 acceptances for 1 users?', 'yes')
             ->expectsConfirmation('Send the re-acceptance emails now?', 'yes')
             ->assertExitCode(0);
@@ -575,7 +605,7 @@ class SendReacceptanceRequestsTest extends TestCase
         $acceptance = $this->acceptedAssetFor($user);
 
         $this->answerFilterPrompts($this->artisan('snipeit:send-reacceptance-requests'))
-            ->expectsConfirmation('No --accepted-before was given, so users who already re-accepted may be prompted again. Continue?', 'yes')
+            ->expectsConfirmation('Is this a dry run?', 'no')
             ->expectsConfirmation('Regenerate 1 acceptances for 1 users?', 'yes')
             ->expectsConfirmation('Send the re-acceptance emails now?', 'no')
             ->expectsConfirmation('Continue and create the acceptances WITHOUT sending emails?', 'yes')
@@ -595,7 +625,7 @@ class SendReacceptanceRequestsTest extends TestCase
         $acceptance = $this->acceptedAssetFor(User::factory()->create());
 
         $this->answerFilterPrompts($this->artisan('snipeit:send-reacceptance-requests'))
-            ->expectsConfirmation('No --accepted-before was given, so users who already re-accepted may be prompted again. Continue?', 'yes')
+            ->expectsConfirmation('Is this a dry run?', 'no')
             ->expectsConfirmation('Regenerate 1 acceptances for 1 users?', 'yes')
             ->expectsConfirmation('Send the re-acceptance emails now?', 'no')
             ->expectsConfirmation('Continue and create the acceptances WITHOUT sending emails?', 'no')
