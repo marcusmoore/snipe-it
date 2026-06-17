@@ -15,10 +15,21 @@ use App\Models\License;
 use App\Models\LicenseSeat;
 use App\Models\User;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Testing\PendingCommand;
 use Tests\TestCase;
 
 class SendReacceptanceRequestsTest extends TestCase
 {
+    private const TYPES_LABEL = 'Which item types would you like to regenerate acceptances for?';
+
+    private const CATEGORIES_LABEL = 'Limit to specific categories? (optional)';
+
+    private const COMPANY_GATE_LABEL = 'Filter to a specific company?';
+
+    private const USER_GATE_LABEL = 'Limit to a single user?';
+
+    private const ACCEPTED_BEFORE_GATE_LABEL = 'Only include items accepted before a cutoff date?';
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -266,7 +277,7 @@ class SendReacceptanceRequestsTest extends TestCase
         $user = User::factory()->create();
         $this->acceptedAssetFor($user);
 
-        $this->artisan('snipeit:send-reacceptance-requests')
+        $this->answerFilterPrompts($this->artisan('snipeit:send-reacceptance-requests'))
             ->expectsConfirmation('No --accepted-before was given, so users who already re-accepted may be prompted again. Continue?', 'yes')
             ->expectsConfirmation('Regenerate 1 acceptances for 1 users?', 'yes')
             ->expectsConfirmation('Send the re-acceptance emails now?', 'yes')
@@ -279,7 +290,7 @@ class SendReacceptanceRequestsTest extends TestCase
     {
         $acceptance = $this->acceptedAssetFor(User::factory()->create());
 
-        $this->artisan('snipeit:send-reacceptance-requests')
+        $this->answerFilterPrompts($this->artisan('snipeit:send-reacceptance-requests'))
             ->expectsConfirmation('No --accepted-before was given, so users who already re-accepted may be prompted again. Continue?', 'yes')
             ->expectsConfirmation('Regenerate 1 acceptances for 1 users?', 'no')
             ->assertExitCode(0);
@@ -294,7 +305,7 @@ class SendReacceptanceRequestsTest extends TestCase
         $user = User::factory()->create();
         $acceptance = $this->acceptedAssetFor($user);
 
-        $this->artisan('snipeit:send-reacceptance-requests')
+        $this->answerFilterPrompts($this->artisan('snipeit:send-reacceptance-requests'))
             ->expectsConfirmation('No --accepted-before was given, so users who already re-accepted may be prompted again. Continue?', 'no')
             ->assertExitCode(0);
 
@@ -310,7 +321,7 @@ class SendReacceptanceRequestsTest extends TestCase
         $user = User::factory()->create();
         $acceptance = $this->acceptedAssetFor($user);
 
-        $this->artisan('snipeit:send-reacceptance-requests')
+        $this->answerFilterPrompts($this->artisan('snipeit:send-reacceptance-requests'))
             ->expectsConfirmation('No --accepted-before was given, so users who already re-accepted may be prompted again. Continue?', 'yes')
             ->expectsConfirmation('Regenerate 1 acceptances for 1 users?', 'yes')
             ->expectsConfirmation('Send the re-acceptance emails now?', 'yes')
@@ -325,9 +336,14 @@ class SendReacceptanceRequestsTest extends TestCase
         $user = User::factory()->create();
         $this->acceptedAssetFor($user, ['accepted_at' => now()->subYear()]);
 
-        $this->artisan('snipeit:send-reacceptance-requests', [
-            '--accepted-before' => now()->subMonth()->format('Y-m-d'),
-        ])
+        // --accepted-before passed: its wizard gate is skipped and the legacy guard
+        // does not fire (option present).
+        $this->answerFilterPrompts(
+            $this->artisan('snipeit:send-reacceptance-requests', [
+                '--accepted-before' => now()->subMonth()->format('Y-m-d'),
+            ]),
+            skipAcceptedBeforeGate: true,
+        )
             ->expectsConfirmation('Regenerate 1 acceptances for 1 users?', 'yes')
             ->expectsConfirmation('Send the re-acceptance emails now?', 'yes')
             ->assertExitCode(0);
@@ -558,7 +574,7 @@ class SendReacceptanceRequestsTest extends TestCase
         $user = User::factory()->create();
         $acceptance = $this->acceptedAssetFor($user);
 
-        $this->artisan('snipeit:send-reacceptance-requests')
+        $this->answerFilterPrompts($this->artisan('snipeit:send-reacceptance-requests'))
             ->expectsConfirmation('No --accepted-before was given, so users who already re-accepted may be prompted again. Continue?', 'yes')
             ->expectsConfirmation('Regenerate 1 acceptances for 1 users?', 'yes')
             ->expectsConfirmation('Send the re-acceptance emails now?', 'no')
@@ -578,7 +594,7 @@ class SendReacceptanceRequestsTest extends TestCase
     {
         $acceptance = $this->acceptedAssetFor(User::factory()->create());
 
-        $this->artisan('snipeit:send-reacceptance-requests')
+        $this->answerFilterPrompts($this->artisan('snipeit:send-reacceptance-requests'))
             ->expectsConfirmation('No --accepted-before was given, so users who already re-accepted may be prompted again. Continue?', 'yes')
             ->expectsConfirmation('Regenerate 1 acceptances for 1 users?', 'yes')
             ->expectsConfirmation('Send the re-acceptance emails now?', 'no')
@@ -666,5 +682,79 @@ class SendReacceptanceRequestsTest extends TestCase
             ->for($consumable, 'checkoutable')
             ->for($user, 'assignedTo')
             ->create($attributes);
+    }
+
+    /**
+     * Answer the five interactive filter prompts (in order) with "no filter":
+     * all four types, no categories, and the company/user/accepted-before gates
+     * declined. Returns the PendingCommand so callers can append the remaining
+     * execution confirms.
+     *
+     * @param  string[]  $typeTokens  selected type tokens; empty selection => all four
+     * @param  int[]  $categoryIds  selected category ids
+     */
+    private function answerFilterPrompts(
+        PendingCommand $command,
+        array $typeTokens = [],
+        array $categoryIds = [],
+        ?Company $company = null,
+        ?User $user = null,
+        ?string $acceptedBefore = null,
+        bool $skipTypes = false,
+        bool $skipCategories = false,
+        bool $skipCompanyGate = false,
+        bool $skipUserGate = false,
+        bool $skipAcceptedBeforeGate = false,
+    ): PendingCommand {
+        // 1. types multiselect (empty selection => all four). Skipped when --type passed.
+        if (! $skipTypes) {
+            $command->expectsQuestion(self::TYPES_LABEL, $typeTokens);
+        }
+
+        // 2. categories multisearch — ask() for the search term, then the selection.
+        //    Skipped when --category passed.
+        if (! $skipCategories) {
+            $command->expectsQuestion(self::CATEGORIES_LABEL, '');
+            $command->expectsQuestion(self::CATEGORIES_LABEL, $categoryIds);
+        }
+
+        // 3. company gate confirm -> search only when answered yes. The search term
+        //    must match what the command's option closure queries on (company name).
+        //    Skipped entirely when --company passed.
+        if (! $skipCompanyGate) {
+            $command->expectsConfirmation(self::COMPANY_GATE_LABEL, $company === null ? 'no' : 'yes');
+        }
+        if (! $skipCompanyGate && $company !== null) {
+            $command->expectsSearch(
+                'Search for a company by name.',
+                $company->id,
+                $company->name,
+                [$company->id => "{$company->name} (ID: {$company->id})"],
+            );
+        }
+
+        // 4. user gate confirm -> search only when answered yes. Skipped when --user passed.
+        if (! $skipUserGate) {
+            $command->expectsConfirmation(self::USER_GATE_LABEL, $user === null ? 'no' : 'yes');
+        }
+        if (! $skipUserGate && $user !== null) {
+            $command->expectsSearch(
+                'Search for a user by username, first or last name.',
+                $user->id,
+                $user->username,
+                [$user->id => "{$user->first_name} {$user->last_name} ({$user->username})"],
+            );
+        }
+
+        // 5. accepted-before gate confirm -> validated text only when answered yes.
+        //    Skipped when --accepted-before passed.
+        if (! $skipAcceptedBeforeGate) {
+            $command->expectsConfirmation(self::ACCEPTED_BEFORE_GATE_LABEL, $acceptedBefore === null ? 'no' : 'yes');
+        }
+        if (! $skipAcceptedBeforeGate && $acceptedBefore !== null) {
+            $command->expectsQuestion('Accepted-before cutoff date (Y-m-d):', $acceptedBefore);
+        }
+
+        return $command;
     }
 }

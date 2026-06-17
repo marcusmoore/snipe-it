@@ -8,7 +8,9 @@ use App\Mail\ReacceptanceRequestMail;
 use App\Models\Accessory;
 use App\Models\Actionlog;
 use App\Models\Asset;
+use App\Models\Category;
 use App\Models\CheckoutAcceptance;
+use App\Models\Company;
 use App\Models\Consumable;
 use App\Models\LicenseSeat;
 use App\Models\User;
@@ -19,6 +21,12 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 
+use function Laravel\Prompts\confirm;
+use function Laravel\Prompts\multisearch;
+use function Laravel\Prompts\multiselect;
+use function Laravel\Prompts\search;
+use function Laravel\Prompts\text;
+
 class SendReacceptanceRequests extends Command
 {
     private const TYPE_MAP = [
@@ -26,6 +34,17 @@ class SendReacceptanceRequests extends Command
         'license' => LicenseSeat::class,
         'accessory' => Accessory::class,
         'consumable' => Consumable::class,
+    ];
+
+    /**
+     * Map each covered morph class to the category_type used to scope its
+     * categories. Re-acceptance never covers components.
+     */
+    private const MORPH_CATEGORY_TYPE = [
+        Asset::class => 'asset',
+        LicenseSeat::class => 'license',
+        Accessory::class => 'accessory',
+        Consumable::class => 'consumable',
     ];
 
     /**
@@ -60,6 +79,10 @@ class SendReacceptanceRequests extends Command
 
         if ($filters === null) {
             return self::FAILURE;
+        }
+
+        if ($this->input->isInteractive()) {
+            $filters = $this->collectFiltersInteractively($filters);
         }
 
         if (! $this->option('accepted-before')) {
@@ -169,6 +192,205 @@ class SendReacceptanceRequests extends Command
             'user' => $this->option('user'),
             'acceptedBefore' => $this->option('accepted-before') ? Carbon::parse($this->option('accepted-before')) : null,
         ];
+    }
+
+    /**
+     * Walk the user through the filters interactively, prompting only for those
+     * NOT already supplied as a flag. A passed flag skips its prompt and keeps
+     * the value already resolved in $fromOptions. Returns the same filters-array
+     * shape as buildFiltersFromOptions().
+     *
+     * @param  array{types: string[], categories: int[], company: ?int, user: ?int, acceptedBefore: ?Carbon}  $fromOptions
+     * @return array{types: string[], categories: int[], company: ?int, user: ?int, acceptedBefore: ?Carbon}
+     */
+    private function collectFiltersInteractively(array $fromOptions): array
+    {
+        $types = empty($this->option('type'))
+            ? $this->promptForTypes()
+            : $fromOptions['types'];
+
+        $categories = empty($this->option('category'))
+            ? $this->promptForCategories($types)
+            : $fromOptions['categories'];
+
+        $company = $this->option('company')
+            ? $fromOptions['company']
+            : $this->promptForCompany();
+
+        $user = $this->option('user')
+            ? $fromOptions['user']
+            : $this->promptForUser();
+
+        $acceptedBefore = $this->option('accepted-before')
+            ? $fromOptions['acceptedBefore']
+            : $this->promptForAcceptedBefore();
+
+        return [
+            'types' => $types,
+            'categories' => $categories,
+            'company' => $company,
+            'user' => $user,
+            'acceptedBefore' => $acceptedBefore,
+        ];
+    }
+
+    /**
+     * Prompt for the covered checkoutable type(s). An empty selection is treated
+     * as all four covered types.
+     *
+     * @return string[] the selected morph classes
+     */
+    private function promptForTypes(): array
+    {
+        $selected = multiselect(
+            label: 'Which item types would you like to regenerate acceptances for?',
+            options: [
+                'asset' => 'Assets',
+                'license' => 'Licenses',
+                'accessory' => 'Accessories',
+                'consumable' => 'Consumables',
+            ],
+            hint: 'Select none to include all four types.',
+        );
+
+        if (empty($selected)) {
+            return array_values(self::TYPE_MAP);
+        }
+
+        return array_map(fn (string $token) => self::TYPE_MAP[$token], $selected);
+    }
+
+    /**
+     * Prompt for categories, scoped to the category_type(s) of the selected
+     * morph classes. Optional — selecting none applies no category filter.
+     *
+     * @param  string[]  $types  the selected morph classes
+     * @return int[] the selected category ids
+     */
+    private function promptForCategories(array $types): array
+    {
+        $categoryTypes = array_values(array_unique(array_map(
+            fn (string $morphClass) => self::MORPH_CATEGORY_TYPE[$morphClass],
+            $types,
+        )));
+
+        $selected = multisearch(
+            label: 'Limit to specific categories? (optional)',
+            options: function (string $value) use ($categoryTypes): array {
+                $query = Category::whereIn('category_type', $categoryTypes)
+                    ->orderBy('name');
+
+                if ($value !== '') {
+                    $query->where('name', 'like', "%{$value}%");
+                }
+
+                return $query->get()
+                    ->mapWithKeys(fn (Category $category) => [
+                        $category->id => "{$category->name} ({$category->category_type})",
+                    ])
+                    ->toArray();
+            },
+            placeholder: 'Type to search categories...',
+            scroll: 10,
+            hint: 'Leave empty to include every category for the selected types.',
+        );
+
+        return array_map('intval', $selected);
+    }
+
+    /**
+     * Optionally narrow to a single company via a gate confirm + search.
+     */
+    private function promptForCompany(): ?int
+    {
+        if (! confirm(label: 'Filter to a specific company?', default: false)) {
+            return null;
+        }
+
+        $companyId = search(
+            label: 'Search for a company by name.',
+            options: function (string $value): array {
+                if ($value === '') {
+                    return [];
+                }
+
+                return Company::where('name', 'like', "%{$value}%")
+                    ->orderBy('name')
+                    ->get()
+                    ->mapWithKeys(fn (Company $company) => [$company->id => "{$company->name} (ID: {$company->id})"])
+                    ->toArray();
+            },
+            placeholder: 'Type to search companies...',
+        );
+
+        return $companyId ? (int) $companyId : null;
+    }
+
+    /**
+     * Optionally narrow to a single user via a gate confirm + search.
+     */
+    private function promptForUser(): ?int
+    {
+        if (! confirm(label: 'Limit to a single user?', default: false)) {
+            return null;
+        }
+
+        $userId = search(
+            label: 'Search for a user by username, first or last name.',
+            options: function (string $value): array {
+                if ($value === '') {
+                    return [];
+                }
+
+                return User::where(function ($query) use ($value) {
+                    $query->where('username', 'like', "%{$value}%")
+                        ->orWhere('first_name', 'like', "%{$value}%")
+                        ->orWhere('last_name', 'like', "%{$value}%")
+                        ->orWhereRaw("CONCAT(first_name, ' ', last_name) LIKE ?", ["%{$value}%"]);
+                })
+                    ->get()
+                    ->mapWithKeys(fn (User $user) => [$user->id => "{$user->first_name} {$user->last_name} ({$user->username})"])
+                    ->toArray();
+            },
+            placeholder: 'Type to search users...',
+        );
+
+        return $userId ? (int) $userId : null;
+    }
+
+    /**
+     * Optionally set an accepted-before cutoff via a gate confirm + validated
+     * date text (parseable Y-m-d, not in the future).
+     */
+    private function promptForAcceptedBefore(): ?Carbon
+    {
+        if (! confirm(label: 'Only include items accepted before a cutoff date?', default: false)) {
+            return null;
+        }
+
+        $value = text(
+            label: 'Accepted-before cutoff date (Y-m-d):',
+            placeholder: 'e.g. '.now()->format('Y-m-d'),
+            validate: function (string $value): ?string {
+                try {
+                    $date = Carbon::createFromFormat('Y-m-d', $value);
+                } catch (\Exception $e) {
+                    return 'Enter a valid date in Y-m-d format.';
+                }
+
+                if ($date === false || $date->format('Y-m-d') !== $value) {
+                    return 'Enter a valid date in Y-m-d format.';
+                }
+
+                if ($date->isFuture()) {
+                    return 'The cutoff date cannot be in the future.';
+                }
+
+                return null;
+            },
+        );
+
+        return Carbon::createFromFormat('Y-m-d', $value)->startOfDay();
     }
 
     /**
