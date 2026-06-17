@@ -104,6 +104,10 @@ class SendReacceptanceRequests extends Command
 
         $this->printPreview($candidates, $byUser, $noEmailUsers);
 
+        if ($this->wantsItemBreakdown()) {
+            $this->printItemBreakdown($byUser);
+        }
+
         if ($this->option('dry-run')) {
             $dryRun = true;
         } elseif ($this->input->isInteractive()) {
@@ -115,7 +119,7 @@ class SendReacceptanceRequests extends Command
         if ($dryRun) {
             $this->line('Dry run: nothing was written or sent.');
 
-            if (! $this->output->isVerbose()) {
+            if (! $this->output->isVerbose() && ! $this->input->isInteractive()) {
                 $this->line('Run again with -v for the full per-user breakdown.');
             }
 
@@ -241,6 +245,8 @@ class SendReacceptanceRequests extends Command
      */
     private function promptForTypes(): array
     {
+        $tokens = array_keys(self::TYPE_MAP);
+
         $selected = multiselect(
             label: 'Which item types would you like to regenerate acceptances for?',
             options: [
@@ -249,7 +255,8 @@ class SendReacceptanceRequests extends Command
                 'accessory' => 'Accessories',
                 'consumable' => 'Consumables',
             ],
-            hint: 'Select none to include all four types.',
+            default: $tokens,
+            hint: 'All types are selected by default. Deselect any you want to skip.',
         );
 
         if (empty($selected)) {
@@ -260,21 +267,26 @@ class SendReacceptanceRequests extends Command
     }
 
     /**
-     * Prompt for categories, scoped to the category_type(s) of the selected
-     * morph classes. Optional — selecting none applies no category filter.
+     * Optionally narrow to specific categories via a gate confirm + multisearch,
+     * scoped to the category_type(s) of the selected morph classes. Declining the
+     * gate applies no category filter.
      *
      * @param  string[]  $types  the selected morph classes
      * @return int[] the selected category ids
      */
     private function promptForCategories(array $types): array
     {
+        if (! confirm(label: 'Limit to specific categories?', default: false)) {
+            return [];
+        }
+
         $categoryTypes = array_values(array_unique(array_map(
             fn (string $morphClass) => self::MORPH_CATEGORY_TYPE[$morphClass],
             $types,
         )));
 
         $selected = multisearch(
-            label: 'Limit to specific categories? (optional)',
+            label: 'Search for categories to include.',
             options: function (string $value) use ($categoryTypes): array {
                 $query = Category::whereIn('category_type', $categoryTypes)
                     ->orderBy('name');
@@ -291,7 +303,6 @@ class SendReacceptanceRequests extends Command
             },
             placeholder: 'Type to search categories...',
             scroll: 10,
-            hint: 'Leave empty to include every category for the selected types.',
         );
 
         return array_map('intval', $selected);
@@ -661,14 +672,32 @@ class SendReacceptanceRequests extends Command
             $this->warn("{$noEmailUsers->count()} of these users have no email address and will not be notified:");
             $this->renderUsersTable($noEmailUsers);
         }
+    }
 
-        if ($this->output->isVerbose()) {
-            foreach ($byUser as $candidatesForUser) {
-                $user = $candidatesForUser->first()['user'];
-                $this->line("- {$user->display_name} (#{$user->id}):");
-                foreach ($candidatesForUser as $candidate) {
-                    $this->line('    '.class_basename($candidate['checkoutable']).' #'.$candidate['checkoutable']->id);
-                }
+    /**
+     * Decide whether to print the per-user/item breakdown. Interactive runs are
+     * always offered the breakdown (defaulting to the -v flag); non-interactive
+     * runs print it only when -v was passed.
+     */
+    private function wantsItemBreakdown(): bool
+    {
+        if ($this->input->isInteractive()) {
+            return confirm(label: 'Show a breakdown of the affected users and items?', default: $this->output->isVerbose());
+        }
+
+        return $this->output->isVerbose();
+    }
+
+    /**
+     * Print one line per user with each of their affected items.
+     */
+    private function printItemBreakdown(Collection $byUser): void
+    {
+        foreach ($byUser as $candidatesForUser) {
+            $user = $candidatesForUser->first()['user'];
+            $this->line("- {$user->display_name} (#{$user->id}):");
+            foreach ($candidatesForUser as $candidate) {
+                $this->line('    '.class_basename($candidate['checkoutable']).' #'.$candidate['checkoutable']->id);
             }
         }
     }

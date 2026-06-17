@@ -22,13 +22,17 @@ class SendReacceptanceRequestsTest extends TestCase
 {
     private const TYPES_LABEL = 'Which item types would you like to regenerate acceptances for?';
 
-    private const CATEGORIES_LABEL = 'Limit to specific categories? (optional)';
+    private const CATEGORIES_GATE_LABEL = 'Limit to specific categories?';
+
+    private const CATEGORIES_SEARCH_LABEL = 'Search for categories to include.';
 
     private const COMPANY_GATE_LABEL = 'Filter to a specific company?';
 
     private const USER_GATE_LABEL = 'Limit to a single user?';
 
     private const ACCEPTED_BEFORE_GATE_LABEL = 'Only include items accepted before a cutoff date?';
+
+    private const BREAKDOWN_LABEL = 'Show a breakdown of the affected users and items?';
 
     protected function setUp(): void
     {
@@ -284,6 +288,17 @@ class SendReacceptanceRequestsTest extends TestCase
             ->assertExitCode(0);
 
         Mail::assertSent(ReacceptanceRequestMail::class, fn ($mail) => $mail->hasTo($user->email));
+    }
+
+    public function test_interactive_breakdown_confirm_renders_the_item_list(): void
+    {
+        $user = User::factory()->create();
+        $asset = $this->acceptedAssetFor($user)->checkoutable;
+
+        $this->answerFilterPrompts($this->artisan('snipeit:send-reacceptance-requests'), showBreakdown: true)
+            ->expectsOutputToContain('Asset #'.$asset->id)
+            ->expectsConfirmation('Is this a dry run?', 'yes')
+            ->assertExitCode(0);
     }
 
     public function test_interactive_decline_to_regenerate_writes_nothing(): void
@@ -715,13 +730,14 @@ class SendReacceptanceRequestsTest extends TestCase
     }
 
     /**
-     * Answer the five interactive filter prompts (in order) with "no filter":
-     * all four types, no categories, and the company/user/accepted-before gates
-     * declined. Returns the PendingCommand so callers can append the remaining
-     * execution confirms.
+     * Answer the interactive filter prompts (in order) with "no filter": all four
+     * types, and the categories/company/user/accepted-before gates declined. Then
+     * answers the post-preview "show breakdown?" offer. Returns the PendingCommand
+     * so callers can append the remaining execution confirms (dry-run, regenerate,
+     * send).
      *
      * @param  string[]  $typeTokens  selected type tokens; empty selection => all four
-     * @param  int[]  $categoryIds  selected category ids
+     * @param  int[]  $categoryIds  selected category ids; empty => decline the gate
      */
     private function answerFilterPrompts(
         PendingCommand $command,
@@ -731,21 +747,26 @@ class SendReacceptanceRequestsTest extends TestCase
         ?User $user = null,
         ?string $acceptedBefore = null,
         bool $skipTypes = false,
-        bool $skipCategories = false,
+        bool $skipCategoriesGate = false,
         bool $skipCompanyGate = false,
         bool $skipUserGate = false,
         bool $skipAcceptedBeforeGate = false,
+        bool $showBreakdown = false,
     ): PendingCommand {
         // 1. types multiselect (empty selection => all four). Skipped when --type passed.
         if (! $skipTypes) {
             $command->expectsQuestion(self::TYPES_LABEL, $typeTokens);
         }
 
-        // 2. categories multisearch — ask() for the search term, then the selection.
-        //    Skipped when --category passed.
-        if (! $skipCategories) {
-            $command->expectsQuestion(self::CATEGORIES_LABEL, '');
-            $command->expectsQuestion(self::CATEGORIES_LABEL, $categoryIds);
+        // 2. categories gate confirm -> multisearch only when answered yes. The
+        //    multisearch falls back as a search term ask() then the selection.
+        //    Skipped entirely when --category passed.
+        if (! $skipCategoriesGate) {
+            $command->expectsConfirmation(self::CATEGORIES_GATE_LABEL, $categoryIds === [] ? 'no' : 'yes');
+        }
+        if (! $skipCategoriesGate && $categoryIds !== []) {
+            $command->expectsQuestion(self::CATEGORIES_SEARCH_LABEL, '');
+            $command->expectsQuestion(self::CATEGORIES_SEARCH_LABEL, $categoryIds);
         }
 
         // 3. company gate confirm -> search only when answered yes. The search term
@@ -784,6 +805,9 @@ class SendReacceptanceRequestsTest extends TestCase
         if (! $skipAcceptedBeforeGate && $acceptedBefore !== null) {
             $command->expectsQuestion('Accepted-before cutoff date (Y-m-d):', $acceptedBefore);
         }
+
+        // 6. After the preview, interactive runs are offered the per-user breakdown.
+        $command->expectsConfirmation(self::BREAKDOWN_LABEL, $showBreakdown ? 'yes' : 'no');
 
         return $command;
     }
