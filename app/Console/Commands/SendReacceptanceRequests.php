@@ -459,11 +459,31 @@ class SendReacceptanceRequests extends Command
                 return [
                     'user' => $latest->assignedTo,
                     'checkoutable' => $latest->checkoutable,
-                    'qty' => $latest->qty,
+                    'qty' => $this->resolveGroupQty($group, $latest),
                     'acceptances' => $group,
                 ];
             })
             ->values();
+    }
+
+    /**
+     * Resolve the quantity for the regenerated acceptance from a group of prior
+     * accepted acceptances (same user + item).
+     *
+     * Consumables and accessories accumulate: a user may hold several checkouts
+     * of the same item, so the held quantity is the sum across the group. Assets
+     * and license seats are single-unit holdings — duplicate accepted rows are an
+     * anomaly, not accumulation — so the latest row's quantity is carried forward.
+     */
+    private function resolveGroupQty(Collection $group, CheckoutAcceptance $latest): ?int
+    {
+        $checkoutable = $latest->checkoutable;
+
+        if ($checkoutable instanceof Consumable || $checkoutable instanceof Accessory) {
+            return $group->sum(fn (CheckoutAcceptance $acceptance) => $acceptance->qty ?? 1);
+        }
+
+        return $latest->qty;
     }
 
     /**

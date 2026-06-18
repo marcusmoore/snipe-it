@@ -453,6 +453,54 @@ class SendReacceptanceRequestsTest extends TestCase
         $this->assertNotNull($acceptance->superseded_at);
     }
 
+    public function test_sums_qty_across_multiple_accepted_acceptances_for_an_accessory(): void
+    {
+        $user = User::factory()->create();
+        $accessory = Accessory::factory()->create();
+
+        AccessoryCheckout::factory()->create([
+            'accessory_id' => $accessory->id,
+            'assigned_to' => $user->id,
+            'assigned_type' => User::class,
+        ]);
+
+        // The same accessory was checked out to the same user twice, with
+        // different quantities — two accepted rows pointing at one holding.
+        $first = CheckoutAcceptance::factory()
+            ->accepted()
+            ->for($accessory, 'checkoutable')
+            ->for($user, 'assignedTo')
+            ->create(['qty' => 2, 'accepted_at' => now()->subYear()]);
+
+        $second = CheckoutAcceptance::factory()
+            ->accepted()
+            ->for($accessory, 'checkoutable')
+            ->for($user, 'assignedTo')
+            ->create(['qty' => 3, 'accepted_at' => now()->subMonth()]);
+
+        $this->artisan('snipeit:send-reacceptance-requests', [
+            '--no-interaction' => true,
+            '--force' => true,
+            '--no-send' => true,
+        ])->assertExitCode(0);
+
+        // One new pending acceptance carrying the combined quantity.
+        $newPending = CheckoutAcceptance::where('checkoutable_type', Accessory::class)
+            ->where('checkoutable_id', $accessory->id)
+            ->where('assigned_to_id', $user->id)
+            ->pending()
+            ->get();
+
+        $this->assertCount(1, $newPending);
+        $this->assertEquals(5, $newPending->first()->qty);
+
+        // Both prior accepted rows are superseded by that single new acceptance.
+        $first->refresh();
+        $second->refresh();
+        $this->assertEquals($newPending->first()->id, $first->superseded_by_id);
+        $this->assertEquals($newPending->first()->id, $second->superseded_by_id);
+    }
+
     public function test_regenerates_acceptance_for_consumable_still_assigned(): void
     {
         $user = User::factory()->create();
@@ -474,6 +522,49 @@ class SendReacceptanceRequestsTest extends TestCase
         $acceptance->refresh();
         $this->assertEquals($newAcceptance->id, $acceptance->superseded_by_id);
         $this->assertNotNull($acceptance->superseded_at);
+    }
+
+    public function test_sums_qty_across_multiple_accepted_acceptances_for_a_consumable(): void
+    {
+        $user = User::factory()->create();
+        $consumable = Consumable::factory()->create();
+        $consumable->users()->attach($user->id, ['created_by' => $user->id]);
+
+        // The same consumable was checked out to the same user twice, with
+        // different quantities — two accepted rows pointing at one holding.
+        $first = CheckoutAcceptance::factory()
+            ->accepted()
+            ->for($consumable, 'checkoutable')
+            ->for($user, 'assignedTo')
+            ->create(['qty' => 2, 'accepted_at' => now()->subYear()]);
+
+        $second = CheckoutAcceptance::factory()
+            ->accepted()
+            ->for($consumable, 'checkoutable')
+            ->for($user, 'assignedTo')
+            ->create(['qty' => 3, 'accepted_at' => now()->subMonth()]);
+
+        $this->artisan('snipeit:send-reacceptance-requests', [
+            '--no-interaction' => true,
+            '--force' => true,
+            '--no-send' => true,
+        ])->assertExitCode(0);
+
+        // One new pending acceptance carrying the combined quantity.
+        $newPending = CheckoutAcceptance::where('checkoutable_type', Consumable::class)
+            ->where('checkoutable_id', $consumable->id)
+            ->where('assigned_to_id', $user->id)
+            ->pending()
+            ->get();
+
+        $this->assertCount(1, $newPending);
+        $this->assertEquals(5, $newPending->first()->qty);
+
+        // Both prior accepted rows are superseded by that single new acceptance.
+        $first->refresh();
+        $second->refresh();
+        $this->assertEquals($newPending->first()->id, $first->superseded_by_id);
+        $this->assertEquals($newPending->first()->id, $second->superseded_by_id);
     }
 
     public function test_category_filter_limits_to_items_in_the_given_category(): void
