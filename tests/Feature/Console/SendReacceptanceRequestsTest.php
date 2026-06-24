@@ -16,6 +16,7 @@ use App\Models\LicenseSeat;
 use App\Models\User;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Testing\PendingCommand;
+use Tests\Support\ReacceptancePromptScript;
 use Tests\TestCase;
 
 class SendReacceptanceRequestsTest extends TestCase
@@ -282,6 +283,13 @@ class SendReacceptanceRequestsTest extends TestCase
         $this->acceptedAssetFor($user);
 
         $this->answerFilterPrompts($this->artisan('snipeit:send-reacceptance-requests'))
+            ->allTypes()
+            ->declineCategories()
+            ->declineCompany()
+            ->declineUser()
+            ->declineAcceptedBefore()
+            ->declineBreakdown()
+            ->apply()
             ->expectsConfirmation('Is this a dry run?', 'no')
             ->expectsConfirmation('Regenerate 1 acceptances for 1 users?', 'yes')
             ->expectsConfirmation('Send the re-acceptance emails now?', 'yes')
@@ -295,7 +303,14 @@ class SendReacceptanceRequestsTest extends TestCase
         $user = User::factory()->create();
         $asset = $this->acceptedAssetFor($user)->checkoutable;
 
-        $this->answerFilterPrompts($this->artisan('snipeit:send-reacceptance-requests'), showBreakdown: true)
+        $this->answerFilterPrompts($this->artisan('snipeit:send-reacceptance-requests'))
+            ->allTypes()
+            ->declineCategories()
+            ->declineCompany()
+            ->declineUser()
+            ->declineAcceptedBefore()
+            ->showBreakdown()
+            ->apply()
             ->expectsOutputToContain('Asset #'.$asset->id)
             ->expectsConfirmation('Is this a dry run?', 'yes')
             ->assertExitCode(0);
@@ -306,6 +321,13 @@ class SendReacceptanceRequestsTest extends TestCase
         $acceptance = $this->acceptedAssetFor(User::factory()->create());
 
         $this->answerFilterPrompts($this->artisan('snipeit:send-reacceptance-requests'))
+            ->allTypes()
+            ->declineCategories()
+            ->declineCompany()
+            ->declineUser()
+            ->declineAcceptedBefore()
+            ->declineBreakdown()
+            ->apply()
             ->expectsConfirmation('Is this a dry run?', 'no')
             ->expectsConfirmation('Regenerate 1 acceptances for 1 users?', 'no')
             ->assertExitCode(0);
@@ -321,6 +343,13 @@ class SendReacceptanceRequestsTest extends TestCase
         $acceptance = $this->acceptedAssetFor($user);
 
         $this->answerFilterPrompts($this->artisan('snipeit:send-reacceptance-requests'))
+            ->allTypes()
+            ->declineCategories()
+            ->declineCompany()
+            ->declineUser()
+            ->declineAcceptedBefore()
+            ->declineBreakdown()
+            ->apply()
             ->expectsConfirmation('Is this a dry run?', 'yes')
             ->assertExitCode(0);
 
@@ -339,6 +368,13 @@ class SendReacceptanceRequestsTest extends TestCase
         // --send passed in an interactive run: the "Send…now?" confirm is skipped
         // and the flag value is honored (the regenerate confirm still shows).
         $this->answerFilterPrompts($this->artisan('snipeit:send-reacceptance-requests', ['--send' => true]))
+            ->allTypes()
+            ->declineCategories()
+            ->declineCompany()
+            ->declineUser()
+            ->declineAcceptedBefore()
+            ->declineBreakdown()
+            ->apply()
             ->expectsConfirmation('Is this a dry run?', 'no')
             ->expectsConfirmation('Regenerate 1 acceptances for 1 users?', 'yes')
             ->assertExitCode(0);
@@ -352,6 +388,13 @@ class SendReacceptanceRequestsTest extends TestCase
         $acceptance = $this->acceptedAssetFor($user);
 
         $this->answerFilterPrompts($this->artisan('snipeit:send-reacceptance-requests', ['--no-send' => true]))
+            ->allTypes()
+            ->declineCategories()
+            ->declineCompany()
+            ->declineUser()
+            ->declineAcceptedBefore()
+            ->declineBreakdown()
+            ->apply()
             ->expectsConfirmation('Is this a dry run?', 'no')
             ->expectsConfirmation('Regenerate 1 acceptances for 1 users?', 'yes')
             ->assertExitCode(0);
@@ -368,6 +411,13 @@ class SendReacceptanceRequestsTest extends TestCase
 
         // --dry-run passed: the "Is this a dry run?" confirm is skipped (forced true).
         $this->answerFilterPrompts($this->artisan('snipeit:send-reacceptance-requests', ['--dry-run' => true]))
+            ->allTypes()
+            ->declineCategories()
+            ->declineCompany()
+            ->declineUser()
+            ->declineAcceptedBefore()
+            ->declineBreakdown()
+            ->apply()
             ->assertExitCode(0);
 
         Mail::assertNothingSent();
@@ -381,13 +431,19 @@ class SendReacceptanceRequestsTest extends TestCase
         $user = User::factory()->create();
         $this->acceptedAssetFor($user, ['accepted_at' => now()->subYear()]);
 
-        // --accepted-before passed: its wizard gate is skipped (option present).
+        // --accepted-before passed: its wizard gate is skipped (option present), so
+        // the acceptedBefore step is simply not chained.
         $this->answerFilterPrompts(
             $this->artisan('snipeit:send-reacceptance-requests', [
                 '--accepted-before' => now()->subMonth()->format('Y-m-d'),
             ]),
-            skipAcceptedBeforeGate: true,
         )
+            ->allTypes()
+            ->declineCategories()
+            ->declineCompany()
+            ->declineUser()
+            ->declineBreakdown()
+            ->apply()
             ->expectsConfirmation('Is this a dry run?', 'no')
             ->expectsConfirmation('Regenerate 1 acceptances for 1 users?', 'yes')
             ->expectsConfirmation('Send the re-acceptance emails now?', 'yes')
@@ -751,6 +807,13 @@ class SendReacceptanceRequestsTest extends TestCase
         $acceptance = $this->acceptedAssetFor($user);
 
         $this->answerFilterPrompts($this->artisan('snipeit:send-reacceptance-requests'))
+            ->allTypes()
+            ->declineCategories()
+            ->declineCompany()
+            ->declineUser()
+            ->declineAcceptedBefore()
+            ->declineBreakdown()
+            ->apply()
             ->expectsConfirmation('Is this a dry run?', 'no')
             ->expectsConfirmation('Regenerate 1 acceptances for 1 users?', 'yes')
             ->expectsConfirmation('Send the re-acceptance emails now?', 'no')
@@ -771,6 +834,13 @@ class SendReacceptanceRequestsTest extends TestCase
         $acceptance = $this->acceptedAssetFor(User::factory()->create());
 
         $this->answerFilterPrompts($this->artisan('snipeit:send-reacceptance-requests'))
+            ->allTypes()
+            ->declineCategories()
+            ->declineCompany()
+            ->declineUser()
+            ->declineAcceptedBefore()
+            ->declineBreakdown()
+            ->apply()
             ->expectsConfirmation('Is this a dry run?', 'no')
             ->expectsConfirmation('Regenerate 1 acceptances for 1 users?', 'yes')
             ->expectsConfirmation('Send the re-acceptance emails now?', 'no')
@@ -861,85 +931,12 @@ class SendReacceptanceRequestsTest extends TestCase
     }
 
     /**
-     * Answer the interactive filter prompts (in order) with "no filter": all four
-     * types, and the categories/company/user/accepted-before gates declined. Then
-     * answers the post-preview "show breakdown?" offer. Returns the PendingCommand
-     * so callers can append the remaining execution confirms (dry-run, regenerate,
-     * send).
-     *
-     * @param  string[]  $typeTokens  selected type tokens; empty selection => all four
-     * @param  int[]  $categoryIds  selected category ids; empty => decline the gate
+     * Begin scripting the interactive filter prompts (in command order) for a
+     * pending command. Chain one method per filter; omit a step when a CLI flag
+     * supplies that filter (the command then does not prompt for it).
      */
-    private function answerFilterPrompts(
-        PendingCommand $command,
-        array $typeTokens = [],
-        array $categoryIds = [],
-        ?Company $company = null,
-        ?User $user = null,
-        ?string $acceptedBefore = null,
-        bool $skipTypes = false,
-        bool $skipCategoriesGate = false,
-        bool $skipCompanyGate = false,
-        bool $skipUserGate = false,
-        bool $skipAcceptedBeforeGate = false,
-        bool $showBreakdown = false,
-    ): PendingCommand {
-        // 1. types multiselect (empty selection => all four). Skipped when --type passed.
-        if (! $skipTypes) {
-            $command->expectsQuestion(self::TYPES_LABEL, $typeTokens);
-        }
-
-        // 2. categories gate confirm -> multisearch only when answered yes. The
-        //    multisearch falls back as a search term ask() then the selection.
-        //    Skipped entirely when --category passed.
-        if (! $skipCategoriesGate) {
-            $command->expectsConfirmation(self::CATEGORIES_GATE_LABEL, $categoryIds === [] ? 'no' : 'yes');
-        }
-        if (! $skipCategoriesGate && $categoryIds !== []) {
-            $command->expectsQuestion(self::CATEGORIES_SEARCH_LABEL, '');
-            $command->expectsQuestion(self::CATEGORIES_SEARCH_LABEL, $categoryIds);
-        }
-
-        // 3. company gate confirm -> search only when answered yes. The search term
-        //    must match what the command's option closure queries on (company name).
-        //    Skipped entirely when --company passed.
-        if (! $skipCompanyGate) {
-            $command->expectsConfirmation(self::COMPANY_GATE_LABEL, $company === null ? 'no' : 'yes');
-        }
-        if (! $skipCompanyGate && $company !== null) {
-            $command->expectsSearch(
-                'Search for a company by name.',
-                $company->id,
-                $company->name,
-                [$company->id => "{$company->name} (ID: {$company->id})"],
-            );
-        }
-
-        // 4. user gate confirm -> search only when answered yes. Skipped when --user passed.
-        if (! $skipUserGate) {
-            $command->expectsConfirmation(self::USER_GATE_LABEL, $user === null ? 'no' : 'yes');
-        }
-        if (! $skipUserGate && $user !== null) {
-            $command->expectsSearch(
-                'Search for a user by username, first or last name.',
-                $user->id,
-                $user->username,
-                [$user->id => "{$user->first_name} {$user->last_name} ({$user->username})"],
-            );
-        }
-
-        // 5. accepted-before gate confirm -> validated text only when answered yes.
-        //    Skipped when --accepted-before passed.
-        if (! $skipAcceptedBeforeGate) {
-            $command->expectsConfirmation(self::ACCEPTED_BEFORE_GATE_LABEL, $acceptedBefore === null ? 'no' : 'yes');
-        }
-        if (! $skipAcceptedBeforeGate && $acceptedBefore !== null) {
-            $command->expectsQuestion('Accepted-before cutoff date (Y-m-d):', $acceptedBefore);
-        }
-
-        // 6. After the preview, interactive runs are offered the per-user breakdown.
-        $command->expectsConfirmation(self::BREAKDOWN_LABEL, $showBreakdown ? 'yes' : 'no');
-
-        return $command;
+    private function answerFilterPrompts(PendingCommand $command): ReacceptancePromptScript
+    {
+        return new ReacceptancePromptScript($command);
     }
 }
