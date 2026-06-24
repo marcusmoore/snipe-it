@@ -280,7 +280,7 @@ class SendReacceptanceRequests extends Command
             return [];
         }
 
-        $categoryTypes = collect(self::MORPH_CATEGORY_TYPE)->values()->all();
+        $categoryTypes = array_map(fn (string $morphClass) => self::MORPH_CATEGORY_TYPE[$morphClass], $types);
 
         $selected = multisearch(
             label: 'Search for categories to include.',

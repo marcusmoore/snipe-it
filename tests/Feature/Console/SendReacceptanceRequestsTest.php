@@ -597,6 +597,46 @@ class SendReacceptanceRequestsTest extends TestCase
         $this->assertNull($otherAcceptance->superseded_by_id, 'asset in another category should be excluded by --category');
     }
 
+    public function test_interactive_category_search_only_offers_categories_for_the_selected_types(): void
+    {
+        $user = User::factory()->create();
+
+        $this->acceptedAssetFor($user);
+
+        // Two categories of distinct types sharing a unique search token "Common",
+        // so the search-term filter isolates them from any incidental categories
+        // created by the accepted item above.
+        // Selecting only the "asset" type in the types multiselect must scope
+        // the category search to asset categories.
+        $assetCategory = Category::factory()->forAssets()->create(['name' => 'Common Category for Assets']);
+        Category::factory()->forLicenses()->create(['name' => 'Common Category for Licenses']);
+
+        $command = $this->artisan('snipeit:send-reacceptance-requests');
+
+        // 1. Select ONLY the "asset" type token.
+        $command->expectsQuestion(self::TYPES_LABEL, ['asset']);
+
+        // 2. Open the categories gate, then assert the offered options for a search
+        //    term matching both categories by name. Only the asset category is
+        //    offered; the license category is excluded by the type scoping.
+        $command->expectsConfirmation(self::CATEGORIES_GATE_LABEL, 'yes');
+        $command->expectsSearch(
+            self::CATEGORIES_SEARCH_LABEL,
+            [],
+            'Common',
+            [$assetCategory->id => "{$assetCategory->name} ({$assetCategory->category_type})"],
+        );
+
+        // 3. Decline the remaining gates and the breakdown, then exit via dry run.
+        $command->expectsConfirmation(self::COMPANY_GATE_LABEL, 'no');
+        $command->expectsConfirmation(self::USER_GATE_LABEL, 'no');
+        $command->expectsConfirmation(self::ACCEPTED_BEFORE_GATE_LABEL, 'no');
+        $command->expectsConfirmation(self::BREAKDOWN_LABEL, 'no');
+        $command->expectsConfirmation('Is this a dry run?', 'yes');
+
+        $command->assertExitCode(0);
+    }
+
     public function test_company_filter_limits_to_items_in_the_given_company(): void
     {
         $user = User::factory()->create();
