@@ -886,6 +886,265 @@ class SendReacceptanceRequestsTest extends TestCase
         $this->assertEquals($newPending->first()->id, $second->superseded_by_id);
     }
 
+    public function test_category_filter_limits_to_license_seats_in_the_given_category(): void
+    {
+        $user = User::factory()->create();
+
+        // A license seat whose parent license belongs to the wanted category.
+        $category = Category::factory()->forLicenses()->create();
+        $license = License::factory()->create(['category_id' => $category->id]);
+        $licenseSeat = LicenseSeat::factory()->for($license)->create(['assigned_to' => $user->id]);
+        $wantedAcceptance = CheckoutAcceptance::factory()
+            ->accepted()
+            ->for($licenseSeat, 'checkoutable')
+            ->for($user, 'assignedTo')
+            ->create();
+
+        // Control: a license seat whose parent license is in a different category.
+        $otherLicense = License::factory()->create();
+        $otherSeat = LicenseSeat::factory()->for($otherLicense)->create(['assigned_to' => $user->id]);
+        $otherAcceptance = CheckoutAcceptance::factory()
+            ->accepted()
+            ->for($otherSeat, 'checkoutable')
+            ->for($user, 'assignedTo')
+            ->create();
+
+        $this->artisan('snipeit:send-reacceptance-requests', [
+            '--category' => [$category->id],
+            '--no-interaction' => true,
+            '--force' => true,
+            '--no-send' => true,
+        ])->assertExitCode(0);
+
+        $wantedAcceptance->refresh();
+        $otherAcceptance->refresh();
+        $this->assertNotNull($wantedAcceptance->superseded_by_id);
+        $this->assertNull($otherAcceptance->superseded_by_id, 'license in another category should be excluded by --category');
+    }
+
+    public function test_company_filter_limits_to_license_seats_in_the_given_company(): void
+    {
+        $user = User::factory()->create();
+        $company = Company::factory()->create();
+
+        // A license seat whose parent license belongs to the wanted company.
+        $inCompanyLicense = License::factory()->create(['company_id' => $company->id]);
+        $inCompanySeat = LicenseSeat::factory()->for($inCompanyLicense)->create(['assigned_to' => $user->id]);
+        $inCompanyAcceptance = CheckoutAcceptance::factory()
+            ->accepted()
+            ->for($inCompanySeat, 'checkoutable')
+            ->for($user, 'assignedTo')
+            ->create();
+
+        // Control: a license seat whose parent license is in a different company.
+        $otherLicense = License::factory()->create();
+        $otherSeat = LicenseSeat::factory()->for($otherLicense)->create(['assigned_to' => $user->id]);
+        $otherAcceptance = CheckoutAcceptance::factory()
+            ->accepted()
+            ->for($otherSeat, 'checkoutable')
+            ->for($user, 'assignedTo')
+            ->create();
+
+        $this->artisan('snipeit:send-reacceptance-requests', [
+            '--company' => $company->id,
+            '--no-interaction' => true,
+            '--force' => true,
+            '--no-send' => true,
+        ])->assertExitCode(0);
+
+        $inCompanyAcceptance->refresh();
+        $otherAcceptance->refresh();
+        $this->assertNotNull($inCompanyAcceptance->superseded_by_id);
+        $this->assertNull($otherAcceptance->superseded_by_id, 'license in another company should be excluded by --company');
+    }
+
+    public function test_excludes_license_seat_no_longer_assigned_to_the_same_user(): void
+    {
+        $user = User::factory()->create();
+        $license = License::factory()->create();
+        $licenseSeat = LicenseSeat::factory()->for($license)->create(['assigned_to' => $user->id]);
+        $acceptance = CheckoutAcceptance::factory()
+            ->accepted()
+            ->for($licenseSeat, 'checkoutable')
+            ->for($user, 'assignedTo')
+            ->create();
+
+        // Reassign the seat away from the original user.
+        $licenseSeat->update(['assigned_to' => User::factory()->create()->id]);
+
+        $this->artisan('snipeit:send-reacceptance-requests', [
+            '--no-interaction' => true,
+            '--force' => true,
+            '--no-send' => true,
+        ])->assertExitCode(0);
+
+        $this->assertEquals(0, CheckoutAcceptance::pending()->count());
+        $acceptance->refresh();
+        $this->assertNull($acceptance->superseded_by_id);
+    }
+
+    public function test_excludes_accessory_no_longer_assigned_to_the_same_user(): void
+    {
+        $user = User::factory()->create();
+        $acceptance = $this->acceptedAccessoryFor($user);
+
+        // Remove the checkout pivot so the accessory is no longer held by the user.
+        AccessoryCheckout::where('accessory_id', $acceptance->checkoutable_id)
+            ->where('assigned_to', $user->id)
+            ->where('assigned_type', User::class)
+            ->delete();
+
+        $this->artisan('snipeit:send-reacceptance-requests', [
+            '--no-interaction' => true,
+            '--force' => true,
+            '--no-send' => true,
+        ])->assertExitCode(0);
+
+        $this->assertEquals(0, CheckoutAcceptance::pending()->count());
+        $acceptance->refresh();
+        $this->assertNull($acceptance->superseded_by_id);
+    }
+
+    public function test_excludes_consumable_no_longer_assigned_to_the_same_user(): void
+    {
+        $user = User::factory()->create();
+        $acceptance = $this->acceptedConsumableFor($user);
+
+        // Detach the user so the consumable is no longer held by them.
+        $acceptance->checkoutable->users()->detach($user->id);
+
+        $this->artisan('snipeit:send-reacceptance-requests', [
+            '--no-interaction' => true,
+            '--force' => true,
+            '--no-send' => true,
+        ])->assertExitCode(0);
+
+        $this->assertEquals(0, CheckoutAcceptance::pending()->count());
+        $acceptance->refresh();
+        $this->assertNull($acceptance->superseded_by_id);
+    }
+
+    public function test_interactive_accepted_before_prompt_scopes_to_older_acceptances(): void
+    {
+        $user = User::factory()->create();
+        $oldAcceptance = $this->acceptedAssetFor($user, ['accepted_at' => now()->subYear()]);
+        $recentAcceptance = $this->acceptedAssetFor($user, ['accepted_at' => now()->subDay()]);
+
+        // The cutoff is entered through the interactive prompt (not the flag), so
+        // only the older acceptance is in scope.
+        $this->answerFilterPrompts($this->artisan('snipeit:send-reacceptance-requests'))
+            ->allTypes()
+            ->declineCategories()
+            ->declineCompany()
+            ->declineUser()
+            ->acceptedBefore(now()->subMonth()->format('Y-m-d'))
+            ->declineBreakdown()
+            ->apply()
+            ->expectsConfirmation('Is this a dry run?', 'no')
+            ->expectsConfirmation('Regenerate 1 acceptances for 1 users?', 'yes')
+            ->expectsConfirmation('Send the re-acceptance emails now?', 'yes')
+            ->assertExitCode(0);
+
+        $oldAcceptance->refresh();
+        $recentAcceptance->refresh();
+        $this->assertNotNull($oldAcceptance->superseded_by_id);
+        $this->assertNull($recentAcceptance->superseded_by_id);
+    }
+
+    public function test_interactive_accepted_before_prompt_rejects_a_malformed_date(): void
+    {
+        $this->acceptedAssetFor(User::factory()->create());
+
+        // A non-parseable value is rejected by the prompt's validate closure, which
+        // under test surfaces the error and fails the command.
+        $this->answerFilterPrompts($this->artisan('snipeit:send-reacceptance-requests'))
+            ->allTypes()
+            ->declineCategories()
+            ->declineCompany()
+            ->declineUser()
+            ->acceptedBefore('not-a-date')
+            ->apply()
+            ->expectsOutputToContain('Enter a valid date in Y-m-d format.')
+            ->assertExitCode(1);
+    }
+
+    public function test_interactive_accepted_before_prompt_rejects_a_future_date(): void
+    {
+        $this->acceptedAssetFor(User::factory()->create());
+
+        $this->answerFilterPrompts($this->artisan('snipeit:send-reacceptance-requests'))
+            ->allTypes()
+            ->declineCategories()
+            ->declineCompany()
+            ->declineUser()
+            ->acceptedBefore(now()->addMonth()->format('Y-m-d'))
+            ->apply()
+            ->expectsOutputToContain('The cutoff date cannot be in the future.')
+            ->assertExitCode(1);
+    }
+
+    public function test_interactive_company_search_limits_to_the_selected_company(): void
+    {
+        $user = User::factory()->create();
+        // A distinctive name so the interactive search returns exactly this company.
+        $company = Company::factory()->create(['name' => 'Wanted Interactive Company']);
+
+        $inCompanyAsset = Asset::factory()->create(['company_id' => $company->id]);
+        $inCompanyAcceptance = CheckoutAcceptance::factory()
+            ->accepted()
+            ->for($inCompanyAsset, 'checkoutable')
+            ->for($user, 'assignedTo')
+            ->create();
+
+        // Control: an asset in no particular company.
+        $otherAcceptance = $this->acceptedAssetFor($user);
+
+        $this->answerFilterPrompts($this->artisan('snipeit:send-reacceptance-requests'))
+            ->allTypes()
+            ->declineCategories()
+            ->chooseCompany($company)
+            ->declineUser()
+            ->declineAcceptedBefore()
+            ->declineBreakdown()
+            ->apply()
+            ->expectsConfirmation('Is this a dry run?', 'no')
+            ->expectsConfirmation('Regenerate 1 acceptances for 1 users?', 'yes')
+            ->expectsConfirmation('Send the re-acceptance emails now?', 'yes')
+            ->assertExitCode(0);
+
+        $inCompanyAcceptance->refresh();
+        $otherAcceptance->refresh();
+        $this->assertNotNull($inCompanyAcceptance->superseded_by_id);
+        $this->assertNull($otherAcceptance->superseded_by_id, 'asset in another company should be excluded by the company search');
+    }
+
+    public function test_interactive_user_search_limits_to_the_selected_user(): void
+    {
+        // A distinctive username so the interactive search returns exactly this user.
+        $targetUser = User::factory()->create(['username' => 'wanted.interactive.user']);
+        $otherUser = User::factory()->create();
+        $targetAcceptance = $this->acceptedAssetFor($targetUser);
+        $otherAcceptance = $this->acceptedAssetFor($otherUser);
+
+        $this->answerFilterPrompts($this->artisan('snipeit:send-reacceptance-requests'))
+            ->allTypes()
+            ->declineCategories()
+            ->declineCompany()
+            ->chooseUser($targetUser)
+            ->declineAcceptedBefore()
+            ->declineBreakdown()
+            ->apply()
+            ->expectsConfirmation('Is this a dry run?', 'no')
+            ->expectsConfirmation('Regenerate 1 acceptances for 1 users?', 'yes')
+            ->expectsConfirmation('Send the re-acceptance emails now?', 'yes')
+            ->assertExitCode(0);
+
+        $targetAcceptance->refresh();
+        $otherAcceptance->refresh();
+        $this->assertNotNull($targetAcceptance->superseded_by_id);
+        $this->assertNull($otherAcceptance->superseded_by_id, 'other user should be excluded by the user search');
+    }
+
     private function acceptedAssetFor(User $user, array $attributes = []): CheckoutAcceptance
     {
         // The factory's afterCreating assigns the asset to the user, so it is
