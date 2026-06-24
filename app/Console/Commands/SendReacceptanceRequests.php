@@ -14,6 +14,7 @@ use App\Models\Company;
 use App\Models\Consumable;
 use App\Models\LicenseSeat;
 use App\Models\User;
+use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Support\Carbon;
@@ -148,6 +149,30 @@ class SendReacceptanceRequests extends Command
     }
 
     /**
+     * Build the filters array from the CLI options. Returns null when the --type
+     * tokens are invalid (resolveTypeFilter() already printed the error), so the
+     * caller can return self::FAILURE.
+     *
+     * @return array{types: string[], categories: int[], company: ?int, user: ?int, acceptedBefore: ?Carbon}|null
+     */
+    private function buildFiltersFromOptions(): ?array
+    {
+        $morphClasses = $this->resolveTypeFilter();
+
+        if ($morphClasses === null) {
+            return null;
+        }
+
+        return [
+            'types' => $morphClasses,
+            'categories' => $this->option('category'),
+            'company' => $this->option('company'),
+            'user' => $this->option('user'),
+            'acceptedBefore' => $this->option('accepted-before') ? Carbon::parse($this->option('accepted-before')) : null,
+        ];
+    }
+
+    /**
      * Map and validate the --type tokens to morph classes. Returns null on an
      * invalid token (after printing an error); otherwise the list of morph
      * classes to consider (all four covered types when --type is omitted).
@@ -171,30 +196,6 @@ class SendReacceptanceRequests extends Command
         }
 
         return $morphClasses;
-    }
-
-    /**
-     * Build the filters array from the CLI options. Returns null when the --type
-     * tokens are invalid (resolveTypeFilter() already printed the error), so the
-     * caller can return self::FAILURE.
-     *
-     * @return array{types: string[], categories: int[], company: ?int, user: ?int, acceptedBefore: ?Carbon}|null
-     */
-    private function buildFiltersFromOptions(): ?array
-    {
-        $morphClasses = $this->resolveTypeFilter();
-
-        if ($morphClasses === null) {
-            return null;
-        }
-
-        return [
-            'types' => $morphClasses,
-            'categories' => $this->option('category'),
-            'company' => $this->option('company'),
-            'user' => $this->option('user'),
-            'acceptedBefore' => $this->option('accepted-before') ? Carbon::parse($this->option('accepted-before')) : null,
-        ];
     }
 
     /**
@@ -285,8 +286,7 @@ class SendReacceptanceRequests extends Command
         $selected = multisearch(
             label: 'Search for categories to include.',
             options: function (string $value) use ($categoryTypes): array {
-                $query = Category::whereIn('category_type', $categoryTypes)
-                    ->orderBy('name');
+                $query = Category::whereIn('category_type', $categoryTypes)->orderBy('name');
 
                 if ($value !== '') {
                     $query->where('name', 'like', "%{$value}%");
@@ -381,7 +381,7 @@ class SendReacceptanceRequests extends Command
             validate: function (string $value): ?string {
                 try {
                     $date = Carbon::createFromFormat('Y-m-d', $value);
-                } catch (\Exception $e) {
+                } catch (Exception $e) {
                     return 'Enter a valid date in Y-m-d format.';
                 }
 
@@ -467,26 +467,6 @@ class SendReacceptanceRequests extends Command
     }
 
     /**
-     * Resolve the quantity for the regenerated acceptance from a group of prior
-     * accepted acceptances (same user + item).
-     *
-     * Consumables and accessories accumulate: a user may hold several checkouts
-     * of the same item, so the held quantity is the sum across the group. Assets
-     * and license seats are single-unit holdings — duplicate accepted rows are an
-     * anomaly, not accumulation — so the latest row's quantity is carried forward.
-     */
-    private function resolveGroupQty(Collection $group, CheckoutAcceptance $latest): ?int
-    {
-        $checkoutable = $latest->checkoutable;
-
-        if ($checkoutable instanceof Consumable || $checkoutable instanceof Accessory) {
-            return $group->sum(fn (CheckoutAcceptance $acceptance) => $acceptance->qty ?? 1);
-        }
-
-        return $latest->qty;
-    }
-
-    /**
      * Apply the category/company filters for one morph type inside whereHasMorph.
      */
     private function applyItemFilters($itemQuery, string $type, array $categories, ?string $company): void
@@ -505,6 +485,26 @@ class SendReacceptanceRequests extends Command
                 default => $itemQuery->where('company_id', $company),
             };
         }
+    }
+
+    /**
+     * Resolve the quantity for the regenerated acceptance from a group of prior
+     * accepted acceptances (same user + item).
+     *
+     * Consumables and accessories accumulate: a user may hold several checkouts
+     * of the same item, so the held quantity is the sum across the group. Assets
+     * and license seats are single-unit holdings — duplicate accepted rows are an
+     * anomaly, not accumulation — so the latest row's quantity is carried forward.
+     */
+    private function resolveGroupQty(Collection $group, CheckoutAcceptance $latest): ?int
+    {
+        $checkoutable = $latest->checkoutable;
+
+        if ($checkoutable instanceof Consumable || $checkoutable instanceof Accessory) {
+            return $group->sum(fn (CheckoutAcceptance $acceptance) => $acceptance->qty ?? 1);
+        }
+
+        return $latest->qty;
     }
 
     /**
