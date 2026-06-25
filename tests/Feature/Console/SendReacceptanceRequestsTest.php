@@ -168,8 +168,12 @@ class SendReacceptanceRequestsTest extends TestCase
         $user = User::factory()->create();
         $acceptance = $this->acceptedAssetFor($user);
 
-        // Reassign the asset away from the original user.
-        $acceptance->checkoutable->update(['assigned_to' => User::factory()->create()->id]);
+        // Reassign the asset away from the original user. Set the column directly rather
+        // than via mass-assignment: assigned_to can be dropped from Asset::$fillable by
+        // other suites at runtime, which would make an update() here silently no-op.
+        $asset = $acceptance->checkoutable;
+        $asset->assigned_to = User::factory()->create()->id;
+        $asset->save();
 
         $this->artisan('snipeit:send-reacceptance-requests', [
             '--no-interaction' => true,

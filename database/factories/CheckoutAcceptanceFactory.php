@@ -7,8 +7,6 @@ use App\Models\Asset;
 use App\Models\CheckoutAcceptance;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
-use Illuminate\Database\Eloquent\Model;
-use RuntimeException;
 
 class CheckoutAcceptanceFactory extends Factory
 {
@@ -50,39 +48,14 @@ class CheckoutAcceptanceFactory extends Factory
             }
 
             if ($acceptance->checkoutable instanceof Asset && $acceptance->assignedTo instanceof User) {
+                // Assign the asset to the user directly rather than via mass-assignment.
+                // assigned_to/assigned_type are polymorphic assignment columns that other
+                // test suites can drop from Asset::$fillable at runtime, which would make a
+                // fill()/update() here silently no-op; a direct set is unaffected by that.
                 $asset = $acceptance->checkoutable;
-
-                // Assign via mass-assignment exactly as before, capturing the dirty set fill() produced.
-                $fillResult = array_keys($asset->fill([
-                    'assigned_to' => $acceptance->assigned_to_id,
-                    'assigned_type' => get_class($acceptance->assignedTo),
-                ])->getDirty());
-
-                $updated = $asset->save();
-
-                // Re-read straight from the DB to see whether the write actually landed.
-                $fresh = Asset::query()->withTrashed()->find($asset->id);
-
-                // The anomaly is: fill()+save() did NOT persist the assignment. (An empty
-                // dirty set is fine on its own when the asset is already assigned to this user.)
-                if ((int) $fresh?->assigned_to !== (int) $acceptance->assigned_to_id) {
-                    throw new RuntimeException('PROBE asset assignment did not persist: '.json_encode([
-                        'expected_assigned_to' => $acceptance->assigned_to_id,
-                        'assigned_to_in_fillable' => in_array('assigned_to', $asset->getFillable(), true),
-                        'assigned_type_in_fillable' => in_array('assigned_type', $asset->getFillable(), true),
-                        'fillable_count' => count($asset->getFillable()),
-                        'model_unguarded' => Model::isUnguarded(),
-                        'asset_class' => get_class($asset),
-                        'dirty_after_fill' => $fillResult,
-                        'save_returned' => $updated,
-                        'in_memory_assigned_to' => $asset->assigned_to,
-                        'fresh_db_assigned_to' => $fresh?->assigned_to,
-                        'fresh_db_assigned_type' => $fresh?->assigned_type,
-                        'validation_errors' => $asset->getErrors()->toArray(),
-                        'asset_id' => $asset->id,
-                        'connection' => $asset->getConnectionName(),
-                    ]));
-                }
+                $asset->assigned_to = $acceptance->assigned_to_id;
+                $asset->assigned_type = get_class($acceptance->assignedTo);
+                $asset->save();
             }
         });
     }
