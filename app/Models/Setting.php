@@ -73,6 +73,39 @@ class Setting extends Model
         'label2_asset_logo' => 'boolean',
         'require_checkinout_notes' => 'boolean',
         'manager_view_enabled' => 'boolean',
+        'block_api_user_agents' => 'boolean',
+        'block_blank_api_user_agents' => 'boolean',
+    ];
+
+    /**
+     * Suggested defaults for the "blocked API User-Agent patterns" textarea.
+     *
+     * Substrings (matched case-insensitively against the request's User-Agent)
+     * that identify common scripted or default HTTP clients. New installs see
+     * this list as the pre-filled textarea value; admins can add, remove, or
+     * blank it out entirely. Browser-driven AJAX (snipeit.js, datatables,
+     * select2, etc.) carries the browser's own User-Agent and is unaffected.
+     */
+    public const DEFAULT_BLOCKED_API_USER_AGENTS = [
+        'curl/',
+        'wget/',
+        'python-requests/',
+        'python-urllib',
+        'PostmanRuntime/',
+        'insomnia/',
+        'Go-http-client/',
+        'okhttp/',
+        'HTTPie/',
+        'Apache-HttpClient/',
+        'Java/',
+        'Faraday',
+        'http.rb/',
+        'libwww-perl/',
+        'Ruby',
+        'node-fetch/',
+        'axios/',
+        'GuzzleHttp/',
+        'RestSharp/',
     ];
 
     /**

@@ -52935,6 +52935,11 @@ $(function () {
       });
     });
   });
+  $(document).on('click', '#createModal .toggle-password', function () {
+    $(this).toggleClass('fa-eye fa-eye-slash');
+    var input = $($(this).attr('data-toggle'));
+    input.attr('type', input.attr('type') === 'password' ? 'text' : 'password');
+  });
   $('#createModal').on('click', '#modal-save', function () {
     $.ajax({
       type: 'POST',

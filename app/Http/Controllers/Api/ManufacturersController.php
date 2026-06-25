@@ -43,6 +43,7 @@ class ManufacturersController extends Controller
             'created_at',
             'updated_at',
             'image',
+            'accessories_count',
             'assets_count',
             'consumables_count',
             'components_count',

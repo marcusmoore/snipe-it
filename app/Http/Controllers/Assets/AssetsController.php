@@ -1120,13 +1120,21 @@ class AssetsController extends Controller
     public function getRequestedIndex($user_id = null)
     {
         $this->authorize('index', Asset::class);
-        $requestedItems = CheckoutRequest::with('user', 'requestedItem')->whereNull('canceled_at')->with('user', 'requestedItem');
+
+        $requestedItems = CheckoutRequest::with('user', 'requestedItem')->whereNull('canceled_at');
 
         if ($user_id) {
-            $requestedItems->where('user_id', $user_id)->get();
+            $requestedItems->where('user_id', $user_id);
         }
 
         $requestedItems = $requestedItems->orderBy('created_at', 'desc')->get();
+
+        if (Company::isFullMultipleCompanySupportEnabled() && ! auth()->user()->isSuperUser()) {
+            $requestedItems = $requestedItems->filter(
+                fn (CheckoutRequest $request) => $request->requestable
+                    && Company::isCurrentUserHasAccess($request->requestable)
+            )->values();
+        }
 
         return view('hardware/requested', compact('requestedItems'));
     }

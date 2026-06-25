@@ -107,6 +107,8 @@ class SnipeRootComplex extends Complex
             }
 
             $subNode = null;
+            $path = null;
+            $key = trim($key);
 
             if (strpos($key, ':') !== false) {
                 $parsed = Parser::parse($key);

@@ -16,6 +16,7 @@ use App\Models\AssetModel;
 use App\Models\Category;
 use App\Models\Checkoutable;
 use App\Models\CheckoutAcceptance;
+use App\Models\Company;
 use App\Models\Component;
 use App\Models\Consumable;
 use App\Models\CustomField;
@@ -799,11 +800,11 @@ class ReportsController extends Controller
                 $checkout_start = Carbon::parse($request->input('checkout_date_start'))->startOfDay();
                 $checkout_end = Carbon::parse($request->input('checkout_date_end', now()))->endOfDay();
 
-                $actionlogassets = Actionlog::select('id')->where('action_type', '=', 'checkout')
+                $actionlogassets = Actionlog::select('item_id')->where('action_type', '=', 'checkout')
                     ->where('item_type', '=', Asset::class)
                     ->whereBetween('action_date', [$checkout_start, $checkout_end]); // we are *not* doing ->get()...
 
-                $assets->whereIn('id', $actionlogassets); // ...because this _should_ act as a 'subquery'
+                $assets->whereIn('assets.id', $actionlogassets); // ...because this _should_ act as a 'subquery'
             }
 
             if (($request->filled('checkin_date_start'))) {
@@ -1365,29 +1366,24 @@ class ReportsController extends Controller
 
     private function currentUserCanAccessAcceptance(CheckoutAcceptance $acceptance): bool
     {
-        if (Setting::getSettings()->full_multiple_companies_support != '1') {
+        if (! Company::isFullMultipleCompanySupportEnabled()) {
             return true;
         }
 
-        $user = auth()->user();
-
-        if (! $user->company_id || $user->isSuperUser()) {
+        if (auth()->user()->isSuperUser()) {
             return true;
         }
 
-        // Bypass Eloquent global scopes so cross-company items are still found
+        // Bypass Eloquent global scopes so cross-company items are still resolved for the check.
         $checkoutableType = $acceptance->checkoutable_type;
         $checkoutable = $checkoutableType::withoutGlobalScopes()->find($acceptance->checkoutable_id);
 
+        // LicenseSeat has no company_id of its own; the parent License carries the company.
         if ($checkoutable instanceof LicenseSeat) {
-            $itemCompanyId = License::withoutGlobalScopes()
-                ->where('id', $checkoutable->license_id)
-                ->value('company_id');
-        } else {
-            $itemCompanyId = $checkoutable?->company_id;
+            $checkoutable = License::withoutGlobalScopes()->find($checkoutable->license_id);
         }
 
-        return $itemCompanyId === null || (int) $itemCompanyId === (int) $user->company_id;
+        return Company::isCurrentUserHasAccess($checkoutable);
     }
 
     private function getCheckoutMailType(CheckoutAcceptance $acceptance, $logItem): Mailable

@@ -265,15 +265,14 @@ class ProfileController extends Controller
     {
         $filename = basename((string) $filename);
 
-        $logentry = Actionlog::where('filename', $filename)->first();
+        $logentry = Actionlog::where('filename', $filename)->with('user', 'target')->first();
 
-        // Make sure the user has permission to view this file
-        // Also allow if the user (manager) able to view both users and assets
-        $allowed_to_view_users_assets = Gate::allows('view', User::class) && Gate::allows('view', Asset::class);
-
-        if (auth()->id() != $logentry->target_id && ! $allowed_to_view_users_assets) {
-            return redirect()->route('account')->with('error', trans('general.generic_model_not_found', ['model' => 'file']));
+        if (! $logentry) {
+            return redirect()->back()->with('error', trans('general.record_not_found'));
         }
+
+        $this->authorize('view', $logentry->target);
+        $this->authorize('view', $logentry->user);
 
         if (config('filesystems.default') == 's3_private') {
             return redirect()->away(Storage::disk('s3_private')->temporaryUrl('private_uploads/eula-pdfs/'.$filename, now()->addMinutes(5)));

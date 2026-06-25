@@ -6,6 +6,7 @@ use App\Events\CheckoutableCheckedIn;
 use App\Models\Actionlog;
 use App\Models\Asset;
 use App\Models\CheckoutAcceptance;
+use App\Models\Company;
 use App\Models\LicenseSeat;
 use App\Models\Location;
 use App\Models\Statuslabel;
@@ -177,6 +178,45 @@ class AssetCheckinTest extends TestCase
 
         $this->assertTrue($asset->refresh()->location()->is($rtdLocation));
         $this->assertHasTheseActionLogs($asset, ['create', 'checkin from']);
+    }
+
+    public function test_checkin_rejects_nonexistent_location_id()
+    {
+        $rtdLocation = Location::factory()->create();
+        $asset = Asset::factory()->assignedToUser()->create(['rtd_location_id' => $rtdLocation->id]);
+
+        $this->actingAs(User::factory()->checkinAssets()->create())
+            ->post(route('hardware.checkin.store', [$asset]), [
+                'location_id' => PHP_INT_MAX,
+            ])
+            ->assertRedirect()
+            ->assertSessionHas('error');
+
+        $this->assertNotNull($asset->fresh()->assigned_to);
+    }
+
+    public function test_checkin_rejects_location_from_another_company_under_fmcs()
+    {
+        $this->settings->enableMultipleFullCompanySupport();
+
+        [$companyA, $companyB] = Company::factory()->count(2)->create();
+
+        $foreignLocation = Location::factory()->create(['company_id' => $companyB->id]);
+        $rtdLocation = Location::factory()->create(['company_id' => $companyA->id]);
+        $asset = Asset::factory()->assignedToUser()->create([
+            'company_id' => $companyA->id,
+            'rtd_location_id' => $rtdLocation->id,
+        ]);
+        $actor = User::factory()->checkinAssets()->viewAssets()->create(['company_id' => $companyA->id]);
+
+        $this->actingAs($actor)
+            ->post(route('hardware.checkin.store', [$asset]), [
+                'location_id' => $foreignLocation->id,
+            ])
+            ->assertRedirect()
+            ->assertSessionHas('error');
+
+        $this->assertNotNull($asset->fresh()->assigned_to);
     }
 
     public function test_default_location_can_be_updated_upon_checkin()

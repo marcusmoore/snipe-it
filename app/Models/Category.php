@@ -77,7 +77,6 @@ class Category extends SnipeModel
         'require_acceptance',
         'alert_on_response',
         'use_default_eula',
-        'created_by',
         'tag_color',
         'notes',
     ];

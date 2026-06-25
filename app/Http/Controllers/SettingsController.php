@@ -1151,9 +1151,53 @@ class SettingsController extends Controller
             ->where('oauth_clients.personal_access_client', true)
             ->count();
 
+        $setting = Setting::getSettings();
+        $blockApiUserAgents = (bool) old('block_api_user_agents', $setting?->block_api_user_agents);
+        $blockedApiUserAgents = old(
+            'blocked_api_user_agents',
+            $setting?->blocked_api_user_agents ?? implode("\n", Setting::DEFAULT_BLOCKED_API_USER_AGENTS),
+        );
+        $blockBlankApiUserAgents = (bool) old('block_blank_api_user_agents', $setting?->block_blank_api_user_agents);
+
         return view('settings.api', [
             'personalAccessTokenCount' => $personalAccessTokenCount,
+            'setting' => $setting,
+            'blockApiUserAgents' => $blockApiUserAgents,
+            'blockedApiUserAgents' => $blockedApiUserAgents,
+            'blockBlankApiUserAgents' => $blockBlankApiUserAgents,
         ]);
+    }
+
+    /**
+     * Persist the API request-filter settings (User-Agent allow/block list)
+     * from the API settings page.
+     */
+    public function postApiRequestFilters(Request $request): RedirectResponse
+    {
+        if (is_null($setting = Setting::getSettings())) {
+            return redirect()->to('admin')->with('error', trans('admin/settings/message.update.error'));
+        }
+
+        // Check we're not on the public demo, and redirect without saving if we are.
+        // Otherwise this could mess with the demo API explorer
+        if (config('app.lock_passwords')) {
+            return redirect()
+                ->to(route('settings.oauth.index').'#api-request-filters')
+                ->with('error', trans('general.feature_disabled'));
+        }
+
+        $setting->block_api_user_agents = $request->boolean('block_api_user_agents');
+        $blockedUserAgents = trim((string) $request->input('blocked_api_user_agents', ''));
+        $setting->blocked_api_user_agents = $blockedUserAgents === '' ? null : $blockedUserAgents;
+        $setting->block_blank_api_user_agents = $request->boolean('block_blank_api_user_agents');
+
+        if ($setting->save()) {
+            return redirect()
+                ->to(route('settings.oauth.index').'#api-request-filters')
+                ->with('success', trans('admin/settings/message.update.success'));
+        }
+
+        return redirect()->back()->withInput()->withErrors($setting->getErrors());
     }
 
     /**

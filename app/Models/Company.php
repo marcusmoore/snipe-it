@@ -91,7 +91,6 @@ final class Company extends SnipeModel
         'phone',
         'fax',
         'email',
-        'created_by',
         'tag_color',
         'notes',
     ];

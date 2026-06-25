@@ -401,7 +401,13 @@ class UsersController extends Controller
         $users = Company::scopeCompanyables($users, 'company_id', 'users');
 
         // Allow further narrowing to a specific company passed via data-company-ids on the select.
-        if ((Setting::getSettings()->full_multiple_companies_support == '1') && $request->filled('companyId')) {
+        // Superusers MUST bypass this filter — they manage across companies and need to see every
+        // user on checkout dropdowns. Scoping superusers to the item's company breaks the umbrella-
+        // corp / service-provider workflow where one admin checks items out to users in any sub-company.
+        // See: https://github.com/snipe/snipe-it/issues/ (v8.6.3 regression report)
+        if ((Setting::getSettings()->full_multiple_companies_support == '1')
+            && $request->filled('companyId')
+            && ! auth()->user()->isSuperUser()) {
             $companyIds = array_values(array_filter(array_map('intval', explode(',', $request->input('companyId')))));
             if (! empty($companyIds)) {
                 $users = Company::scopeUsersByCompanyIds($users, $companyIds);
@@ -893,7 +899,7 @@ class UsersController extends Controller
      */
     public function eulas(User $user, ActionlogsTransformer $transformer)
     {
-        $this->authorize('view', User::class);
+        $this->authorize('view', $user);
 
         $eulas = $user->eulas;
 

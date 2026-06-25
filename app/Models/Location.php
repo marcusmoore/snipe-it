@@ -264,6 +264,28 @@ class Location extends SnipeModel
     }
 
     /**
+     * Walk up the parent chain to find the nearest ancestor with a company_id.
+     * Used by FMCS checkout validation so that assets can be checked out to
+     * child locations whose company is only set on a parent location.
+     */
+    public function effectiveFmcsCompanyId(): ?int
+    {
+        if ($this->company_id) {
+            return (int) $this->company_id;
+        }
+
+        $ancestor = $this->parent()->withoutGlobalScopes()->first();
+        while ($ancestor) {
+            if ($ancestor->company_id) {
+                return (int) $ancestor->company_id;
+            }
+            $ancestor = $ancestor->parent()->withoutGlobalScopes()->first();
+        }
+
+        return null;
+    }
+
+    /**
      * Establishes the locations -> company relationship
      *
      * @author [T. Regnery] [<tobias.regnery@gmail.com>]

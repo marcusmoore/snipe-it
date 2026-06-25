@@ -10,6 +10,7 @@ use App\Http\Middleware\CheckLocale;
 use App\Http\Middleware\CheckPermissions;
 use App\Http\Middleware\CheckUserIsActivated;
 use App\Http\Middleware\EncryptCookies;
+use App\Http\Middleware\EnforceApiUserAgent;
 use App\Http\Middleware\LogAuthedUserHeader;
 use App\Http\Middleware\NoSessionStore;
 use App\Http\Middleware\PreventBackHistory;
@@ -81,6 +82,7 @@ class Kernel extends HttpKernel
 
         'api' => [
             'auth:api',
+            EnforceApiUserAgent::class,
             CheckLocale::class,
             LogAuthedUserHeader::class,
             SetPaginationDefaults::class,

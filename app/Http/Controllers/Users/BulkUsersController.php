@@ -271,28 +271,48 @@ class BulkUsersController extends Controller
         if (! $manager_conflict) {
             $this->conditionallyAddItem('manager_id');
         }
-        // Save the updated info
-        User::whereIn('id', $user_raw_array)
-            ->where('id', '!=', auth()->id())->update($this->update_array);
-
-        if (array_key_exists('location_id', $this->update_array)) {
-            Asset::where('assigned_type', User::class)
-                ->whereIn('assigned_to', $user_raw_array)
-                ->update(['location_id' => $this->update_array['location_id']]);
-        }
-
-        // Handle company pivot sync separately from the mass update.
-        // company_ids[] comes from the multi-select; null_company_ids clears all memberships.
+        // Prepare company pivot changes upfront so we can include company_id in the per-user save.
         $bulkCompanyIds = array_filter(array_map('intval', (array) $request->input('company_ids', [])));
         $clearCompanies = $request->input('null_company_ids') == '1';
+        $allowedIds = [];
 
         if ($bulkCompanyIds || $clearCompanies) {
             $allowedIds = Company::getIdsForCurrentUser($bulkCompanyIds);
-            // Also update the scalar company_id column for display/backward compat.
-            $scalarCompanyId = $allowedIds[0] ?? null;
-            User::whereIn('id', $user_raw_array)->where('id', '!=', auth()->id())
-                ->update(['company_id' => $scalarCompanyId]);
-            foreach ($users as $user) {
+            // Include scalar company_id in the update array for display/backward compat.
+            $this->update_array['company_id'] = $allowedIds[0] ?? null;
+        }
+
+        // Save per-user so UserObserver::updating() fires and all field changes are written
+        // to the Activity Report. A mass update() bypasses model observers entirely.
+        foreach ($users as $user) {
+            $canEditAuth = auth()->user()->can('canEditAuthFields', $user) && auth()->user()->can('editableOnDemo');
+            $userUpdate = $this->update_array;
+
+            if ($canEditAuth) {
+                if ($request->filled('activated')) {
+                    $userUpdate['activated'] = $request->input('activated');
+                }
+                if ($request->filled('ldap_import')) {
+                    $userUpdate['ldap_import'] = $request->input('ldap_import');
+                }
+                if ($request->filled('email')) {
+                    $userUpdate['email'] = $request->input('email');
+                } elseif ($request->input('null_email') == '1') {
+                    $userUpdate['email'] = null;
+                }
+            }
+
+            if (! empty($userUpdate)) {
+                $user->fill($userUpdate)->save();
+            }
+
+            if (array_key_exists('location_id', $this->update_array)) {
+                Asset::where('assigned_type', User::class)
+                    ->where('assigned_to', $user->id)
+                    ->update(['location_id' => $this->update_array['location_id']]);
+            }
+
+            if ($bulkCompanyIds || $clearCompanies) {
                 if ($clearCompanies && ! auth()->user()->isSuperUser() && Company::isFullMultipleCompanySupportEnabled()) {
                     // Non-superusers can only detach companies they belong to; sync([]) would
                     // also wipe memberships for companies outside their scope.
@@ -300,33 +320,12 @@ class BulkUsersController extends Controller
                         $user->companies()->pluck('companies.id')->toArray()
                     ));
                 } else {
-                    $user->companies()->sync($allowedIds);
+                    $user->syncCompaniesWithLogging($allowedIds);
                 }
             }
-        }
 
-        // Fields that require canEditAuthFields (non-admins cannot touch admins/superusers,
-        // admins cannot touch superusers) must be applied per-user, not via mass update.
-        foreach ($users as $user) {
-            if (auth()->user()->can('canEditAuthFields', $user) && auth()->user()->can('editableOnDemo')) {
-                $authFieldUpdate = [];
-                if ($request->filled('activated')) {
-                    $authFieldUpdate['activated'] = $request->input('activated');
-                }
-                if ($request->filled('ldap_import')) {
-                    $authFieldUpdate['ldap_import'] = $request->input('ldap_import');
-                }
-                if ($request->filled('email')) {
-                    $authFieldUpdate['email'] = $request->input('email');
-                } elseif ($request->input('null_email') == '1') {
-                    $authFieldUpdate['email'] = null;
-                }
-                if (! empty($authFieldUpdate)) {
-                    $user->update($authFieldUpdate);
-                }
-                if ($request->filled('groups') && auth()->user()->isSuperUser()) {
-                    $user->groups()->sync($request->input('groups'));
-                }
+            if ($canEditAuth && $request->filled('groups') && auth()->user()->isSuperUser()) {
+                $user->groups()->sync($request->input('groups'));
             }
         }
 

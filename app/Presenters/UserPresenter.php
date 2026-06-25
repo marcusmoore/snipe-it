@@ -526,7 +526,7 @@ class UserPresenter extends Presenter
     public function nameUrl()
     {
         if (auth()->user()->can('view', ['\App\Models\User', $this])) {
-            return '<a href="'.route('users.show', $this->id).'">'.e($this->display_name).'</a>';
+            return '<a title="'.e($this->display_name).'" href="'.route('users.show', $this->id).'">'.e($this->display_name).'</a>';
         } else {
             return e($this->display_name);
         }

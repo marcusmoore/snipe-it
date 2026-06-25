@@ -92,7 +92,6 @@ class License extends Depreciable
         'serial',
         'supplier_id',
         'termination_date',
-        'created_by',
         'min_amt',
     ];
 

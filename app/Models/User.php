@@ -753,21 +753,57 @@ class User extends SnipeModel implements AuthenticatableContract, AuthorizableCo
     protected function linkLightColor(): Attribute
     {
         return Attribute::make(
-            get: fn (?string $value) => CssColor::sanitize($value, '#296282'),
+            get: function (?string $value) {
+                $fallback = '#296282';
+
+                if ($value) {
+                    return CssColor::sanitize($value, $fallback);
+                }
+
+                if (Setting::getSettings()) {
+                    return CssColor::sanitize(Setting::getSettings()->link_light_color, $fallback);
+                }
+
+                return CssColor::sanitize($value, $fallback);
+            },
         );
     }
 
     protected function linkDarkColor(): Attribute
     {
         return Attribute::make(
-            get: fn (?string $value) => CssColor::sanitize($value, '#5fa4cc'),
+            get: function (?string $value) {
+                $fallback = '#5fa4cc';
+
+                if ($value) {
+                    return CssColor::sanitize($value, $fallback);
+                }
+
+                if (Setting::getSettings()) {
+                    return CssColor::sanitize(Setting::getSettings()->link_dark_color, $fallback);
+                }
+
+                return CssColor::sanitize($value, $fallback);
+            },
         );
     }
 
     protected function navLinkColor(): Attribute
     {
         return Attribute::make(
-            get: fn (?string $value) => CssColor::sanitize($value, '#ffffff'),
+            get: function (?string $value) {
+                $fallback = '#ffffff';
+
+                if ($value) {
+                    return CssColor::sanitize($value, $fallback);
+                }
+
+                if (Setting::getSettings()) {
+                    return CssColor::sanitize(Setting::getSettings()->nav_link_color, $fallback);
+                }
+
+                return CssColor::sanitize($value, $fallback);
+            },
         );
     }
 

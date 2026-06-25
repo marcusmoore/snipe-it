@@ -382,12 +382,14 @@ class ValidationServiceProvider extends ServiceProvider
                 $location = Location::find($value);
 
                 if ($location) {
-                    if ($location->company_id === null) {
-                        // Null-company location: accessible to companied users only when floater is on.
+                    $effectiveCompanyId = $location->effectiveFmcsCompanyId();
+
+                    if ($effectiveCompanyId === null) {
+                        // No company found anywhere in the parent chain — floater rule applies.
                         return (bool) $settings->null_company_is_floater;
                     }
 
-                    if (! in_array($location->company_id, $companyIds)) {
+                    if (! in_array($effectiveCompanyId, $companyIds)) {
                         return false;
                     }
                 }

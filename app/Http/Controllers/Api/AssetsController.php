@@ -372,7 +372,7 @@ class AssetsController extends Controller
         }
 
         foreach ($all_custom_fields as $field) {
-            if ($request->filled($field->db_column_name())) {
+            if ($field->db_column_name() && $request->filled($field->db_column_name())) {
                 $assets->where($field->db_column_name(), '=', $request->input($field->db_column_name()));
             }
         }
@@ -423,6 +423,9 @@ class AssetsController extends Controller
                 break;
             case 'created_by':
                 $assets->OrderByCreatedByName($order);
+                break;
+            case 'eol':
+                $assets->orderBy('assets.asset_eol_date', $order);
                 break;
             default:
                 $numeric_sort = false;
@@ -614,7 +617,13 @@ class AssetsController extends Controller
         $assets = Company::scopeCompanyables($assets);
 
         // Allow further narrowing to a specific company passed via data-company-id on the select.
-        if ((Setting::getSettings()->full_multiple_companies_support == '1') && $request->filled('companyId')) {
+        // Superusers MUST bypass this filter — they manage across companies and need to see every
+        // asset on checkout dropdowns. Scoping superusers to the item's company breaks the umbrella-
+        // corp / service-provider workflow where one admin checks items out across sub-companies.
+        // See: https://github.com/snipe/snipe-it/issues/ (v8.6.3 regression report)
+        if ((Setting::getSettings()->full_multiple_companies_support == '1')
+            && $request->filled('companyId')
+            && ! auth()->user()->isSuperUser()) {
             $companyIds = array_values(array_filter(array_map('intval', explode(',', $request->input('companyId')))));
             if (! empty($companyIds)) {
                 $assets->whereIn('assets.company_id', $companyIds);
@@ -713,6 +722,8 @@ class AssetsController extends Controller
                         } else {
                             $field_val = Crypt::encrypt($request->input($field->db_column));
                         }
+                    } else {
+                        continue;
                     }
                 }
                 if ($field->element == 'checkbox') {

@@ -237,6 +237,9 @@ Route::group(['prefix' => 'admin', 'middleware' => ['auth', 'authorize:superuser
         ->breadcrumbs(fn (Trail $trail) => $trail->parent('settings.index')
             ->push(trans('admin/settings/general.oauth'), route('settings.oauth.index')));
 
+    Route::post('oauth/request-filters', [SettingsController::class, 'postApiRequestFilters'])
+        ->name('settings.oauth.request_filters.save');
+
     Route::post('oauth/tokens/{token}/revoke', [SettingsController::class, 'revokePersonalAccessToken'])
         ->name('settings.oauth.tokens.revoke');
 

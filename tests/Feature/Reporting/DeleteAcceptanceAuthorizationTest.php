@@ -75,6 +75,26 @@ class DeleteAcceptanceAuthorizationTest extends TestCase
         $this->assertNotNull($acceptance->fresh()->deleted_at);
     }
 
+    public function test_pivot_only_user_cannot_delete_acceptance_belonging_to_another_company()
+    {
+        $this->settings->enableMultipleFullCompanySupport();
+
+        [$companyA, $companyB] = Company::factory()->count(2)->create();
+
+        $assetB = Asset::factory()->create(['company_id' => $companyB->id]);
+        $reporter = User::factory()->canViewReports()->create(['company_id' => null]);
+        $reporter->companies()->sync([$companyA->id]);
+
+        $acceptance = CheckoutAcceptance::factory()->pending()->for($assetB, 'checkoutable')->create();
+
+        $this->actingAs($reporter)
+            ->delete(route('reports/unaccepted_assets_delete', $acceptance->id))
+            ->assertRedirectToRoute('reports/unaccepted_assets')
+            ->assertSessionHas('error');
+
+        $this->assertNull($acceptance->fresh()->deleted_at);
+    }
+
     public function test_company_scoping_not_enforced_when_fmcs_disabled()
     {
         $this->settings->disableMultipleFullCompanySupport();
