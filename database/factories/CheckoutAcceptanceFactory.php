@@ -7,6 +7,7 @@ use App\Models\Asset;
 use App\Models\CheckoutAcceptance;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Database\Eloquent\Model;
 use RuntimeException;
 
 class CheckoutAcceptanceFactory extends Factory
@@ -51,10 +52,16 @@ class CheckoutAcceptanceFactory extends Factory
             if ($acceptance->checkoutable instanceof Asset && $acceptance->assignedTo instanceof User) {
                 $asset = $acceptance->checkoutable;
 
-                $dirtyBefore = array_keys($asset->fill([
+                // Diagnostic snapshot BEFORE we touch the asset.
+                $fillResult = array_keys($asset->fill([
                     'assigned_to' => $acceptance->assigned_to_id,
                     'assigned_type' => get_class($acceptance->assignedTo),
                 ])->getDirty());
+
+                // Now bypass mass-assignment entirely and set the attributes directly.
+                $asset->assigned_to = $acceptance->assigned_to_id;
+                $asset->assigned_type = get_class($acceptance->assignedTo);
+                $dirtyAfterDirect = array_keys($asset->getDirty());
 
                 $updated = $asset->save();
 
@@ -64,11 +71,14 @@ class CheckoutAcceptanceFactory extends Factory
                 if (! $updated || (int) $fresh?->assigned_to !== (int) $acceptance->assigned_to_id) {
                     throw new RuntimeException('PROBE asset assignment did not persist: '.json_encode([
                         'expected_assigned_to' => $acceptance->assigned_to_id,
-                        'expected_assigned_type' => get_class($acceptance->assignedTo),
+                        'assigned_to_in_fillable' => in_array('assigned_to', $asset->getFillable(), true),
+                        'fillable_count' => count($asset->getFillable()),
+                        'model_unguarded' => Model::isUnguarded(),
+                        'asset_class' => get_class($asset),
+                        'dirty_after_fill' => $fillResult,
+                        'dirty_after_direct_set' => $dirtyAfterDirect,
                         'save_returned' => $updated,
-                        'dirty_keys_before_save' => $dirtyBefore,
                         'in_memory_assigned_to' => $asset->assigned_to,
-                        'in_memory_assigned_type' => $asset->assigned_type,
                         'fresh_db_assigned_to' => $fresh?->assigned_to,
                         'fresh_db_assigned_type' => $fresh?->assigned_type,
                         'validation_errors' => $asset->getErrors()->toArray(),
