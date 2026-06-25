@@ -48,10 +48,6 @@ class CheckoutAcceptanceFactory extends Factory
             }
 
             if ($acceptance->checkoutable instanceof Asset && $acceptance->assignedTo instanceof User) {
-                // Assign the asset to the user directly rather than via mass-assignment.
-                // assigned_to/assigned_type are polymorphic assignment columns that other
-                // test suites can drop from Asset::$fillable at runtime, which would make a
-                // fill()/update() here silently no-op; a direct set is unaffected by that.
                 $asset = $acceptance->checkoutable;
                 $asset->assigned_to = $acceptance->assigned_to_id;
                 $asset->assigned_type = get_class($acceptance->assignedTo);
