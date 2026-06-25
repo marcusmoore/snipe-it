@@ -52,31 +52,28 @@ class CheckoutAcceptanceFactory extends Factory
             if ($acceptance->checkoutable instanceof Asset && $acceptance->assignedTo instanceof User) {
                 $asset = $acceptance->checkoutable;
 
-                // Diagnostic snapshot BEFORE we touch the asset.
+                // Assign via mass-assignment exactly as before, capturing the dirty set fill() produced.
                 $fillResult = array_keys($asset->fill([
                     'assigned_to' => $acceptance->assigned_to_id,
                     'assigned_type' => get_class($acceptance->assignedTo),
                 ])->getDirty());
-
-                // Now bypass mass-assignment entirely and set the attributes directly.
-                $asset->assigned_to = $acceptance->assigned_to_id;
-                $asset->assigned_type = get_class($acceptance->assignedTo);
-                $dirtyAfterDirect = array_keys($asset->getDirty());
 
                 $updated = $asset->save();
 
                 // Re-read straight from the DB to see whether the write actually landed.
                 $fresh = Asset::query()->withTrashed()->find($asset->id);
 
-                if (! $updated || (int) $fresh?->assigned_to !== (int) $acceptance->assigned_to_id) {
+                // The anomaly is: fill()+save() did NOT persist the assignment. (An empty
+                // dirty set is fine on its own when the asset is already assigned to this user.)
+                if ((int) $fresh?->assigned_to !== (int) $acceptance->assigned_to_id) {
                     throw new RuntimeException('PROBE asset assignment did not persist: '.json_encode([
                         'expected_assigned_to' => $acceptance->assigned_to_id,
                         'assigned_to_in_fillable' => in_array('assigned_to', $asset->getFillable(), true),
+                        'assigned_type_in_fillable' => in_array('assigned_type', $asset->getFillable(), true),
                         'fillable_count' => count($asset->getFillable()),
                         'model_unguarded' => Model::isUnguarded(),
                         'asset_class' => get_class($asset),
                         'dirty_after_fill' => $fillResult,
-                        'dirty_after_direct_set' => $dirtyAfterDirect,
                         'save_returned' => $updated,
                         'in_memory_assigned_to' => $asset->assigned_to,
                         'fresh_db_assigned_to' => $fresh?->assigned_to,
