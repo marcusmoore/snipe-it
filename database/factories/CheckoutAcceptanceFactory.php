@@ -49,13 +49,32 @@ class CheckoutAcceptanceFactory extends Factory
             }
 
             if ($acceptance->checkoutable instanceof Asset && $acceptance->assignedTo instanceof User) {
-                $updated = $acceptance->checkoutable->update([
+                $asset = $acceptance->checkoutable;
+
+                $dirtyBefore = array_keys($asset->fill([
                     'assigned_to' => $acceptance->assigned_to_id,
                     'assigned_type' => get_class($acceptance->assignedTo),
-                ]);
+                ])->getDirty());
 
-                if (! $updated) {
-                    throw new RuntimeException('Asset assignment failed: '.json_encode($acceptance->checkoutable->getErrors()->toArray()));
+                $updated = $asset->save();
+
+                // Re-read straight from the DB to see whether the write actually landed.
+                $fresh = Asset::query()->withTrashed()->find($asset->id);
+
+                if (! $updated || (int) $fresh?->assigned_to !== (int) $acceptance->assigned_to_id) {
+                    throw new RuntimeException('PROBE asset assignment did not persist: '.json_encode([
+                        'expected_assigned_to' => $acceptance->assigned_to_id,
+                        'expected_assigned_type' => get_class($acceptance->assignedTo),
+                        'save_returned' => $updated,
+                        'dirty_keys_before_save' => $dirtyBefore,
+                        'in_memory_assigned_to' => $asset->assigned_to,
+                        'in_memory_assigned_type' => $asset->assigned_type,
+                        'fresh_db_assigned_to' => $fresh?->assigned_to,
+                        'fresh_db_assigned_type' => $fresh?->assigned_type,
+                        'validation_errors' => $asset->getErrors()->toArray(),
+                        'asset_id' => $asset->id,
+                        'connection' => $asset->getConnectionName(),
+                    ]));
                 }
             }
         });
