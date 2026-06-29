@@ -507,6 +507,127 @@ class SendReacceptanceRequests extends Command
         };
     }
 
+    private function printPreview(Collection $candidates, Collection $candidatesByUser, Collection $noEmailUsers): void
+    {
+        $supersededCount = $candidates->sum(fn (Candidate $candidate) => $candidate->acceptances->count());
+
+        $this->info("Would regenerate {$candidates->count()} acceptances for {$candidatesByUser->count()} users (superseding {$supersededCount} existing acceptances).");
+
+        if ($noEmailUsers->isNotEmpty()) {
+            $this->warn("{$noEmailUsers->count()} of these users have no email address and will not be notified:");
+            $this->printUsersTable($noEmailUsers);
+        }
+    }
+
+    /**
+     * Decide whether to print the per-user/item breakdown. Interactive runs are
+     * always offered the breakdown (defaulting to the -v flag); non-interactive
+     * runs print it only when -v was passed.
+     */
+    private function wantsItemBreakdown(): bool
+    {
+        if ($this->input->isInteractive()) {
+            return confirm(label: 'Show a breakdown of the affected users and items?', default: $this->output->isVerbose());
+        }
+
+        return $this->output->isVerbose();
+    }
+
+    /**
+     * Print one line per user with each of their affected items.
+     */
+    private function printItemBreakdown(Collection $candidatesByUser): void
+    {
+        foreach ($candidatesByUser as $candidatesForUser) {
+            $user = $candidatesForUser->first()->user;
+            $this->line("- {$user->display_name} (#{$user->id}):");
+            foreach ($candidatesForUser as $candidate) {
+                $this->line('    '.class_basename($candidate->checkoutable).' #'.$candidate->checkoutable->id);
+            }
+        }
+    }
+
+    /**
+     * Decide whether this is a dry run: honored from --dry-run, else prompted on
+     * interactive runs (defaulting to true), else false.
+     */
+    private function resolveDryRun(): bool
+    {
+        if ($this->option('dry-run')) {
+            return true;
+        }
+
+        if ($this->input->isInteractive()) {
+            return confirm(label: 'Is this a dry run?', default: true);
+        }
+
+        return false;
+    }
+
+    /**
+     * Validate the non-interactive send options. Interactive runs prompt instead,
+     * so they always pass. Prints an error and returns false on a bad combo.
+     */
+    private function validateSendOptions(): bool
+    {
+        if ($this->input->isInteractive()) {
+            return true;
+        }
+
+        if (! $this->option('force')) {
+            $this->error('Non-interactive run: pass --force to skip the regenerate confirmation.');
+
+            return false;
+        }
+
+        if ($this->option('send') && $this->option('no-send')) {
+            $this->error('--send and --no-send cannot be used together.');
+
+            return false;
+        }
+
+        if (! $this->option('send') && ! $this->option('no-send')) {
+            $this->error('Non-interactive run: pass --send or --no-send to choose the email behavior.');
+
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Decide whether to send emails.
+     *
+     * @return bool|null true = send emails, false = create without sending, null = user aborted
+     */
+    private function resolveSendDecision(int $count, int $userCount): ?bool
+    {
+        if (! $this->input->isInteractive()) {
+            return (bool) $this->option('send');
+        }
+
+        if (! $this->confirm("Regenerate {$count} acceptances for {$userCount} users?")) {
+            return null;
+        }
+
+        // A passed --send/--no-send flag skips the send prompt and is honored.
+        if ($this->option('send')) {
+            return true;
+        }
+
+        if ($this->option('no-send')) {
+            return false;
+        }
+
+        if ($this->confirm('Send the re-acceptance emails now?', true)) {
+            return true;
+        }
+
+        $this->warn('These users will NOT be notified now. You can send the generic reminder later with `snipeit:acceptance-reminder` (which uses the old reminder wording, not the re-accept wording).');
+
+        return $this->confirm('Continue and create the acceptances WITHOUT sending emails?', false) ? false : null;
+    }
+
     /**
      * Regenerate acceptances: per item, create the fresh pending row, supersede
      * the prior accepted row(s), and log it — all atomically.
@@ -596,127 +717,6 @@ class SendReacceptanceRequests extends Command
         }
 
         return $notified;
-    }
-
-    /**
-     * Validate the non-interactive send options. Interactive runs prompt instead,
-     * so they always pass. Prints an error and returns false on a bad combo.
-     */
-    private function validateSendOptions(): bool
-    {
-        if ($this->input->isInteractive()) {
-            return true;
-        }
-
-        if (! $this->option('force')) {
-            $this->error('Non-interactive run: pass --force to skip the regenerate confirmation.');
-
-            return false;
-        }
-
-        if ($this->option('send') && $this->option('no-send')) {
-            $this->error('--send and --no-send cannot be used together.');
-
-            return false;
-        }
-
-        if (! $this->option('send') && ! $this->option('no-send')) {
-            $this->error('Non-interactive run: pass --send or --no-send to choose the email behavior.');
-
-            return false;
-        }
-
-        return true;
-    }
-
-    /**
-     * Decide whether this is a dry run: honored from --dry-run, else prompted on
-     * interactive runs (defaulting to true), else false.
-     */
-    private function resolveDryRun(): bool
-    {
-        if ($this->option('dry-run')) {
-            return true;
-        }
-
-        if ($this->input->isInteractive()) {
-            return confirm(label: 'Is this a dry run?', default: true);
-        }
-
-        return false;
-    }
-
-    /**
-     * Decide whether to send emails.
-     *
-     * @return bool|null true = send emails, false = create without sending, null = user aborted
-     */
-    private function resolveSendDecision(int $count, int $userCount): ?bool
-    {
-        if (! $this->input->isInteractive()) {
-            return (bool) $this->option('send');
-        }
-
-        if (! $this->confirm("Regenerate {$count} acceptances for {$userCount} users?")) {
-            return null;
-        }
-
-        // A passed --send/--no-send flag skips the send prompt and is honored.
-        if ($this->option('send')) {
-            return true;
-        }
-
-        if ($this->option('no-send')) {
-            return false;
-        }
-
-        if ($this->confirm('Send the re-acceptance emails now?', true)) {
-            return true;
-        }
-
-        $this->warn('These users will NOT be notified now. You can send the generic reminder later with `snipeit:acceptance-reminder` (which uses the old reminder wording, not the re-accept wording).');
-
-        return $this->confirm('Continue and create the acceptances WITHOUT sending emails?', false) ? false : null;
-    }
-
-    private function printPreview(Collection $candidates, Collection $candidatesByUser, Collection $noEmailUsers): void
-    {
-        $supersededCount = $candidates->sum(fn (Candidate $candidate) => $candidate->acceptances->count());
-
-        $this->info("Would regenerate {$candidates->count()} acceptances for {$candidatesByUser->count()} users (superseding {$supersededCount} existing acceptances).");
-
-        if ($noEmailUsers->isNotEmpty()) {
-            $this->warn("{$noEmailUsers->count()} of these users have no email address and will not be notified:");
-            $this->printUsersTable($noEmailUsers);
-        }
-    }
-
-    /**
-     * Decide whether to print the per-user/item breakdown. Interactive runs are
-     * always offered the breakdown (defaulting to the -v flag); non-interactive
-     * runs print it only when -v was passed.
-     */
-    private function wantsItemBreakdown(): bool
-    {
-        if ($this->input->isInteractive()) {
-            return confirm(label: 'Show a breakdown of the affected users and items?', default: $this->output->isVerbose());
-        }
-
-        return $this->output->isVerbose();
-    }
-
-    /**
-     * Print one line per user with each of their affected items.
-     */
-    private function printItemBreakdown(Collection $candidatesByUser): void
-    {
-        foreach ($candidatesByUser as $candidatesForUser) {
-            $user = $candidatesForUser->first()->user;
-            $this->line("- {$user->display_name} (#{$user->id}):");
-            foreach ($candidatesForUser as $candidate) {
-                $this->line('    '.class_basename($candidate->checkoutable).' #'.$candidate->checkoutable->id);
-            }
-        }
     }
 
     private function printFinalResults(int $regenerated, int $notified, Collection $noEmailUsers): void
