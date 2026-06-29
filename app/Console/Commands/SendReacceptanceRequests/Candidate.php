@@ -20,6 +20,5 @@ final readonly class Candidate
         public Model $checkoutable,
         public ?int $qty,
         public Collection $acceptances,
-    ) {
-    }
+    ) {}
 }
