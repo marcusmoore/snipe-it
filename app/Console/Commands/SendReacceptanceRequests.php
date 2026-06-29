@@ -139,11 +139,11 @@ class SendReacceptanceRequests extends Command
             return self::SUCCESS;
         }
 
-        $createdByUser = $this->regenerate($byUser);
+        $createdByUser = $this->regenerateAcceptances($byUser);
 
         $notified = $send ? $this->sendEmails($createdByUser) : 0;
 
-        $this->report($candidates->count(), $notified, $noEmailUsers);
+        $this->printFinalResults($candidates->count(), $notified, $noEmailUsers);
 
         return self::SUCCESS;
     }
@@ -459,7 +459,7 @@ class SendReacceptanceRequests extends Command
                 return [
                     'user' => $latest->assignedTo,
                     'checkoutable' => $latest->checkoutable,
-                    'qty' => $this->resolveGroupQty($group, $latest),
+                    'qty' => $this->resolveGroupQuantity($group, $latest),
                     'acceptances' => $group,
                 ];
             })
@@ -496,7 +496,7 @@ class SendReacceptanceRequests extends Command
      * and license seats are single-unit holdings — duplicate accepted rows are an
      * anomaly, not accumulation — so the latest row's quantity is carried forward.
      */
-    private function resolveGroupQty(Collection $group, CheckoutAcceptance $latest): ?int
+    private function resolveGroupQuantity(Collection $group, CheckoutAcceptance $latest): ?int
     {
         $checkoutable = $latest->checkoutable;
 
@@ -530,7 +530,7 @@ class SendReacceptanceRequests extends Command
      *
      * @return array<int, array{user: User, acceptances: Collection}>
      */
-    private function regenerate(Collection $byUser): array
+    private function regenerateAcceptances(Collection $byUser): array
     {
         $createdByUser = [];
 
@@ -687,7 +687,7 @@ class SendReacceptanceRequests extends Command
 
         if ($noEmailUsers->isNotEmpty()) {
             $this->warn("{$noEmailUsers->count()} of these users have no email address and will not be notified:");
-            $this->renderUsersTable($noEmailUsers);
+            $this->printUsersTable($noEmailUsers);
         }
     }
 
@@ -719,13 +719,13 @@ class SendReacceptanceRequests extends Command
         }
     }
 
-    private function report(int $regenerated, int $notified, Collection $noEmailUsers): void
+    private function printFinalResults(int $regenerated, int $notified, Collection $noEmailUsers): void
     {
         $this->info("Regenerated {$regenerated} acceptances. Notified {$notified} users.");
 
         if ($noEmailUsers->isNotEmpty()) {
             $this->warn("Skipped {$noEmailUsers->count()} users with no email address:");
-            $this->renderUsersTable($noEmailUsers);
+            $this->printUsersTable($noEmailUsers);
         }
     }
 
@@ -734,7 +734,7 @@ class SendReacceptanceRequests extends Command
      *
      * @param  Collection<int, User>  $users
      */
-    private function renderUsersTable(Collection $users): void
+    private function printUsersTable(Collection $users): void
     {
         $this->table(['ID', 'Name'], $users->map(fn (User $user) => [$user->id, $user->display_name])->all());
     }
