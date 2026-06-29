@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Console\Commands;
+namespace App\Console\Commands\SendReacceptanceRequests;
 
 use App\Actions\Acceptances\CreateCheckoutAcceptanceAction;
 use App\Enums\ActionType;
