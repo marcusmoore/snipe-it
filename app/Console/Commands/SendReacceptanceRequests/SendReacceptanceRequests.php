@@ -86,7 +86,7 @@ class SendReacceptanceRequests extends Command
             $filters = $this->collectFiltersInteractively($filters);
         }
 
-        if (! $filters['acceptedBefore']) {
+        if (! $filters->acceptedBefore) {
             $this->warn('No accepted-before cutoff in effect: users who already re-accepted may be prompted again once they accept. Set a cutoff to scope to a smaller window of time.');
         }
 
@@ -149,13 +149,11 @@ class SendReacceptanceRequests extends Command
     }
 
     /**
-     * Build the filters array from the CLI options. Returns null when the --type
+     * Build the filters from the CLI options. Returns null when the --type
      * tokens are invalid (resolveTypeFilter() already printed the error), so the
      * caller can return self::FAILURE.
-     *
-     * @return array{types: string[], categories: int[], company: ?int, user: ?int, acceptedBefore: ?Carbon}|null
      */
-    private function buildFiltersFromOptions(): ?array
+    private function buildFiltersFromOptions(): ?ReacceptanceFilters
     {
         $morphClasses = $this->resolveTypeFilter();
 
@@ -163,13 +161,13 @@ class SendReacceptanceRequests extends Command
             return null;
         }
 
-        return [
-            'types' => $morphClasses,
-            'categories' => $this->option('category'),
-            'company' => $this->option('company'),
-            'user' => $this->option('user'),
-            'acceptedBefore' => $this->option('accepted-before') ? Carbon::parse($this->option('accepted-before')) : null,
-        ];
+        return new ReacceptanceFilters(
+            types: $morphClasses,
+            categories: array_map('intval', $this->option('category')),
+            company: $this->option('company') ? (int) $this->option('company') : null,
+            user: $this->option('user') ? (int) $this->option('user') : null,
+            acceptedBefore: $this->option('accepted-before') ? Carbon::parse($this->option('accepted-before')) : null,
+        );
     }
 
     /**
@@ -201,41 +199,37 @@ class SendReacceptanceRequests extends Command
     /**
      * Walk the user through the filters interactively, prompting only for those
      * NOT already supplied as a flag. A passed flag skips its prompt and keeps
-     * the value already resolved in $fromOptions. Returns the same filters-array
-     * shape as buildFiltersFromOptions().
-     *
-     * @param  array{types: string[], categories: int[], company: ?int, user: ?int, acceptedBefore: ?Carbon}  $fromOptions
-     * @return array{types: string[], categories: int[], company: ?int, user: ?int, acceptedBefore: ?Carbon}
+     * the value already resolved in $fromOptions.
      */
-    private function collectFiltersInteractively(array $fromOptions): array
+    private function collectFiltersInteractively(ReacceptanceFilters $fromOptions): ReacceptanceFilters
     {
         $types = empty($this->option('type'))
             ? $this->promptForTypes()
-            : $fromOptions['types'];
+            : $fromOptions->types;
 
         $categories = empty($this->option('category'))
             ? $this->promptForCategories($types)
-            : $fromOptions['categories'];
+            : $fromOptions->categories;
 
         $company = $this->option('company')
-            ? $fromOptions['company']
+            ? $fromOptions->company
             : $this->promptForCompany();
 
         $user = $this->option('user')
-            ? $fromOptions['user']
+            ? $fromOptions->user
             : $this->promptForUser();
 
         $acceptedBefore = $this->option('accepted-before')
-            ? $fromOptions['acceptedBefore']
+            ? $fromOptions->acceptedBefore
             : $this->promptForAcceptedBefore();
 
-        return [
-            'types' => $types,
-            'categories' => $categories,
-            'company' => $company,
-            'user' => $user,
-            'acceptedBefore' => $acceptedBefore,
-        ];
+        return new ReacceptanceFilters(
+            types: $types,
+            categories: $categories,
+            company: $company,
+            user: $user,
+            acceptedBefore: $acceptedBefore,
+        );
     }
 
     /**
@@ -408,19 +402,17 @@ class SendReacceptanceRequests extends Command
      *
      * Future: an "all still-assigned" mode (never-accepted items) would plug in
      * here behind a --mode switch
-     *
-     * @param  array{types: string[], categories: int[], company: ?int, user: ?int, acceptedBefore: ?Carbon}  $filters
      */
-    private function resolveCandidates(array $filters): Collection
+    private function resolveCandidates(ReacceptanceFilters $filters): Collection
     {
-        $categories = $filters['categories'];
-        $company = $filters['company'];
-        $acceptedBefore = $filters['acceptedBefore'];
-        $userId = $filters['user'];
+        $categories = $filters->categories;
+        $company = $filters->company;
+        $acceptedBefore = $filters->acceptedBefore;
+        $userId = $filters->user;
 
         $query = CheckoutAcceptance::accepted()
             ->notSuperseded()
-            ->whereIn('checkoutable_type', $filters['types'])
+            ->whereIn('checkoutable_type', $filters->types)
             ->with([
                 'assignedTo',
                 'checkoutable' => function (MorphTo $morph) {
@@ -444,7 +436,7 @@ class SendReacceptanceRequests extends Command
         if (! empty($categories) || $company) {
             $query->whereHasMorph(
                 'checkoutable',
-                $filters['types'],
+                $filters->types,
                 fn ($itemQuery, string $type) => $this->applyItemFilters($itemQuery, $type, $categories, $company)
             );
         }
@@ -469,7 +461,7 @@ class SendReacceptanceRequests extends Command
     /**
      * Apply the category/company filters for one morph type inside whereHasMorph.
      */
-    private function applyItemFilters($itemQuery, string $type, array $categories, ?string $company): void
+    private function applyItemFilters($itemQuery, string $type, array $categories, ?int $company): void
     {
         if (! empty($categories)) {
             match ($type) {
