@@ -98,9 +98,9 @@ class SendReacceptanceRequests extends Command
             return self::SUCCESS;
         }
 
-        $candidatesByUser = $candidates->groupBy(fn (array $candidate) => $candidate['user']->id);
+        $candidatesByUser = $candidates->groupBy(fn (Candidate $candidate) => $candidate->user->id);
         $noEmailUsers = $candidatesByUser
-            ->map(fn (Collection $group) => $group->first()['user'])
+            ->map(fn (Collection $group) => $group->first()->user)
             ->filter(fn (User $user) => ! $user->email);
 
         $this->printPreview($candidates, $candidatesByUser, $noEmailUsers);
@@ -397,8 +397,7 @@ class SendReacceptanceRequests extends Command
     /**
      * Resolve the previously-accepted candidates still assigned to the same user.
      *
-     * Returns a collection of ['user' => User, 'checkoutable' => Model, 'qty' => ?int,
-     * 'acceptances' => Collection] arrays — one per (user, item).
+     * Returns a Collection<Candidate> — one per (user, item).
      *
      * Future: an "all still-assigned" mode (never-accepted items) would plug in
      * here behind a --mode switch
@@ -448,12 +447,12 @@ class SendReacceptanceRequests extends Command
             ->map(function (Collection $group) {
                 $latest = $group->sortByDesc('accepted_at')->first();
 
-                return [
-                    'user' => $latest->assignedTo,
-                    'checkoutable' => $latest->checkoutable,
-                    'qty' => $this->resolveGroupQuantity($group, $latest),
-                    'acceptances' => $group,
-                ];
+                return new Candidate(
+                    user: $latest->assignedTo,
+                    checkoutable: $latest->checkoutable,
+                    qty: $this->resolveGroupQuantity($group, $latest),
+                    acceptances: $group,
+                );
             })
             ->values();
     }
@@ -532,12 +531,12 @@ class SendReacceptanceRequests extends Command
             foreach ($candidates as $candidate) {
                 $newAcceptance = DB::transaction(function () use ($candidate) {
                     $newAcceptance = CreateCheckoutAcceptanceAction::run(
-                        $candidate['checkoutable'],
-                        $candidate['user'],
-                        $candidate['qty'],
+                        $candidate->checkoutable,
+                        $candidate->user,
+                        $candidate->qty,
                     );
 
-                    foreach ($candidate['acceptances'] as $supersededAcceptance) {
+                    foreach ($candidate->acceptances as $supersededAcceptance) {
                         $supersededAcceptance->markSupersededBy($newAcceptance);
                     }
 
@@ -550,7 +549,7 @@ class SendReacceptanceRequests extends Command
             }
 
             $createdAcceptancesByUser[$userId] = [
-                'user' => $candidates->first()['user'],
+                'user' => $candidates->first()->user,
                 'acceptances' => $created,
             ];
         }
@@ -673,7 +672,7 @@ class SendReacceptanceRequests extends Command
 
     private function printPreview(Collection $candidates, Collection $candidatesByUser, Collection $noEmailUsers): void
     {
-        $supersededCount = $candidates->sum(fn (array $candidate) => $candidate['acceptances']->count());
+        $supersededCount = $candidates->sum(fn (Candidate $candidate) => $candidate->acceptances->count());
 
         $this->info("Would regenerate {$candidates->count()} acceptances for {$candidatesByUser->count()} users (superseding {$supersededCount} existing acceptances).");
 
@@ -703,10 +702,10 @@ class SendReacceptanceRequests extends Command
     private function printItemBreakdown(Collection $candidatesByUser): void
     {
         foreach ($candidatesByUser as $candidatesForUser) {
-            $user = $candidatesForUser->first()['user'];
+            $user = $candidatesForUser->first()->user;
             $this->line("- {$user->display_name} (#{$user->id}):");
             foreach ($candidatesForUser as $candidate) {
-                $this->line('    '.class_basename($candidate['checkoutable']).' #'.$candidate['checkoutable']->id);
+                $this->line('    '.class_basename($candidate->checkoutable).' #'.$candidate->checkoutable->id);
             }
         }
     }
