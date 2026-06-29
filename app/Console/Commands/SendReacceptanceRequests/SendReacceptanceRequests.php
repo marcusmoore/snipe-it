@@ -109,15 +109,7 @@ class SendReacceptanceRequests extends Command
             $this->printItemBreakdown($candidatesByUser);
         }
 
-        if ($this->option('dry-run')) {
-            $dryRun = true;
-        } elseif ($this->input->isInteractive()) {
-            $dryRun = confirm(label: 'Is this a dry run?', default: true);
-        } else {
-            $dryRun = false;
-        }
-
-        if ($dryRun) {
+        if ($this->resolveDryRun()) {
             $this->line('Dry run: nothing was written or sent.');
 
             if (! $this->output->isVerbose() && ! $this->input->isInteractive()) {
@@ -635,6 +627,23 @@ class SendReacceptanceRequests extends Command
         }
 
         return true;
+    }
+
+    /**
+     * Decide whether this is a dry run: honored from --dry-run, else prompted on
+     * interactive runs (defaulting to true), else false.
+     */
+    private function resolveDryRun(): bool
+    {
+        if ($this->option('dry-run')) {
+            return true;
+        }
+
+        if ($this->input->isInteractive()) {
+            return confirm(label: 'Is this a dry run?', default: true);
+        }
+
+        return false;
     }
 
     /**
