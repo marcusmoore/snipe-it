@@ -98,15 +98,15 @@ class SendReacceptanceRequests extends Command
             return self::SUCCESS;
         }
 
-        $byUser = $candidates->groupBy(fn (array $candidate) => $candidate['user']->id);
-        $noEmailUsers = $byUser
+        $candidatesByUser = $candidates->groupBy(fn (array $candidate) => $candidate['user']->id);
+        $noEmailUsers = $candidatesByUser
             ->map(fn (Collection $group) => $group->first()['user'])
             ->filter(fn (User $user) => ! $user->email);
 
-        $this->printPreview($candidates, $byUser, $noEmailUsers);
+        $this->printPreview($candidates, $candidatesByUser, $noEmailUsers);
 
         if ($this->wantsItemBreakdown()) {
-            $this->printItemBreakdown($byUser);
+            $this->printItemBreakdown($candidatesByUser);
         }
 
         if ($this->option('dry-run')) {
@@ -131,7 +131,7 @@ class SendReacceptanceRequests extends Command
             return self::FAILURE;
         }
 
-        $send = $this->resolveSendDecision($candidates->count(), $byUser->count());
+        $send = $this->resolveSendDecision($candidates->count(), $candidatesByUser->count());
 
         if ($send === null) {
             $this->info('Aborted. Nothing was written.');
@@ -139,9 +139,9 @@ class SendReacceptanceRequests extends Command
             return self::SUCCESS;
         }
 
-        $createdByUser = $this->regenerateAcceptances($byUser);
+        $createdAcceptancesByUser = $this->regenerateAcceptances($candidatesByUser);
 
-        $notified = $send ? $this->sendEmails($createdByUser) : 0;
+        $notified = $send ? $this->sendEmails($createdAcceptancesByUser) : 0;
 
         $this->printFinalResults($candidates->count(), $notified, $noEmailUsers);
 
@@ -522,11 +522,11 @@ class SendReacceptanceRequests extends Command
      *
      * @return array<int, array{user: User, acceptances: Collection}>
      */
-    private function regenerateAcceptances(Collection $byUser): array
+    private function regenerateAcceptances(Collection $candidatesByUser): array
     {
-        $createdByUser = [];
+        $createdAcceptancesByUser = [];
 
-        foreach ($byUser as $userId => $candidates) {
+        foreach ($candidatesByUser as $userId => $candidates) {
             $created = collect();
 
             foreach ($candidates as $candidate) {
@@ -549,13 +549,13 @@ class SendReacceptanceRequests extends Command
                 $created->push($newAcceptance);
             }
 
-            $createdByUser[$userId] = [
+            $createdAcceptancesByUser[$userId] = [
                 'user' => $candidates->first()['user'],
                 'acceptances' => $created,
             ];
         }
 
-        return $createdByUser;
+        return $createdAcceptancesByUser;
     }
 
     /**
@@ -581,13 +581,13 @@ class SendReacceptanceRequests extends Command
      * Send one email per user with their set of new acceptances, skipping users
      * without an email address. Returns the number of users notified.
      *
-     * @param  array<int, array{user: User, acceptances: Collection}>  $createdByUser
+     * @param  array<int, array{user: User, acceptances: Collection}>  $createdAcceptancesByUser
      */
-    private function sendEmails(array $createdByUser): int
+    private function sendEmails(array $createdAcceptancesByUser): int
     {
         $notified = 0;
 
-        foreach ($createdByUser as $entry) {
+        foreach ($createdAcceptancesByUser as $entry) {
             $user = $entry['user'];
 
             if (! $user->email) {
@@ -671,11 +671,11 @@ class SendReacceptanceRequests extends Command
         return $this->confirm('Continue and create the acceptances WITHOUT sending emails?', false) ? false : null;
     }
 
-    private function printPreview(Collection $candidates, Collection $byUser, Collection $noEmailUsers): void
+    private function printPreview(Collection $candidates, Collection $candidatesByUser, Collection $noEmailUsers): void
     {
         $supersededCount = $candidates->sum(fn (array $candidate) => $candidate['acceptances']->count());
 
-        $this->info("Would regenerate {$candidates->count()} acceptances for {$byUser->count()} users (superseding {$supersededCount} existing acceptances).");
+        $this->info("Would regenerate {$candidates->count()} acceptances for {$candidatesByUser->count()} users (superseding {$supersededCount} existing acceptances).");
 
         if ($noEmailUsers->isNotEmpty()) {
             $this->warn("{$noEmailUsers->count()} of these users have no email address and will not be notified:");
@@ -700,9 +700,9 @@ class SendReacceptanceRequests extends Command
     /**
      * Print one line per user with each of their affected items.
      */
-    private function printItemBreakdown(Collection $byUser): void
+    private function printItemBreakdown(Collection $candidatesByUser): void
     {
-        foreach ($byUser as $candidatesForUser) {
+        foreach ($candidatesByUser as $candidatesForUser) {
             $user = $candidatesForUser->first()['user'];
             $this->line("- {$user->display_name} (#{$user->id}):");
             foreach ($candidatesForUser as $candidate) {
