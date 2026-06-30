@@ -20,7 +20,9 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
 
 use function Laravel\Prompts\confirm;
 use function Laravel\Prompts\multisearch;
@@ -72,10 +74,18 @@ class SendReacceptanceRequests extends Command
     protected $description = 'Generate fresh acceptance requests for previously-accepted items still assigned to the same user, and (optionally) email those users.';
 
     /**
+     * Short random identifier stamped on every log line for this invocation, so a
+     * single run can be grepped out of a shared log.
+     */
+    private string $runId;
+
+    /**
      * Execute the console command.
      */
     public function handle(): int
     {
+        $this->runId = Str::random(8);
+
         $filters = $this->buildFiltersFromOptions();
 
         if ($filters === null) {
@@ -85,6 +95,18 @@ class SendReacceptanceRequests extends Command
         if ($this->input->isInteractive()) {
             $filters = $this->collectFiltersInteractively($filters);
         }
+
+        Log::info('reacceptance.run.start', [
+            'run_id' => $this->runId,
+            'types' => $filters->types,
+            'categories' => $filters->categories,
+            'company' => $filters->company,
+            'user' => $filters->user,
+            'accepted_before' => $filters->acceptedBefore?->toDateString(),
+            'dry_run' => (bool) $this->option('dry-run'),
+            'interactive' => $this->input->isInteractive(),
+            'actor' => auth()?->id(),
+        ]);
 
         if (! $filters->acceptedBefore) {
             $this->warn('No accepted-before cutoff in effect: users who already re-accepted may be prompted again once they accept. Set a cutoff to scope to a smaller window of time.');
@@ -103,6 +125,13 @@ class SendReacceptanceRequests extends Command
             ->map(fn (Collection $group) => $group->first()->user)
             ->filter(fn (User $user) => ! $user->email);
 
+        Log::info('reacceptance.candidates.resolved', [
+            'run_id' => $this->runId,
+            'candidate_count' => $candidates->count(),
+            'user_count' => $candidatesByUser->count(),
+            'no_email_count' => $noEmailUsers->count(),
+        ]);
+
         $this->printPreview($candidates, $candidatesByUser, $noEmailUsers);
 
         if ($this->wantsItemBreakdown()) {
@@ -110,6 +139,8 @@ class SendReacceptanceRequests extends Command
         }
 
         if ($this->resolveDryRun()) {
+            Log::info('reacceptance.dry_run', ['run_id' => $this->runId]);
+
             $this->line('Dry run: nothing was written or sent.');
 
             if (! $this->output->isVerbose() && ! $this->input->isInteractive()) {
@@ -131,11 +162,22 @@ class SendReacceptanceRequests extends Command
             return self::SUCCESS;
         }
 
-        $createdAcceptancesByUser = $this->regenerateAcceptances($candidatesByUser);
+        $result = $this->regenerateAcceptances($candidatesByUser);
 
-        $notified = $send ? $this->sendEmails($createdAcceptancesByUser) : 0;
+        $regenerated = collect($result->createdAcceptancesByUser)
+            ->sum(fn (array $entry) => $entry['acceptances']->count());
 
-        $this->printFinalResults($candidates->count(), $notified, $noEmailUsers);
+        $notified = $send ? $this->sendEmails($result->createdAcceptancesByUser) : 0;
+
+        $this->printFinalResults($regenerated, $notified, $noEmailUsers, $result->failedUsers);
+
+        Log::info('reacceptance.run.complete', [
+            'run_id' => $this->runId,
+            'regenerated' => $regenerated,
+            'notified' => $notified,
+            'skipped_no_email' => $noEmailUsers->count(),
+            'failed_users' => $result->failedUsers->count(),
+        ]);
 
         return self::SUCCESS;
     }
@@ -629,45 +671,73 @@ class SendReacceptanceRequests extends Command
     }
 
     /**
-     * Regenerate acceptances: per item, create the fresh pending row, supersede
-     * the prior accepted row(s), and log it — all atomically.
-     *
-     * @return array<int, array{user: User, acceptances: Collection}>
+     * Regenerate acceptances one user at a time. Each user's items are processed
+     * in a single transaction (create the fresh pending row, supersede the prior
+     * accepted row(s), and log it). A user whose transaction throws is caught,
+     * logged, and skipped — the run continues with the remaining users and the
+     * failed user is reported at the end (a re-run picks them up, since the
+     * candidate query is idempotent).
      */
-    private function regenerateAcceptances(Collection $candidatesByUser): array
+    private function regenerateAcceptances(Collection $candidatesByUser): RegenerationResult
     {
         $createdAcceptancesByUser = [];
+        $failedUsers = collect();
+        $actorId = auth()?->id();
 
         foreach ($candidatesByUser as $userId => $candidates) {
-            $created = collect();
+            $user = $candidates->first()->user;
 
-            foreach ($candidates as $candidate) {
-                $newAcceptance = DB::transaction(function () use ($candidate) {
-                    $newAcceptance = CreateCheckoutAcceptanceAction::run(
-                        $candidate->checkoutable,
-                        $candidate->user,
-                        $candidate->qty,
-                    );
+            try {
+                $created = DB::transaction(function () use ($candidates, $actorId) {
+                    $created = collect();
 
-                    foreach ($candidate->acceptances as $supersededAcceptance) {
-                        $supersededAcceptance->markSupersededBy($newAcceptance);
+                    foreach ($candidates as $candidate) {
+                        $newAcceptance = CreateCheckoutAcceptanceAction::run(
+                            $candidate->checkoutable,
+                            $candidate->user,
+                            $candidate->qty,
+                        );
+
+                        foreach ($candidate->acceptances as $supersededAcceptance) {
+                            $supersededAcceptance->markSupersededBy($newAcceptance);
+                        }
+
+                        $this->logReacceptanceRequested($newAcceptance, $actorId);
+
+                        Log::debug('reacceptance.item.regenerated', [
+                            'run_id' => $this->runId,
+                            'user_id' => $candidate->user->id,
+                            'type' => $candidate->checkoutable::class,
+                            'id' => $candidate->checkoutable->id,
+                            'qty' => $candidate->qty,
+                            'superseded_count' => $candidate->acceptances->count(),
+                        ]);
+
+                        $created->push($newAcceptance);
                     }
 
-                    $this->logReacceptanceRequested($newAcceptance, auth()?->id());
-
-                    return $newAcceptance;
+                    return $created;
                 });
+            } catch (\Throwable $e) {
+                Log::error('reacceptance.user.failed', [
+                    'run_id' => $this->runId,
+                    'user_id' => $user->id,
+                    'email' => $user->email,
+                    'error' => $e->getMessage(),
+                ]);
 
-                $created->push($newAcceptance);
+                $failedUsers->push($user);
+
+                continue;
             }
 
             $createdAcceptancesByUser[$userId] = [
-                'user' => $candidates->first()->user,
+                'user' => $user,
                 'acceptances' => $created,
             ];
         }
 
-        return $createdAcceptancesByUser;
+        return new RegenerationResult($createdAcceptancesByUser, $failedUsers);
     }
 
     /**
@@ -713,19 +783,35 @@ class SendReacceptanceRequests extends Command
                 ? Mail::to($user->email)->send($mailable->locale($locale))
                 : Mail::to($user->email)->send($mailable);
 
+            Log::debug('reacceptance.email.sent', [
+                'run_id' => $this->runId,
+                'user_id' => $user->id,
+                'email' => $user->email,
+                'item_count' => $entry['acceptances']->count(),
+            ]);
+
             $notified++;
         }
 
         return $notified;
     }
 
-    private function printFinalResults(int $regenerated, int $notified, Collection $noEmailUsers): void
+    /**
+     * @param  Collection<int, User>  $noEmailUsers
+     * @param  Collection<int, User>  $failedUsers
+     */
+    private function printFinalResults(int $regenerated, int $notified, Collection $noEmailUsers, Collection $failedUsers): void
     {
         $this->info("Regenerated {$regenerated} acceptances. Notified {$notified} users.");
 
         if ($noEmailUsers->isNotEmpty()) {
             $this->warn("Skipped {$noEmailUsers->count()} users with no email address:");
             $this->printUsersTable($noEmailUsers);
+        }
+
+        if ($failedUsers->isNotEmpty()) {
+            $this->warn("Failed to regenerate {$failedUsers->count()} users:");
+            $this->printUsersTable($failedUsers);
         }
     }
 
