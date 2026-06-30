@@ -23,6 +23,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
+use Throwable;
 
 use function Laravel\Prompts\confirm;
 use function Laravel\Prompts\multisearch;
@@ -718,7 +719,7 @@ class SendReacceptanceRequests extends Command
 
                     return $created;
                 });
-            } catch (\Throwable $e) {
+            } catch (Throwable $e) {
                 Log::error('reacceptance.user.failed', [
                     'run_id' => $this->runId,
                     'user_id' => $user->id,
