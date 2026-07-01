@@ -32,7 +32,7 @@
                 @endif
 
                 <div class="dynamic-form-row">
-                    <div class="col-md-3 col-xs-12"><label for="modal-company_id">{{ trans('general.company') }}:</label></div>
+                    <label for="modal-company_id" class="col-md-3 control-label">{{ trans('general.company') }}:</label>
                     <div class="col-md-9 col-xs-12">
                         <select class="js-data-ajax" data-endpoint="companies" data-placeholder="{{ trans('general.select_company') }}" name="company_id" id="modal-company_id" style="width:100%">
                             <option value=""></option>
@@ -41,7 +41,8 @@
                 </div>
 
                 <div class="dynamic-form-row">
-                    <div class="col-md-3 col-xs-12"><label for="modal-location_id">{{ trans('general.location') }}:</label></div>
+                    <label for="modal-location_id" class="col-md-3 control-label">{{ trans('general.location') }}
+                        :</label>
                     <div class="col-md-9 col-xs-12">
                         <select class="js-data-ajax" data-endpoint="locations" data-placeholder="{{ trans('general.select_location') }}" name="location_id" id="modal-location_id" style="width:100%">
                             <option value=""></option>
@@ -50,7 +51,8 @@
                 </div>
 
                 <div class="dynamic-form-row">
-                    <div class="col-md-3 col-xs-12"><label for="modal-first_name">{{ trans('general.first_name') }}:</label></div>
+                    <label for="modal-first_name" class="col-md-3 control-label">{{ trans('general.first_name') }}:
+                    </label>
                     <div class="col-md-9 col-xs-12"><input type="text" name="first_name" id="modal-first_name" class="form-control" maxlength="191" required></div>
                 </div>
 
@@ -60,8 +62,12 @@
                 </div>
 
                 <div class="dynamic-form-row">
-                    <div class="col-md-3 col-xs-12"><label for="modal-email">{{ trans('admin/users/table.email') }}:</label></div>
-                    <div class="col-md-9 col-xs-12"><input type="email" name="email" id="modal-email" class="form-control" maxlength="191"></div>
+                    <label for="modal-email" class="col-md-3 control-label">{{ trans('admin/users/table.email') }}
+                        :</label>
+
+                    <div class="col-md-9 col-xs-12">
+                        <input type="email" name="email" id="modal-email" class="form-control" maxlength="191">
+                    </div>
                 </div>
 
                 <div class="dynamic-form-row">
@@ -70,7 +76,9 @@
                 </div>
 
                 <div class="dynamic-form-row">
-                    <div class="col-md-3 col-xs-12"><label for="modal-password">{{ trans('admin/users/table.password') }}:</label></div>
+                    <label for="modal-password" class="col-md-3 control-label">
+                        {{ trans('admin/users/table.password') }}:
+                    </label>
                     <div class="col-md-8 col-xs-12">
                         <div class="input-group">
                             <input type="password" name="password" id="modal-password" class="form-control" required>
@@ -81,15 +89,17 @@
                         </div>
                     </div>
                     <div class="col-md-1">
-                        <a href="#" class="btn btn-default btn-sm" id="modal-genPassword" data-tooltip="true" title="{{ trans('admin/users/general.generate_password') }}">
+                        <a href="#" class="btn btn-theme btn-sm" id="modal-genPassword" data-tooltip="true" title="{{ trans('admin/users/general.generate_password') }}">
                             <i class="fa-solid fa-wand-magic-sparkles"></i>
                         </a>
                     </div>
                 </div>
 
                 <div class="dynamic-form-row">
-                    <div class="col-md-3 col-xs-12"><label for="modal-password_confirmation">{{ trans('admin/users/table.password_confirm') }}:</label></div>
-                    <div class="col-md-9 col-xs-12">
+                    <label for="modal-password_confirmation" class="col-md-3 control-label">
+                        {{ trans('admin/users/table.password_confirm') }}:
+                    </label>
+                    <div class="col-md-8 col-xs-12">
                         <div class="input-group">
                             <input type="password" name="password_confirmation" id="modal-password_confirmation" class="form-control" required>
                             <span class="input-group-addon">
@@ -101,8 +111,12 @@
                 </div>
 
                 <div class="dynamic-form-row">
-                    <div class="col-md-3 col-xs-12"><label for="modal-display_name">{{ trans('admin/users/table.display_name') }}:</label></div>
-                    <div class="col-md-9 col-xs-12"><input type="text" name="display_name" id="modal-display_name" class="form-control" maxlength="191"></div>
+                    <label for="modal-display_name" class="col-md-3 control-label">
+                        {{ trans('admin/users/table.display_name') }}:
+                    </label>
+                    <div class="col-md-9 col-xs-12">
+                        <input type="text" name="display_name" id="modal-display_name" class="form-control" maxlength="191">
+                    </div>
                 </div>
 
                 <div class="dynamic-form-row">

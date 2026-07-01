@@ -25,6 +25,8 @@ class UpdateAssetRequest extends ImageUploadRequest
 
     public function prepareForValidation(): void
     {
+        parent::prepareForValidation();
+
         if ($this->filled('purchase_cost') && ! is_float($this->input('purchase_cost')) && preg_match('/^[\d.,]+$/', (string) $this->input('purchase_cost'))) {
             $this->merge(['purchase_cost' => Helper::ParseCurrency($this->input('purchase_cost'))]);
         }

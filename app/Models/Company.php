@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Http\Traits\UniqueUndeletedTrait;
 use App\Models\Traits\CompanyableTrait;
 use App\Models\Traits\HasUploads;
 use App\Models\Traits\Loggable;
@@ -30,12 +31,13 @@ final class Company extends SnipeModel
     use HasUploads;
     use Loggable;
     use SoftDeletes;
+    use UniqueUndeletedTrait;
 
     protected $table = 'companies';
 
     // Declare the rules for the model validation
     protected $rules = [
-        'name' => 'required|max:255|unique:companies,name',
+        'name' => 'required|max:255|unique_undeleted',
         'fax' => 'min:7|max:35|nullable',
         'phone' => 'min:7|max:35|nullable',
         'email' => 'email|max:150|nullable',

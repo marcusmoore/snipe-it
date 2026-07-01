@@ -1,26 +1,33 @@
 <?php
 
-namespace Tests\Feature\Reporting;
+namespace Tests\Feature\Reporting\Custom;
 
 use App\Models\Asset;
 use App\Models\Company;
 use App\Models\CustomField;
 use App\Models\ReportTemplate;
 use App\Models\User;
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Crypt;
 use League\Csv\Reader;
 use PHPUnit\Framework\Attributes\Group;
-use Tests\Concerns\TestsPermissionsRequirement;
 use Tests\TestCase;
 
 #[Group('custom-reporting')]
-class CustomReportTest extends TestCase implements TestsPermissionsRequirement
+class CustomAssetReportTest extends TestCase
 {
-    public function test_requires_permission()
+    public function test_requires_permission_to_view_page()
     {
         $this->actingAs(User::factory()->create())
             ->get(route('reports/custom'))
+            ->assertForbidden();
+    }
+
+    public function test_requires_permission_to_run_report()
+    {
+        $this->actingAs(User::factory()->create())
+            ->post(route('reports.post-custom'), [
+                //
+            ])
             ->assertForbidden();
     }
 
@@ -33,26 +40,6 @@ class CustomReportTest extends TestCase implements TestsPermissionsRequirement
                 'template' => function (ReportTemplate $template) {
                     // the view should have an empty report by default
                     return $template->exists() === false;
-                },
-            ]);
-    }
-
-    public function test_saved_templates_on_page_are_scoped_to_the_user()
-    {
-        // Given there is a saved template for one user
-        ReportTemplate::factory()->create(['name' => 'Report A']);
-
-        // When loading reports/custom while acting as another user that also has a saved template
-        $user = User::factory()->canViewReports()
-            ->has(ReportTemplate::factory(['name' => 'Report B']))
-            ->create();
-
-        // The user should not see the other user's template (in view as 'report_templates')
-        $this->actingAs($user)
-            ->get(route('reports/custom'))
-            ->assertViewHas([
-                'report_templates' => function (Collection $reports) {
-                    return $reports->pluck('name')->doesntContain('Report A');
                 },
             ]);
     }
@@ -75,7 +62,7 @@ class CustomReportTest extends TestCase implements TestsPermissionsRequirement
 
     public function test_custom_asset_report_adheres_to_company_scoping()
     {
-        [$companyA, $companyB] = Company::factory()->count(2)->create();
+        [$companyA, $companyB] = Company::factory()->count(2)->create()->all();
 
         Asset::factory()->for($companyA)->create(['name' => 'Asset A']);
         Asset::factory()->for($companyB)->create(['name' => 'Asset B']);
@@ -168,6 +155,64 @@ class CustomReportTest extends TestCase implements TestsPermissionsRequirement
             ->assertOk()
             ->assertDontSeeTextInStreamedResponse('Assigned Asset')
             ->assertSeeTextInStreamedResponse('Unassigned Asset');
+    }
+
+    public function test_assigned_asset_tag_column_emits_parent_tag_only_when_opted_in(): void
+    {
+        // #18281: opt-in column that emits the parent asset's tag in its own
+        // cell when an asset is checked out to another asset. Users/locations
+        // /unassigned rows leave the cell empty. Header must not appear when
+        // the checkbox isn't submitted, so existing templates are unchanged.
+        $parent = Asset::factory()->create(['asset_tag' => 'PARENT-001']);
+        Asset::factory()->assignedToAsset()->create([
+            'name' => 'Child Asset',
+            'assigned_to' => $parent->id,
+            'assigned_type' => Asset::class,
+        ]);
+        Asset::factory()->assignedToUser()->create(['name' => 'User-Assigned Asset']);
+        Asset::factory()->create(['name' => 'Unassigned Asset']);
+
+        $reporter = User::factory()->canViewReports()->create();
+
+        // With the checkbox: column appears, parent tag in the asset-to-asset
+        // row, empty cell everywhere else.
+        $response = $this->actingAs($reporter)
+            ->post('reports/custom', [
+                'asset_name' => '1',
+                'assigned_asset_tag' => '1',
+            ])
+            ->assertOk()
+            ->assertHeader('content-type', 'text/csv; charset=utf-8');
+
+        $rows = collect(Reader::createFromString($response->streamedContent())->getRecords())->values();
+        $header = $rows->first();
+        $body = $rows->slice(1)->values();
+
+        $columnIndex = array_search(
+            trans('admin/reports/general.custom_export.assigned_asset_tag'),
+            $header,
+            true,
+        );
+        $this->assertNotFalse($columnIndex, 'Checked Out Asset Tag header should be present when checkbox is submitted');
+
+        $byName = $body->keyBy(fn ($row) => $row[array_search(trans('general.name'), $header, true)] ?? null);
+
+        $this->assertSame('PARENT-001', $byName['Child Asset'][$columnIndex] ?? null);
+        $this->assertSame('', $byName['User-Assigned Asset'][$columnIndex] ?? null);
+        $this->assertSame('', $byName['Unassigned Asset'][$columnIndex] ?? null);
+
+        // Without the checkbox: column header is absent entirely.
+        $responseWithout = $this->actingAs($reporter)
+            ->post('reports/custom', ['asset_name' => '1'])
+            ->assertOk();
+
+        $headerWithout = collect(Reader::createFromString($responseWithout->streamedContent())->getRecords())
+            ->first();
+
+        $this->assertFalse(
+            array_search(trans('admin/reports/general.custom_export.assigned_asset_tag'), $headerWithout, true),
+            'Checked Out Asset Tag column must not appear when checkbox is unchecked',
+        );
     }
 
     public function test_custom_report_decrypts_encrypted_custom_fields_when_user_has_permission(): void

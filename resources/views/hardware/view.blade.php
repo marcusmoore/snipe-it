@@ -381,16 +381,8 @@
 
                     <!-- start maintenances tab pane -->
                     <x-tabs.pane name="maintenances">
-
-                        <x-slot:table_header>
-                            {{ trans('general.maintenances') }}
-                        </x-slot:table_header>
-
-                        <x-table
-                            name="assetMaintenances"
-                            buttons="maintenanceButtons"
-                            api_url="{{ route('api.maintenances.index', array('asset_id' => $asset->id)) }}"
-                            :presenter="\App\Presenters\MaintenancesPresenter::dataTableLayout()"
+                        <x-table.maintenances
+                            :route="route('api.maintenances.index', ['asset_id' => $asset->id])"
                             export_filename="export-maintenances-{{ str_slug($asset->name) }}-{{ date('Y-m-d') }}"
                         />
                     </x-tabs.pane>

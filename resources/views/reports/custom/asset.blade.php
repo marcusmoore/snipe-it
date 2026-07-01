@@ -47,7 +47,7 @@
     <!-- Horizontal Form -->
         <div class="box box-default">
             <div class="box-header with-border">
-                @if (request()->routeIs('reports/custom') || request()->routeIs('report-templates.show'))
+                @if (request()->routeIs('reports/custom', 'report-templates.show'))
                     <h2 class="box-title" style="padding-top: 7px;">
                         {{ trans('general.customize_report') }}
                     </h2>
@@ -255,6 +255,11 @@
                   <input type="checkbox" name="assigned_to" value="1" @checked($template->checkmarkValue('assigned_to')) />
                 {{ trans('admin/licenses/table.assigned_to') }}
               </label>
+
+                <label class="form-control">
+                    <input type="checkbox" name="assigned_asset_tag" value="1" @checked($template->checkmarkValue('assigned_asset_tag', '0')) />
+                    {{ trans('admin/reports/general.custom_export.assigned_asset_tag') }}
+                </label>
 
 
               <label class="form-control">
@@ -723,26 +728,7 @@
     <!-- Saved Reports right column -->
     <div class="col-md-3">
         @if (! request()->routeIs('report-templates.edit'))
-            <div class="form-group">
-                <label for="saved_report_select">{{ trans('admin/reports/general.open_saved_template') }}</label>
-                <select
-                    id="saved_report_select"
-                    class="form-control select2"
-                    data-placeholder="{{ trans('admin/reports/general.select_a_template') }}"
-                >
-                    <option></option>
-                    @foreach($report_templates as $savedTemplate)
-                        <option
-                            value="{{ $savedTemplate->id }}"
-                            data-route="{{ route('report-templates.show', $savedTemplate->id) }}"
-                            @selected($savedTemplate->is(request()->route()->parameter('reportTemplate')))
-                        >
-                            {{ $savedTemplate->name }}
-                        </option>
-                    @endforeach
-                </select>
-            </div>
-
+            <livewire:report-template-select type="asset" />
             <div class="row">
                 <div class="col-md-12">
 
@@ -910,6 +896,12 @@
               type: 'hidden',
               name: 'name',
               value: $('#name').val(),
+          }).appendTo(form);
+
+          $('<input>').attr({
+              type: 'hidden',
+              name: 'type',
+              value: 'asset',
           }).appendTo(form);
 
           form.attr('action', '{{ route('report-templates.store') }}').submit();

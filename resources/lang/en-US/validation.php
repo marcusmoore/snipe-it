@@ -171,6 +171,7 @@ return [
     'uploaded' => 'The :attribute failed to upload.',
     'uppercase' => 'The :attribute field must be uppercase.',
     'url' => 'The :attribute field must be a valid URL.',
+    'external_url' => 'The :attribute field must be a valid external URL (http:// or https://) that does not point at a private or local address.',
     'ulid' => 'The :attribute field must be a valid ULID.',
     'uuid' => 'The :attribute field must be a valid UUID.',
     'valid_css_color' => 'The :attribute field must be a valid CSS color (hex, rgb, rgba, hsl, or hsla).',

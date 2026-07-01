@@ -22,6 +22,7 @@ use App\Http\Controllers\ManufacturersController;
 use App\Http\Controllers\ModalController;
 use App\Http\Controllers\NotesController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\Reports\CustomComponentReportController;
 use App\Http\Controllers\QrCodeController;
 use App\Http\Controllers\ReportsController;
 use App\Http\Controllers\ReportTemplatesController;
@@ -526,14 +527,25 @@ Route::group(['prefix' => 'reports', 'middleware' => ['auth']], function () {
     Route::get('export/accessories', [ReportsController::class, 'exportAccessoryReport'])
         ->name('reports/export/accessories');
 
-    Route::get('custom', [ReportsController::class, 'getCustomReport'])
-        ->name('reports/custom')
-        ->breadcrumbs(fn (Trail $trail) => $trail->parent('home')
-            ->push(trans('general.reports'), route('reports.index'))
-            ->push(trans('general.custom_report'), route('reports/custom')));
+    Route::group(['prefix' => 'custom'], function () {
+        Route::get('/', [ReportsController::class, 'getCustomReport'])
+            ->name('reports/custom')
+            ->breadcrumbs(fn (Trail $trail) => $trail->parent('home')
+                ->push(trans('general.reports'), route('reports.index'))
+                ->push(trans('general.custom_report'), route('reports/custom')));
 
-    Route::post('custom', [ReportsController::class, 'postCustom'])
-        ->name('reports.post-custom');
+        Route::post('/', [ReportsController::class, 'postCustom'])
+            ->name('reports.post-custom');
+
+        Route::get('component', [CustomComponentReportController::class, 'show'])
+            ->name('reports.custom.component')
+            ->breadcrumbs(fn (Trail $trail) => $trail->parent('home')
+                ->push(trans('general.reports'), route('reports.index'))
+                ->push(trans('general.custom_component_report'), route('reports.custom.component')));
+
+        Route::post('component', [CustomComponentReportController::class, 'run'])
+            ->name('reports.custom.component.run');
+    });
 
     Route::prefix('templates')
         ->group(function () {
@@ -544,15 +556,29 @@ Route::group(['prefix' => 'reports', 'middleware' => ['auth']], function () {
             // The breadcrumb on this is a little odd for now since we don't have a template index
             Route::get('/{reportTemplate}', [ReportTemplatesController::class, 'show'])
                 ->name('report-templates.show')
-                ->breadcrumbs(fn (Trail $trail, ReportTemplate $reportTemplate) => $trail->parent('reports/custom')
-                    ->push($reportTemplate->name, null)
-                    ->push(trans('general.customize_report'), ''));
+                ->breadcrumbs(function (Trail $trail, ReportTemplate $reportTemplate) {
+                    $parent = match ($reportTemplate->type) {
+                        'asset' => 'reports/custom',
+                        'component' => 'reports.custom.component',
+                    };
+
+                    return $trail->parent($parent)
+                        ->push($reportTemplate->name, null)
+                        ->push(trans('general.customize_report'), '');
+                });
 
             Route::get('/{reportTemplate}/edit', [ReportTemplatesController::class, 'edit'])
                 ->name('report-templates.edit')
-                ->breadcrumbs(fn (Trail $trail, ReportTemplate $reportTemplate) => $trail->parent('reports/custom')
-                    ->push($reportTemplate->name, route('report-templates.show', $reportTemplate))
-                    ->push(trans('general.customize_report'), ''));
+                ->breadcrumbs(function (Trail $trail, ReportTemplate $reportTemplate) {
+                    $parent = match ($reportTemplate->type) {
+                        'asset' => 'reports/custom',
+                        'component' => 'reports.custom.component',
+                    };
+
+                    return $trail->parent($parent)
+                        ->push($reportTemplate->name, route('report-templates.show', $reportTemplate))
+                        ->push(trans('general.customize_report'), '');
+                });
 
             Route::post('/{reportTemplate}', [ReportTemplatesController::class, 'update'])
                 ->name('report-templates.update');

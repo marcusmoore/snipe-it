@@ -308,6 +308,16 @@ class UserPresenter extends Presenter
                 'formatter' => 'linkNumberToUserManagedLocationsFormatter',
             ],
             [
+                'field' => 'assigned_maintenances_count',
+                'searchable' => false,
+                'sortable' => true,
+                'switchable' => true,
+                'class' => 'css-maintenances',
+                'title' => trans('general.maintenances'),
+                'visible' => false,
+                'formatter' => 'linkNumberToUserAssignedMaintenancesFormatter',
+            ],
+            [
                 'field' => 'notes',
                 'searchable' => true,
                 'sortable' => true,

@@ -10,10 +10,6 @@
 @parent
 @stop
 
-@section('content')
-
-
-
 {{-- Page content --}}
 @section('content')
 

@@ -1882,6 +1882,11 @@
                                             {{ trans('general.custom_report') }}
                                         </a>
                                     </li>
+                                    <li {{!! (request()->is('reports.custom.component') ? ' class="active"' : '') !!}}>
+                                        <a href="{{ route('reports.custom.component') }}">
+                                            {{ trans('general.custom_component_report') }}
+                                        </a>
+                                    </li>
                                     <li {{!! (request()->is('reports/audit') ? ' class="active"' : '') !!}}>
                                         <a href="{{ route('reports.audit') }}">
                                             {{ trans('general.audit_report') }}</a>

@@ -82,6 +82,7 @@ class UsersTransformer
             'consumables_count' => (int) $user->consumables_count,
             'manages_users_count' => (int) $user->manages_users_count,
             'manages_locations_count' => (int) $user->manages_locations_count,
+            'assigned_maintenances_count' => (int) $user->assigned_maintenances_count,
             // Legacy field — kept for backward API compatibility; use `companies` for multi-company support.
             'company' => $user->companies->isNotEmpty() ? [
                 'id' => (int) $user->companies->first()->id,

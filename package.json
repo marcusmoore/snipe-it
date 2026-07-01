@@ -60,14 +60,14 @@
         "tether": "^1.4.0"
     },
     "overrides": {
-      "pbkdf2": {
-        "sha.js": ">=2.4.12"
-      },
-      "create-hmac": {
-        "sha.js": ">=2.4.12"
-      },
-      "create-hash": {
-        "sha.js": ">=2.4.12"
-      }
+        "pbkdf2": {
+            "sha.js": ">=2.4.12"
+        },
+        "create-hmac": {
+            "sha.js": ">=2.4.12"
+        },
+        "create-hash": {
+            "sha.js": ">=2.4.12"
+        }
     }
 }

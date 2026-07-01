@@ -166,6 +166,25 @@ class SnipeMutableCollection extends MutableCollection
     {
         $this->add($value, $object);
     }
+
+    // POST /scim/v2/Groups with an initial `members` array arrives here with
+    // an unsaved parent: the SCIM library runs attribute mappers before it
+    // calls save() on the new resource. Letting parent::add() fire on an
+    // unsaved model makes Eloquent's pivot INSERT bind NULL for group_id
+    // (since $parent->getKey() is null) and blow up with a MySQL 23000 integrity
+    // violation. Persist first so the pivot row has a real parent id, then
+    // stash the object into the request so the displayName uniqueness closure
+    // (which re-runs after mapping) can recognize its own row instead of
+    // treating it as an existing name collision.
+    public function add($value, Model &$object)
+    {
+        if (! $object->exists) {
+            $object->save();
+            request()->attributes->set('scim_in_flight_resource', $object);
+        }
+
+        parent::add($value, $object);
+    }
 }
 
 class MappedTable extends Attribute
@@ -644,9 +663,23 @@ class SnipeSCIMConfig
                     eloquent('displayName', 'name')->ensure('required', 'min:3', function ($attribute, $value, $fail) {
                         // check if group does not exist or if it exists, it is the same group
                         $group = $this->getGroupClass()::where('name', $value)->first();
-                        if ($group && (request()->route('resourceObject') == null || $group->id != request()->route('resourceObject')->id)) {
-                            $fail('The name has already been taken.');
+                        if (! $group) {
+                            return;
                         }
+                        // PATCH/PUT: the group being edited is route-bound.
+                        $routeResource = request()->route('resourceObject');
+                        if ($routeResource && $group->id == $routeResource->id) {
+                            return;
+                        }
+                        // POST create with an initial members[] triggers SnipeMutableCollection
+                        // to save the parent early (so the pivot INSERT has a valid group_id),
+                        // which puts a row in the DB before this closure re-runs. Recognize the
+                        // just-saved row as ours so validation doesn't false-positive.
+                        $inFlight = request()->attributes->get('scim_in_flight_resource');
+                        if ($inFlight && $group->id == $inFlight->id) {
+                            return;
+                        }
+                        $fail('The name has already been taken.');
                     }),
                     (new SnipeMutableCollection('members'))->withSubAttributes(
                         eloquent('value', 'id')->ensure('required'),

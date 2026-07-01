@@ -21389,8 +21389,15 @@ a.accordion-header {
   color: #333;
 }
 .dynamic-form-row {
-  padding: 10px;
-  margin: 20px;
+  margin-bottom: 15px;
+}
+.dynamic-form-row::before,
+.dynamic-form-row::after {
+  content: " ";
+  display: table;
+}
+.dynamic-form-row::after {
+  clear: both;
 }
 .handle {
   padding-left: 10px;
@@ -21754,8 +21761,15 @@ a.accordion-header {
   color: #333;
 }
 .dynamic-form-row {
-  padding: 10px;
-  margin: 20px;
+  margin-bottom: 15px;
+}
+.dynamic-form-row::before,
+.dynamic-form-row::after {
+  content: " ";
+  display: table;
+}
+.dynamic-form-row::after {
+  clear: both;
 }
 .handle {
   padding-left: 10px;
@@ -22380,6 +22394,7 @@ thead th.css-house-laptop > .th-inner,
 thead th.css-house-user > .th-inner,
 thead th.css-license > .th-inner,
 thead th.css-location > .th-inner,
+thead th.css-maintenances > .th-inner,
 thead th.css-users > .th-inner,
 thead th.css-currency > .th-inner,
 thead th.css-child-locations > .th-inner,
@@ -22403,6 +22418,7 @@ thead th.css-house-laptop > .th-inner::before,
 thead th.css-house-user > .th-inner::before,
 thead th.css-license > .th-inner::before,
 thead th.css-location > .th-inner::before,
+thead th.css-maintenances > .th-inner::before,
 thead th.css-users > .th-inner::before,
 thead th.css-currency > .th-inner::before,
 thead th.css-child-locations > .th-inner::before,
@@ -22450,6 +22466,12 @@ thead th.css-location > .th-inner::before {
   content: "\f3c5";
   font-family: "Font Awesome 5 Free";
   font-size: 19px;
+  margin-bottom: 0px;
+}
+thead th.css-maintenances > .th-inner::before {
+  content: "\f7d9";
+  font-family: "Font Awesome 5 Free";
+  font-size: 18px;
   margin-bottom: 0px;
 }
 thead th.css-component > .th-inner::before {
@@ -23555,8 +23577,15 @@ a.accordion-header {
   color: #333;
 }
 .dynamic-form-row {
-  padding: 10px;
-  margin: 20px;
+  margin-bottom: 15px;
+}
+.dynamic-form-row::before,
+.dynamic-form-row::after {
+  content: " ";
+  display: table;
+}
+.dynamic-form-row::after {
+  clear: both;
 }
 .handle {
   padding-left: 10px;
@@ -24181,6 +24210,7 @@ thead th.css-house-laptop > .th-inner,
 thead th.css-house-user > .th-inner,
 thead th.css-license > .th-inner,
 thead th.css-location > .th-inner,
+thead th.css-maintenances > .th-inner,
 thead th.css-users > .th-inner,
 thead th.css-currency > .th-inner,
 thead th.css-child-locations > .th-inner,
@@ -24204,6 +24234,7 @@ thead th.css-house-laptop > .th-inner::before,
 thead th.css-house-user > .th-inner::before,
 thead th.css-license > .th-inner::before,
 thead th.css-location > .th-inner::before,
+thead th.css-maintenances > .th-inner::before,
 thead th.css-users > .th-inner::before,
 thead th.css-currency > .th-inner::before,
 thead th.css-child-locations > .th-inner::before,
@@ -24251,6 +24282,12 @@ thead th.css-location > .th-inner::before {
   content: "\f3c5";
   font-family: "Font Awesome 5 Free";
   font-size: 19px;
+  margin-bottom: 0px;
+}
+thead th.css-maintenances > .th-inner::before {
+  content: "\f7d9";
+  font-family: "Font Awesome 5 Free";
+  font-size: 18px;
   margin-bottom: 0px;
 }
 thead th.css-component > .th-inner::before {

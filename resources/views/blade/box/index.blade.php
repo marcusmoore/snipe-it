@@ -31,9 +31,10 @@
             </div>
         @endif
 
-            @if (($slot) && (!$slot->isEmpty()))
-                {{ $slot }}
-            @endif
+            {{-- Render slot unconditionally — ComponentSlot::isEmpty()
+                 materializes the slot to inspect it, doubling every DB call
+                 inside. An empty slot renders nothing visible. --}}
+            {{ $slot }}
 
     </div>
 

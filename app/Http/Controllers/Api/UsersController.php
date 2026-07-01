@@ -101,6 +101,10 @@ class UsersController extends Controller
                 'consumables as consumables_count',
                 'managesUsers as manages_users_count',
                 'managedLocations as manages_locations_count',
+                // Count of maintenances whose polymorphic checked_out_to points
+                // at this user. Used by the users index sort + filter and by
+                // the user detail Maintenances tab badge.
+                'assignedMaintenances as assigned_maintenances_count',
             ]);
 
         $allowed_columns =
@@ -125,6 +129,7 @@ class UsersController extends Controller
                 'accessories_count',
                 'manages_users_count',
                 'manages_locations_count',
+                'assigned_maintenances_count',
                 'phone',
                 'mobile',
                 'address',
@@ -304,6 +309,10 @@ class UsersController extends Controller
 
         if ($request->filled('accessories_count')) {
             $users->has('accessories', '=', $request->input('accessories_count'));
+        }
+
+        if ($request->filled('assigned_maintenances_count')) {
+            $users->has('assignedMaintenances', '=', $request->input('assigned_maintenances_count'));
         }
 
         if ($request->filled('manages_users_count')) {
@@ -532,7 +541,7 @@ class UsersController extends Controller
     {
         $this->authorize('view', User::class);
 
-        if ($user = User::withCount('assets as assets_count', 'licenses as licenses_count', 'accessories as accessories_count', 'consumables as consumables_count', 'managesUsers as manages_users_count', 'managedLocations as manages_locations_count')->find($id)) {
+        if ($user = User::withCount('assets as assets_count', 'licenses as licenses_count', 'accessories as accessories_count', 'consumables as consumables_count', 'managesUsers as manages_users_count', 'managedLocations as manages_locations_count', 'assignedMaintenances as assigned_maintenances_count')->find($id)) {
             $this->authorize('view', $user);
 
             return (new UsersTransformer)->transformUser($user);

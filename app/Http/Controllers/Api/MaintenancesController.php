@@ -14,6 +14,7 @@ use App\Models\Asset;
 use App\Models\Company;
 use App\Models\Maintenance;
 use App\Models\Setting;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -52,6 +53,18 @@ class MaintenancesController extends Controller
 
         if ($request->filled('asset_id')) {
             $maintenances->where('asset_id', '=', $request->input('asset_id'));
+        }
+
+        // Polymorphic filter — used by the user detail Maintenances tab to
+        // pull every maintenance where the underlying asset was checked out
+        // to a specific user. Defaults to type=User when only the id is
+        // supplied; pass `checked_out_to_type=<fqcn>` to target locations
+        // or assets if/when those tabs land.
+        if ($request->filled('checked_out_to_id')) {
+            $type = $request->input('checked_out_to_type', User::class);
+            $maintenances
+                ->where('maintenances.checked_out_to_id', $request->input('checked_out_to_id'))
+                ->where('maintenances.checked_out_to_type', $type);
         }
 
         if ($request->filled('supplier_id')) {

@@ -75,6 +75,11 @@ class Setting extends Model
         'manager_view_enabled' => 'boolean',
         'block_api_user_agents' => 'boolean',
         'block_blank_api_user_agents' => 'boolean',
+        // tinyInteger with no cast was leaking 0 (int) into call sites that
+        // use loose-equality string checks like `== '1'` and `== ''`. Under
+        // PHP 8 `0 == ''` is false, so checks expecting "disabled" misfired.
+        // Normalize on read so every consumer sees a consistent string mode.
+        'two_factor_enabled' => 'string',
     ];
 
     /**
