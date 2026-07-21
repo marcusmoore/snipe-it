@@ -148,7 +148,7 @@ class TestLocationsFmcsTest extends TestCase
     {
         $company = Company::factory()->create();
         $location = Location::factory()->for($company)->create();
-        $user = User::factory()->create(['company_id' => null, 'location_id' => $location->id]);
+        $user = User::factory()->withoutCompany()->create(['location_id' => $location->id]);
         $user->companies()->sync([]);
 
         $this->settings->enableMultipleFullCompanySupport();
@@ -162,7 +162,7 @@ class TestLocationsFmcsTest extends TestCase
     {
         $company = Company::factory()->create();
         $location = Location::factory()->for($company)->create();
-        $user = User::factory()->create(['company_id' => null, 'location_id' => $location->id]);
+        $user = User::factory()->withoutCompany()->create(['location_id' => $location->id]);
         $user->companies()->sync([]);
 
         $this->settings->enableFloaterMode();

@@ -29,15 +29,34 @@
                 <div class="box-body">
                     {{csrf_field()}}
 
-                    <!-- Asset Tag -->
-                    <div class="form-group {{ $errors->has('asset_tag') ? 'error' : '' }}">
-                        <label for="asset_tag" class="col-md-3 control-label" id="checkin_tag">{{ trans('general.asset_tag') }}</label>
+                    {{-- Look up by asset_tag or serial. Serial is only offered when the
+                         installation enforces unique serials, since checkin-by-serial would
+                         otherwise match ambiguously. Mirrors the audit-side quickscan flow. --}}
+                    <div class="form-group {{ $errors->has('checkin_by_field') ? 'error' : '' }}">
+                        <label for="checkin_by_field" class="col-md-3 control-label">{{ trans('general.checkin_by_field') }}</label>
+                        <div class="col-md-8">
+                            <select name="checkin_by_field" id="checkin_by_field" data-minimum-results-for-search="Infinity" style="width: 100% !important" class="form-control select2" aria-label="checkin_by_field" required>
+                                <option value="asset_tag">{{ trans('general.asset_tag') }}</option>
+                                <option value="serial" {{ ($snipeSettings->unique_serial != '1') ? 'disabled' : '' }}>{{ trans('general.serial_number') }}</option>
+                            </select>
+                            <x-form.error name="checkin_by_field" />
+
+                            <p class="help-block">
+                                <x-icon type="tip"/>
+                                {{ trans('general.checkin_by_field_help') }}
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Asset Tag / Serial -->
+                    <div class="form-group {{ $errors->has('checkin_key') ? 'error' : '' }}">
+                        <label for="checkin_key" class="col-md-3 control-label" id="checkin_key_label">{{ trans('general.asset_tag') }}</label>
                         <div class="col-md-9">
                             <div class="input-group col-md-11 required">
-                                <input type="text" class="form-control" name="asset_tag" id="asset_tag" value="{{ old('asset_tag') }}" required>
+                                <input type="text" class="form-control" name="checkin_key" id="checkin_key" value="{{ old('checkin_key') }}" required>
 
                             </div>
-                            {!! $errors->first('asset_tag', '<span class="alert-msg" aria-hidden="true"><i class="fas fa-times" aria-hidden="true"></i> :message</span>') !!}
+                            <x-form.error name="checkin_key" />
                         </div>
                     </div>
 
@@ -54,7 +73,7 @@
                                 style="width:100%"
                                 aria-label="status_id"
                             />
-                            {!! $errors->first('status_id', '<span class="alert-msg" aria-hidden="true"><i class="fas fa-times" aria-hidden="true"></i> :message</span>') !!}
+                            <x-form.error name="status_id" />
                         </div>
                     </div>
 
@@ -66,7 +85,7 @@
                             <label for="note" class="col-md-3 control-label">{{ trans('admin/hardware/form.notes') }}</label>
                             <div class="col-md-8">
                                 <textarea class="col-md-6 form-control" id="note" name="note">{{ old('note') }}</textarea>
-                                {!! $errors->first('note', '<span class="alert-msg" aria-hidden="true"><i class="fas fa-times" aria-hidden="true"></i> :message</span>') !!}
+                                <x-form.error name="note" />
                             </div>
                         </div>
 
@@ -105,11 +124,11 @@
                     <table id="checkedin" class="table table-striped snipe-table">
                         <thead>
                         <tr>
-                            <th>{{ trans('general.asset_tag') }}</th>
-                            <th>{{ trans('general.asset_model') }}</th>
-                            <th>{{ trans('general.model_no') }}</th>
-                            <th>{{ trans('general.quickscan_checkin_status') }}</th>
-                            <th></th>
+                            <th scope="col">{{ trans('general.asset_tag') }}</th>
+                            <th scope="col">{{ trans('general.asset_model') }}</th>
+                            <th scope="col">{{ trans('general.model_no') }}</th>
+                            <th scope="col">{{ trans('general.quickscan_checkin_status') }}</th>
+                            <th scope="col"></th>
                         </tr>
                         <tr id="checkin-loader" style="display: none;">
                             <td colspan="3">
@@ -132,6 +151,14 @@
 
 @section('moar_scripts')
     <script nonce="{{ csrf_token() }}">
+
+        $(document.body).on("change", "#checkin_by_field", function () {
+            $('label#checkin_key_label').text('{{ trans('general.asset_tag') }}');
+
+            if (this.value === 'serial') {
+                $('label#checkin_key_label').text('{{ trans('general.serial_number') }}');
+            }
+        });
 
         $("#checkin-form").submit(function (event) {
             $('#checkedin-div').show();
@@ -164,7 +191,7 @@
                     } else {
                         handlecheckinFail(data);
                     }
-                    $('input#asset_tag').val('');
+                    $('input#checkin_key').val('');
                 },
                 error: function (data) {
                     handlecheckinFail(data);
@@ -208,7 +235,7 @@
             $('#checkin-counter').html(y);
         }
 
-        $("#checkin_tag").focus();
+        $("#checkin_key").focus();
 
     </script>
 @stop

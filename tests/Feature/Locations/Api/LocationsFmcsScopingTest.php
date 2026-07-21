@@ -41,7 +41,7 @@ class LocationsFmcsScopingTest extends TestCase
 
     private function userWithNoCompany(): User
     {
-        return User::factory()->viewLocationHistory()->createUsers()->create(['company_id' => null]);
+        return User::factory()->viewLocationHistory()->createUsers()->withoutCompany()->create();
     }
 
     private function indexIds(User $user): array

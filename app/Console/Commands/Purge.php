@@ -2,184 +2,249 @@
 
 namespace App\Console\Commands;
 
-use App\Models\Accessory;
-use App\Models\Actionlog;
 use App\Models\Asset;
-use App\Models\AssetModel;
-use App\Models\Category;
-use App\Models\Component;
-use App\Models\Consumable;
 use App\Models\License;
-use App\Models\Location;
-use App\Models\Manufacturer;
-use App\Models\Statuslabel;
-use App\Models\Supplier;
 use App\Models\User;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Storage;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\DB;
+use ReflectionClass;
+
+use function Laravel\Prompts\confirm;
+use function Laravel\Prompts\warning;
 
 class Purge extends Command
 {
     /**
-     * The name and signature of the console command.
+     * The `--force=true` back-compat: the settings UI at
+     * SettingsController::postPurge() calls this with
+     * `['--force' => 'true', '--no-interaction' => true]`.
      *
      * @var string
      */
-    protected $signature = 'snipeit:purge {--force=false}';
+    protected $signature = 'snipeit:purge
+        {--force=false : Skip the confirmation prompt (accepts "true").}
+        {--dry-run : Report what would be purged without deleting anything.}';
+
+    protected $description = 'Purge all soft-deleted records in the database. Walks every model that uses the SoftDeletes trait, DELETEs the trashed rows, and cleans up their polymorphic action_log children. No undo.';
 
     /**
-     * The console command description.
-     *
-     * @var string
+     * Users are excluded even when soft-deleted if show_in_list='0'. System
+     * users (LDAP-sync placeholders, etc.) set this to '0' and shouldn't be
+     * garbage-collected here.
      */
-    protected $description = 'Purge all soft-deleted deleted records in the database. This will rewrite history for items that have been edited, or checked in or out. It will also rewrite history for users associated with deleted items.';
+    private const PARENT_QUERY_FILTERS = [
+        User::class => [['column' => 'show_in_list', 'op' => '!=', 'value' => '0']],
+    ];
 
     /**
-     * Create a new command instance.
-     *
-     * @return void
+     * Non-soft-deletable FK children that should be nuked when their parent
+     * is purged, even if the child itself was not soft-deleted. Auto-
+     * discovery finds all soft-deletable models, but a trashed License with
+     * live LicenseSeats or a trashed Asset with live Maintenances would
+     * leave orphans behind if we only nuked soft-deleted rows. This map
+     * covers the parent→child relations where the parent "owns" the child
+     * outright and orphaning it makes no sense.
      */
-    public function __construct()
+    private const FK_CHILDREN = [
+        Asset::class => [
+            ['table' => 'maintenances', 'foreign_key' => 'asset_id'],
+        ],
+        License::class => [
+            ['table' => 'license_seats', 'foreign_key' => 'license_id'],
+        ],
+    ];
+
+    public function handle(): int
     {
-        parent::__construct();
+        $force = $this->option('force') === 'true';
+        $dryRun = (bool) $this->option('dry-run');
+
+        if (! $force) {
+            warning('This will PERMANENTLY delete every soft-deleted record in the database. There is no undo.');
+
+            if (! confirm('Continue with the purge?', default: false)) {
+                $this->info('Cancelled. Nothing was purged.');
+
+                return self::SUCCESS;
+            }
+        }
+
+        $started = microtime(true);
+        $summary = [];
+
+        foreach ($this->discoverSoftDeletableModels() as $modelClass) {
+            foreach ($this->purgeModel($modelClass, $dryRun) as $row) {
+                $summary[] = $row;
+            }
+        }
+
+        $elapsed = microtime(true) - $started;
+
+        $this->newLine();
+
+        if ($dryRun) {
+            $this->components->info('Dry run complete. No records were deleted.');
+        } else {
+            $this->components->info('Purge complete.');
+        }
+
+        if (empty($summary)) {
+            $this->info('Nothing to purge.');
+        } else {
+            $this->table(['Resource', $dryRun ? 'Would purge' : 'Purged'], $summary);
+        }
+
+        $this->info(sprintf('Elapsed: %.3fs   Peak memory: %s MB',
+            $elapsed,
+            round(memory_get_peak_usage(true) / 1024 / 1024, 2)
+        ));
+
+        return self::SUCCESS;
     }
 
     /**
-     * Execute the console command.
+     * Walk app/Models/ and return the FQCNs of every concrete Eloquent
+     * model that uses the SoftDeletes trait. Runtime discovery means a new
+     * soft-deletable model gets picked up automatically without touching
+     * this command.
      *
-     * @return mixed
+     * Dedupe by table so single-table inheritance / subclassed models
+     * (e.g. SCIMUser extends User, same `users` table) don't get processed
+     * twice — the first pass would run without the subclass-specific
+     * filters (`show_in_list != 0` for users) and delete the rows the
+     * parent's filter was supposed to preserve. Prefer the base class:
+     * the more-derived class is skipped if a parent for its table was
+     * already added.
+     *
+     * @return list<class-string<Model>>
      */
-    public function handle()
+    private function discoverSoftDeletableModels(): array
     {
-        $force = $this->option('force');
-        if (($this->confirm("\n****************************************************\nTHIS WILL PURGE ALL SOFT-DELETED ITEMS IN YOUR SYSTEM. \nThere is NO undo. This WILL permanently destroy \nALL of your deleted data. \n****************************************************\n\nDo you wish to continue? No backsies! [y|N]")) || $force == 'true') {
-
-            /**
-             * Delete assets
-             */
-            $assets = Asset::whereNotNull('deleted_at')->withTrashed()->get();
-            $assetcount = $assets->count();
-            $this->info($assets->count().' assets purged.');
-            $asset_assoc = 0;
-            $maintenances = 0;
-
-            foreach ($assets as $asset) {
-                $this->info('- Asset "'.$asset->display_name.'" deleted.');
-                $asset_assoc += $asset->assetlog()->count();
-                $asset->assetlog()->forceDelete();
-                $maintenances += $asset->maintenances()->count();
-                $asset->maintenances()->forceDelete();
-                $asset->forceDelete();
+        $candidates = [];
+        foreach (glob(app_path('Models/*.php')) as $file) {
+            $class = 'App\\Models\\'.basename($file, '.php');
+            if (! class_exists($class)) {
+                continue;
             }
-
-            $this->info($asset_assoc.' corresponding log records purged.');
-            $this->info($maintenances.' corresponding maintenance records purged.');
-
-            $locations = Location::whereNotNull('deleted_at')->withTrashed()->get();
-            $this->info($locations->count().' locations purged.');
-            foreach ($locations as $location) {
-                $this->info('- Location "'.$location->name.'" deleted.');
-                $location->forceDelete();
+            $ref = new ReflectionClass($class);
+            if ($ref->isAbstract() || ! $ref->isSubclassOf(Model::class)) {
+                continue;
             }
-
-            $accessories = Accessory::whereNotNull('deleted_at')->withTrashed()->get();
-            $accessory_assoc = 0;
-            $this->info($accessories->count().' accessories purged.');
-            foreach ($accessories as $accessory) {
-                $this->info('- Accessory "'.$accessory->name.'" deleted.');
-                $accessory_assoc += $accessory->assetlog()->count();
-                $accessory->assetlog()->forceDelete();
-                $accessory->forceDelete();
+            if (! in_array(SoftDeletes::class, class_uses_recursive($class), true)) {
+                continue;
             }
-            $this->info($accessory_assoc.' corresponding log records purged.');
-
-            $consumables = Consumable::whereNotNull('deleted_at')->withTrashed()->get();
-            $this->info($consumables->count().' consumables purged.');
-            foreach ($consumables as $consumable) {
-                $this->info('- Consumable "'.$consumable->name.'" deleted.');
-                $consumable->assetlog()->forceDelete();
-                $consumable->forceDelete();
-            }
-
-            $components = Component::whereNotNull('deleted_at')->withTrashed()->get();
-            $this->info($components->count().' components purged.');
-            foreach ($components as $component) {
-                $this->info('- Component "'.$component->name.'" deleted.');
-                $component->assetlog()->forceDelete();
-                $component->forceDelete();
-            }
-
-            $licenses = License::whereNotNull('deleted_at')->withTrashed()->get();
-            $this->info($licenses->count().' licenses purged.');
-            foreach ($licenses as $license) {
-                $this->info('- License "'.$license->name.'" deleted.');
-                $license->assetlog()->forceDelete();
-                $license->licenseseats()->forceDelete();
-                $license->forceDelete();
-            }
-
-            $models = AssetModel::whereNotNull('deleted_at')->withTrashed()->get();
-            $this->info($models->count().' asset models purged.');
-            foreach ($models as $model) {
-                $this->info('- Asset Model "'.$model->name.'" deleted.');
-                $model->forceDelete();
-            }
-
-            $categories = Category::whereNotNull('deleted_at')->withTrashed()->get();
-            $this->info($categories->count().' categories purged.');
-            foreach ($categories as $category) {
-                $this->info('- Category "'.$category->name.'" deleted.');
-                $category->forceDelete();
-            }
-
-            $suppliers = Supplier::whereNotNull('deleted_at')->withTrashed()->get();
-            $this->info($suppliers->count().' suppliers purged.');
-            foreach ($suppliers as $supplier) {
-                $this->info('- Supplier "'.$supplier->name.'" deleted.');
-                $supplier->forceDelete();
-            }
-
-            $users = User::whereNotNull('deleted_at')->where('show_in_list', '!=', '0')->withTrashed()->get();
-            $this->info($users->count().' users purged.');
-            $user_assoc = 0;
-            foreach ($users as $user) {
-
-                $rel_path = 'private_uploads/users';
-                $filenames = Actionlog::where('action_type', 'uploaded')
-                    ->where('item_id', $user->id)
-                    ->pluck('filename');
-                foreach ($filenames as $filename) {
-                    try {
-                        if (Storage::exists($rel_path.'/'.$filename)) {
-                            Storage::delete($rel_path.'/'.$filename);
-                        }
-                    } catch (\Exception $e) {
-                        Log::info('An error occurred while deleting files: '.$e->getMessage());
-                    }
-                }
-                $this->info('- User "'.$user->username.'" deleted.');
-                $user_assoc += $user->userlog()->count();
-                $user->userlog()->forceDelete();
-                $user->forceDelete();
-            }
-            $this->info($user_assoc.' corresponding user log records purged.');
-
-            $manufacturers = Manufacturer::whereNotNull('deleted_at')->withTrashed()->get();
-            $this->info($manufacturers->count().' manufacturers purged.');
-            foreach ($manufacturers as $manufacturer) {
-                $this->info('- Manufacturer "'.$manufacturer->name.'" deleted.');
-                $manufacturer->forceDelete();
-            }
-
-            $status_labels = Statuslabel::whereNotNull('deleted_at')->withTrashed()->get();
-            $this->info($status_labels->count().' status labels purged.');
-            foreach ($status_labels as $status_label) {
-                $this->info('- Status Label "'.$status_label->name.'" deleted.');
-                $status_label->forceDelete();
-            }
-        } else {
-            $this->info('Action canceled. Nothing was purged.');
+            $candidates[] = $class;
         }
+
+        // Dedupe by table, keeping the base-most class in each group so
+        // filters on the parent class apply. Sort by inheritance depth
+        // ascending, then walk and keep the first per table.
+        usort($candidates, fn ($a, $b) => count(class_parents($a)) <=> count(class_parents($b)));
+
+        $seen = [];
+        $result = [];
+        foreach ($candidates as $class) {
+            $table = (new $class)->getTable();
+            if (isset($seen[$table])) {
+                continue;
+            }
+            $seen[$table] = true;
+            $result[] = $class;
+        }
+
+        return $result;
+    }
+
+    /**
+     * Nuke one model's trashed rows: pluck the trashed ids, wipe their
+     * polymorphic action_log children (via `item_type`/`item_id` and
+     * `target_type`/`target_id`), then bulk-delete the parents by their
+     * `deleted_at` index.
+     *
+     * Children go per-row DELETE against the composite index on
+     * action_logs — bulk WHERE IN and JOIN DELETE both benchmarked ~3x
+     * slower on MariaDB (InnoDB commits small autocommit transactions
+     * faster than one long one against the composite index).
+     *
+     * @return array<int, array{0: string, 1: int}>
+     */
+    private function purgeModel(string $modelClass, bool $dryRun): array
+    {
+        $model = new $modelClass;
+        $table = $model->getTable();
+        $label = class_basename($modelClass);
+
+        $parentQuery = DB::table($table)->whereNotNull('deleted_at');
+        foreach (self::PARENT_QUERY_FILTERS[$modelClass] ?? [] as $f) {
+            $parentQuery->where($f['column'], $f['op'], $f['value']);
+        }
+
+        $ids = (clone $parentQuery)->pluck('id');
+        if ($ids->isEmpty()) {
+            return [];
+        }
+
+        $rows = [];
+
+        // Polymorphic action_log cleanup. Every model referenced by
+        // action_logs uses one of two column pairs. Users use target_*,
+        // everything else uses item_*.
+        $itemLogs = 0;
+        $targetLogs = 0;
+        foreach ($ids as $id) {
+            if ($dryRun) {
+                $itemLogs += DB::table('action_logs')
+                    ->where('item_type', $modelClass)
+                    ->where('item_id', $id)
+                    ->count();
+                $targetLogs += DB::table('action_logs')
+                    ->where('target_type', $modelClass)
+                    ->where('target_id', $id)
+                    ->count();
+            } else {
+                $itemLogs += DB::table('action_logs')
+                    ->where('item_type', $modelClass)
+                    ->where('item_id', $id)
+                    ->delete();
+                $targetLogs += DB::table('action_logs')
+                    ->where('target_type', $modelClass)
+                    ->where('target_id', $id)
+                    ->delete();
+            }
+        }
+
+        // FK-child cleanup: rows in other tables that belong to a trashed
+        // parent by a plain foreign key (see FK_CHILDREN docblock). These
+        // are nuked whole rather than only-trashed because a live
+        // LicenseSeat pointing at a purged License is an orphan by
+        // definition.
+        $fkChildCounts = [];
+        foreach (self::FK_CHILDREN[$modelClass] ?? [] as $child) {
+            $count = 0;
+            foreach ($ids as $id) {
+                $q = DB::table($child['table'])->where($child['foreign_key'], $id);
+                $count += $dryRun ? $q->count() : $q->delete();
+            }
+            if ($count > 0) {
+                $fkChildCounts[$child['table']] = $count;
+            }
+        }
+
+        $parentCount = $dryRun ? $ids->count() : $parentQuery->delete();
+
+        $rows[] = [$label, $parentCount];
+        if ($itemLogs > 0) {
+            $rows[] = [$label.' action_logs (item)', $itemLogs];
+        }
+        if ($targetLogs > 0) {
+            $rows[] = [$label.' action_logs (target)', $targetLogs];
+        }
+        foreach ($fkChildCounts as $table => $count) {
+            $rows[] = [$table, $count];
+        }
+
+        return $rows;
     }
 }

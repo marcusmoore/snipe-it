@@ -17,11 +17,17 @@ class BulkAssetCheckoutTest extends TestCase
 {
     public function test_requires_permission()
     {
+        // The target user must actually exist and be undeleted, or the
+        // FormRequest's `exists_undeleted:users,id` rule on `assigned_user`
+        // trips first and returns 422 before the controller's permission
+        // check ever runs. Rule was added in 8acedc241f (FD-56263).
+        $target = User::factory()->create();
+
         $this->actingAs(User::factory()->create())
             ->post(route('hardware.bulkcheckout.store'), [
                 'selected_assets' => [1],
                 'checkout_to_type' => 'user',
-                'assigned_user' => 1,
+                'assigned_user' => $target->id,
                 'assigned_asset' => null,
                 'checkout_at' => null,
                 'expected_checkin' => null,
@@ -142,7 +148,7 @@ class BulkAssetCheckoutTest extends TestCase
             function () {
                 return [
                     'type' => 'user',
-                    'target' => User::factory()->forCompany()->create(),
+                    'target' => User::factory()->create(),
                 ];
             },
         ];
@@ -151,7 +157,7 @@ class BulkAssetCheckoutTest extends TestCase
             function () {
                 return [
                     'type' => 'asset',
-                    'target' => Asset::factory()->forCompany()->create(),
+                    'target' => Asset::factory()->create(),
                 ];
             },
         ];
@@ -160,7 +166,7 @@ class BulkAssetCheckoutTest extends TestCase
             function () {
                 return [
                     'type' => 'location',
-                    'target' => Location::factory()->forCompany()->create(),
+                    'target' => Location::factory()->create(),
                 ];
             },
         ];
@@ -229,5 +235,45 @@ class BulkAssetCheckoutTest extends TestCase
 
         // ensure redirected back
         $response->assertRedirectToRoute('hardware.bulkcheckout.show');
+    }
+
+    /**
+     * Regression: BulkAssetsController::store used to call
+     *   session()->put(['checkout_to_type' => $target]);
+     * with $target being the resolved Eloquent model. The checkout-selector
+     * partial compares against 'user'/'asset'/'location' string literals, so
+     * an object silently mismatched and no radio rendered `checked`.
+     *
+     * @see \App\Http\Controllers\Assets\BulkAssetsController::store
+     */
+    #[DataProvider('bulkCheckoutTargetTypesProvider')]
+    public function test_bulk_checkout_stores_target_type_as_string_in_session(string $type)
+    {
+        [$field, $target] = match ($type) {
+            'user' => ['assigned_user', User::factory()->create()->id],
+            'asset' => ['assigned_asset', Asset::factory()->create()->id],
+            'location' => ['assigned_location', Location::factory()->create()->id],
+        };
+        $asset = Asset::factory()->create();
+
+        $this->actingAs(User::factory()->superuser()->create())
+            ->post(route('hardware.bulkcheckout.store'), [
+                'selected_assets' => [$asset->id],
+                'checkout_to_type' => $type,
+                $field => $target,
+            ]);
+
+        $stored = session('checkout_to_type');
+        $this->assertIsString($stored, 'checkout_to_type must be a string, not an Eloquent model');
+        $this->assertSame($type, $stored);
+    }
+
+    public static function bulkCheckoutTargetTypesProvider(): array
+    {
+        return [
+            'user target' => ['user'],
+            'asset target' => ['asset'],
+            'location target' => ['location'],
+        ];
     }
 }

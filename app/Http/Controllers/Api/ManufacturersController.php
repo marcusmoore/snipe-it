@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Actions\Manufacturers\DeleteManufacturerAction;
+use App\Actions\Manufacturers\DestroyManufacturerAction;
 use App\Exceptions\ItemStillHasChildren;
 use App\Helpers\Helper;
 use App\Http\Controllers\Controller;
@@ -213,7 +213,7 @@ class ManufacturersController extends Controller
     {
         $this->authorize('delete', $manufacturer);
         try {
-            DeleteManufacturerAction::run($manufacturer);
+            DestroyManufacturerAction::run($manufacturer);
         } catch (ItemStillHasChildren $e) {
             return response()->json(Helper::formatStandardApiResponse('error', null, trans('general.bulk_delete_associations.general_assoc_warning', ['item' => trans('general.manufacturer')])));
         } catch (\Exception $e) {

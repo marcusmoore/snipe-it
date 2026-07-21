@@ -667,7 +667,7 @@ class CustomComponentReportTest extends TestCase
         Component::factory()->for($companyA)->create(['name' => 'Company A Component']);
         Component::factory()->for($companyB)->create(['name' => 'Company B Component']);
 
-        $this->actor = User::factory()->canViewReports()->for($companyA)->create();
+        $this->actor = User::factory()->canViewReports()->forCompany($companyA)->create();
 
         $this->settings->enableMultipleFullCompanySupport();
 

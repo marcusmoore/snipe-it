@@ -359,6 +359,41 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Superuser Impersonation
+    |--------------------------------------------------------------------------
+    |
+    | Comma-separated list of usernames allowed to impersonate other users.
+    | Users in this list must ALSO be superusers. Empty or unset means the
+    | feature is completely off. Wrap usernames that contain commas in double
+    | quotes. Example: ALLOW_USER_IMPERSONATION=admin,"jane, doe"
+    |
+    */
+
+    'user_impersonation_usernames' => (function () {
+        $raw = env('ALLOW_USER_IMPERSONATION', '');
+
+        // Reject anything that isn't a string. env() converts literal "true"/"false"/"null"/etc.
+        // to PHP bool/null, which would otherwise stringify to garbage tokens.
+        if (! is_string($raw) || trim($raw) === '') {
+            return [];
+        }
+
+        $usernames = [];
+        $seen = [];
+        foreach (str_getcsv($raw, ',', '"', '\\') as $token) {
+            $token = trim((string) $token);
+            $lower = mb_strtolower($token);
+            if ($token !== '' && ! isset($seen[$lower])) {
+                $usernames[] = $token;
+                $seen[$lower] = true;
+            }
+        }
+
+        return $usernames;
+    })(),
+
+    /*
+    |--------------------------------------------------------------------------
     | Minimum PHP version
     |--------------------------------------------------------------------------
     |

@@ -395,7 +395,7 @@ class ImportAssetsTest extends ImportDataTestCase implements TestsPermissionsReq
             'category', 'manufacturer_id', 'name', 'tag', 'model_id',
             'model_number', 'purchase_date', 'purchase_cost', 'warranty_months', 'supplier_id',
             'location_id', 'company_id', 'serial', 'assigned_to', 'status_id', 'rtd_location_id',
-            'last_checkout', 'requestable', 'updated_at', 'checkout_counter', 'assigned_type',
+            'last_checkout', 'updated_at', 'checkout_counter', 'assigned_type',
         ];
 
         $this->assertEquals($row['assigneeFullName'], "{$assignee->first_name} {$assignee->last_name}");
@@ -419,13 +419,52 @@ class ImportAssetsTest extends ImportDataTestCase implements TestsPermissionsReq
         $this->assertEquals(1, $updatedAsset->checkout_counter);
         $this->assertEquals(User::class, $updatedAsset->assigned_type);
 
-        // RequestAble is always updated regardless of initial value.
-        // $this->assertEquals($asset->requestable, $updatedAsset->requestable);
+        // The import file has no requestable column, so the flag should be untouched.
+        $this->assertEquals($asset->requestable, $updatedAsset->requestable);
 
         $this->assertEquals(
             Arr::except($asset->attributesToArray(), $updatedAttributes),
             Arr::except($updatedAsset->attributesToArray(), $updatedAttributes),
         );
+    }
+
+    #[Test]
+    public function update_mode_preserves_boolean_flags_when_columns_are_not_in_file(): void
+    {
+        $asset = Asset::factory()->create(['requestable' => 1, 'byod' => 1])->refresh();
+
+        // The default import file has no "Requestable" or "BYOD" columns, so an
+        // update import should leave both flags alone.
+        $importFileBuilder = ImportFileBuilder::times(1)->replace(['tag' => $asset->asset_tag]);
+        $import = Import::factory()->asset()->create(['file_path' => $importFileBuilder->saveToImportsDirectory()]);
+
+        $this->actingAsForApi(User::factory()->superuser()->create());
+        $this->importFileResponse(['import' => $import->id, 'import-update' => true])->assertOk();
+
+        $asset->refresh();
+        $this->assertEquals(1, $asset->requestable, 'Update import without a requestable column should not reset the requestable flag.');
+        $this->assertEquals(1, $asset->byod, 'Update import without a byod column should not reset the byod flag.');
+    }
+
+    #[Test]
+    public function update_mode_can_clear_boolean_flags_when_explicitly_false(): void
+    {
+        $asset = Asset::factory()->create(['requestable' => 1, 'byod' => 1])->refresh();
+
+        $row = ImportFileBuilder::new()->definition();
+        $row['tag'] = $asset->asset_tag;
+        $row['Requestable'] = 'FALSE';
+        $row['BYOD'] = 'FALSE';
+
+        $importFileBuilder = new ImportFileBuilder([$row]);
+        $import = Import::factory()->asset()->create(['file_path' => $importFileBuilder->saveToImportsDirectory()]);
+
+        $this->actingAsForApi(User::factory()->superuser()->create());
+        $this->importFileResponse(['import' => $import->id, 'import-update' => true])->assertOk();
+
+        $asset->refresh();
+        $this->assertEquals(0, $asset->requestable, 'Update import with requestable=FALSE should clear the requestable flag.');
+        $this->assertEquals(0, $asset->byod, 'Update import with byod=FALSE should clear the byod flag.');
     }
 
     #[Test]
@@ -647,7 +686,7 @@ class ImportAssetsTest extends ImportDataTestCase implements TestsPermissionsReq
     public function import_asset_checkout_is_blocked_when_fmcs_companies_differ(): void
     {
         [$companyA, $companyB] = Company::factory()->count(2)->create();
-        $user = User::factory()->for($companyB)->create();
+        $user = User::factory()->forCompany($companyB)->create();
         $this->settings->enableMultipleFullCompanySupport();
 
         $importFileBuilder = ImportFileBuilder::new([
@@ -668,7 +707,7 @@ class ImportAssetsTest extends ImportDataTestCase implements TestsPermissionsReq
     public function import_asset_checkout_is_allowed_when_fmcs_companies_match(): void
     {
         $company = Company::factory()->create();
-        $user = User::factory()->for($company)->create();
+        $user = User::factory()->forCompany($company)->create();
         $this->settings->enableMultipleFullCompanySupport();
 
         $importFileBuilder = ImportFileBuilder::new([
@@ -689,7 +728,7 @@ class ImportAssetsTest extends ImportDataTestCase implements TestsPermissionsReq
     public function import_asset_checkout_is_blocked_when_floater_disabled_and_user_has_no_company(): void
     {
         $company = Company::factory()->create();
-        $user = User::factory()->create(['company_id' => null]);
+        $user = User::factory()->withoutCompany()->create();
         $this->settings->enableMultipleFullCompanySupport()->disableFloaterMode();
 
         $importFileBuilder = ImportFileBuilder::new([
@@ -710,7 +749,7 @@ class ImportAssetsTest extends ImportDataTestCase implements TestsPermissionsReq
     public function import_asset_checkout_is_allowed_when_floater_enabled_and_user_has_no_company(): void
     {
         $company = Company::factory()->create();
-        $user = User::factory()->create(['company_id' => null]);
+        $user = User::factory()->withoutCompany()->create();
         $this->settings->enableFloaterMode();
 
         $importFileBuilder = ImportFileBuilder::new([
@@ -725,5 +764,38 @@ class ImportAssetsTest extends ImportDataTestCase implements TestsPermissionsReq
 
         $newAsset = Asset::where('serial', $importFileBuilder->firstRow()['serialNumber'])->sole();
         $this->assertEquals($user->id, $newAsset->assigned_to, 'Asset should be checked out to a no-company user when floater mode is on');
+    }
+
+    #[Test]
+    public function asset_import_does_not_mint_a_floater_user_side_effect_for_non_superuser(): void
+    {
+        // #19200: when an asset CSV references a brand-new username, the base
+        // Importer::createOrFetchUser side-effects a new user with no company
+        // pivot. Under floater mode that previously promoted the new user to
+        // system-wide visibility — exploitable as an asset import path. The
+        // guard refuses the user creation for actors who can't grant floater
+        // status; the asset still imports, it just doesn't get checked out.
+        $this->settings->enableFloaterMode();
+
+        $company = Company::factory()->create();
+        $importer = $company->users()->save(
+            User::factory()->createAssets()->editAssets()->canImport()->create(),
+        );
+
+        $importFileBuilder = ImportFileBuilder::new([
+            'companyName' => $company->name,
+            'assigneeUsername' => 'phantom-floater-user',
+            'assigneeFullName' => 'Phantom Floater',
+            'assigneeEmail' => 'phantom@example.org',
+        ]);
+
+        $this->actingAsForApi($importer);
+        $import = Import::factory()->asset()->create(['file_path' => $importFileBuilder->saveToImportsDirectory()]);
+        $this->importFileResponse(['import' => $import->id])->assertOk();
+
+        $this->assertDatabaseMissing('users', ['username' => 'phantom-floater-user']);
+
+        $newAsset = Asset::where('serial', $importFileBuilder->firstRow()['serialNumber'])->sole();
+        $this->assertNull($newAsset->assigned_to, 'Asset imports but is not checked out to the rejected user');
     }
 }

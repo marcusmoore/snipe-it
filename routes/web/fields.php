@@ -2,15 +2,14 @@
 
 use App\Http\Controllers\CustomFieldsController;
 use App\Http\Controllers\CustomFieldsetsController;
+use App\Livewire\CustomFieldEditor;
 use Illuminate\Support\Facades\Route;
 
 /*
 * Custom Fields Routes
 */
 
-
-
-Route::group([ 'prefix' => 'fields','middleware' => ['auth'] ], function () {
+Route::group(['prefix' => 'fields', 'middleware' => ['auth']], function () {
 
     Route::post(
         'required/{fieldset_id}/{field_id}',
@@ -32,15 +31,13 @@ Route::group([ 'prefix' => 'fields','middleware' => ['auth'] ], function () {
         [CustomFieldsetsController::class, 'associate']
     )->name('fieldsets.associate');
 
-
     Route::resource('fieldsets', CustomFieldsetsController::class, [
         'parameters' => [
             'fieldset' => 'fieldset',
-            'field' => 'field_id'
+            'field' => 'field_id',
         ],
-        'except' => ['show', 'view']
+        'except' => ['show', 'view'],
     ]);
-
 
     // This is a shim to handle bootstrap tables
     // @todo: normalize this in the JS
@@ -56,8 +53,14 @@ Route::group([ 'prefix' => 'fields','middleware' => ['auth'] ], function () {
 
 });
 
-Route::resource('fields', CustomFieldsController::class,
-    ['middleware' => ['auth'],
-        'except' => ['show', 'view']
-    ]);
+Route::group(['middleware' => ['auth']], function () {
+    // Create/edit are handled by the CustomFieldEditor Livewire component
+    // as full-page routes — mount() applies the create/update policies.
+    Route::get('fields/create', CustomFieldEditor::class)->name('fields.create');
+    Route::get('fields/{field}/edit', CustomFieldEditor::class)->name('fields.edit');
 
+    // index + destroy remain on the controller (the Livewire component
+    // handles saves via wire:submit -> save(), so store/update are gone).
+    Route::get('fields', [CustomFieldsController::class, 'index'])->name('fields.index');
+    Route::delete('fields/{field}', [CustomFieldsController::class, 'destroy'])->name('fields.destroy');
+});

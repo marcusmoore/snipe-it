@@ -99,6 +99,25 @@
                         data-target-name="{{ $field->db_column_name() }}">
                     {{ trans('/admin/hardware/general.clear') }}
                 </button>
+
+            @elseif ($field->element=='date_picker')
+                <div class="input-group col-md-5" style="padding-left: 0px;">
+                    <x-input.datepicker
+                        id="{{ $field->db_column_name() }}"
+                        name="{{ $field->db_column_name() }}"
+                        :value="old($field->db_column_name(), isset($item) ? Helper::gracefulDecrypt($field, $item->{$field->db_column_name()}) : '')"
+                    />
+                </div>
+
+            @elseif ($field->element=='datetime_picker')
+                <div class="input-group col-md-6" style="padding-left: 0px;">
+                    <x-input.datetimepicker
+                        id="{{ $field->db_column_name() }}"
+                        name="{{ $field->db_column_name() }}"
+                        :value="old($field->db_column_name(), isset($item) ? Helper::gracefulDecrypt($field, $item->{$field->db_column_name()}) : '')"
+                        :default_now="false"
+                    />
+                </div>
             @endif
 
             @else
@@ -107,15 +126,28 @@
             @if ($field->format=='DATE')
 
             <div class="input-group col-md-5" style="padding-left: 0px;">
-                <div class="input-group date" data-provide="datepicker" data-date-format="yyyy-mm-dd" data-autoclose="true" data-date-clear-btn="true">
-                    <input type="text" class="form-control" placeholder="{{ trans('general.select_date') }}"
-                           name="{{ $field->db_column_name() }}"
-                           id="{{ $field->db_column_name() }}" readonly
-                           value="{{ old($field->db_column_name(),(isset($item) ? Helper::gracefulDecrypt($field, $item->{$field->db_column_name()}) : '')) }}"
-                           style="background-color:inherit">
-                    <span class="input-group-addon"><x-icon type="calendar" /></span>
-                </div>
+                <x-input.datepicker
+                    id="{{ $field->db_column_name() }}"
+                    name="{{ $field->db_column_name() }}"
+                    :value="old($field->db_column_name(), isset($item) ? Helper::gracefulDecrypt($field, $item->{$field->db_column_name()}) : '')"
+                />
             </div>
+
+
+                @elseif ($field->format=='DATETIME')
+
+                    {{-- Outer wrapper with inline padding-left: 0 to match
+                         the DATE case above; conflicting duplicate CSS
+                         rules for .input-group[class*="col-"] otherwise
+                         re-apply the 15px grid padding. --}}
+                  <div class="input-group col-md-6" style="padding-left: 0px;">
+                        <x-input.datetimepicker
+                            id="{{ $field->db_column_name() }}"
+                            name="{{ $field->db_column_name() }}"
+                            :value="old($field->db_column_name(), isset($item) ? Helper::gracefulDecrypt($field, $item->{$field->db_column_name()}) : '')"
+                            :default_now="false"
+                        />
+                    </div>
 
 
                 @else
@@ -161,7 +193,7 @@
           $errormessage=$errors->first($field->db_column_name());
           if ($errormessage) {
               $errormessage=preg_replace('/ snipeit /', '', $errormessage);
-              print('<span class="alert-msg" aria-hidden="true"><i class="fas fa-times" aria-hidden="true"></i> '.$errormessage.'</span>');
+              print('<span class="alert-msg" role="alert" aria-live="assertive">'.$errormessage.'</span>');
           }
             ?>
       </div>

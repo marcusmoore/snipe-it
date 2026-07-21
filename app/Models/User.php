@@ -72,7 +72,6 @@ class User extends SnipeModel implements AuthenticatableContract, AuthorizableCo
         'activated',
         'address',
         'city',
-        'company_id',
         'country',
         'department_id',
         'email',
@@ -106,7 +105,7 @@ class User extends SnipeModel implements AuthenticatableContract, AuthorizableCo
     protected $casts = [
         'manager_id' => 'integer',
         'location_id' => 'integer',
-        'company_id' => 'integer',
+        'legacy_company_id' => 'integer',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime',
@@ -253,15 +252,6 @@ class User extends SnipeModel implements AuthenticatableContract, AuthorizableCo
 
     protected static function booted(): void
     {
-        // Bridge for factories/seeders that still set company_id directly: ensure
-        // that company appears in the pivot so FMCS scoping works correctly.
-        // Application code (controllers, importers) writes only to the pivot.
-        static::created(function (User $user) {
-            if ($user->company_id) {
-                $user->companies()->syncWithoutDetaching([$user->company_id]);
-            }
-        });
-
         static::forceDeleted(function (User $user) {
             CheckoutRequest::where(['user_id' => $user->id])->forceDelete();
             $user->purgeAssociatedPassportTokens();
@@ -552,6 +542,33 @@ class User extends SnipeModel implements AuthenticatableContract, AuthorizableCo
         return $this->checkPermissionSection('superuser');
     }
 
+    public function canImpersonate(): bool
+    {
+        if (! $this->isSuperUser()) {
+            return false;
+        }
+
+        $allowed = array_map('mb_strtolower', (array) config('app.user_impersonation_usernames'));
+
+        return in_array(mb_strtolower((string) $this->username), $allowed, true);
+    }
+
+    public function mayImpersonate(User $target): bool
+    {
+        return $this->canImpersonate()
+            && $target->id !== $this->id
+            && ! $target->isSuperUser()
+            && $target->deleted_at === null
+            && $target->activated == 1;
+    }
+
+    public function twoFactorResettable(): bool
+    {
+        return $this->activated == '1'
+            && $this->two_factor_active_and_enrolled()
+            && ! in_array(Setting::getSettings()->two_factor_enabled, ['0', '', null], true);
+    }
+
     /**
      * Checks if the user is an admin
      *
@@ -564,6 +581,35 @@ class User extends SnipeModel implements AuthenticatableContract, AuthorizableCo
     public function isAdmin()
     {
         return $this->checkPermissionSection('admin');
+    }
+
+    /**
+     * Whether this user is allowed to save another user with no company
+     * assignment. Under floater mode, "no companies" means the target gains
+     * system-wide visibility, so the actor needs to already be at that
+     * privilege level: superusers can always grant it; floater actors
+     * (themselves uncompanied) can grant it to others without escalating —
+     * they already have the same access. The only blocked case is a
+     * *companied* non-superuser trying to elevate someone to floater, which
+     * would be a genuine escalation. When floater mode itself is off — or
+     * FMCS is off — there's no floater to grant, so the answer is yes. See
+     * #19200.
+     */
+    public function canGrantFloaterStatus(): bool
+    {
+        $settings = Setting::getSettings();
+
+        if (! $settings->full_multiple_companies_support) {
+            return true;
+        }
+        if (! $settings->null_company_is_floater) {
+            return true;
+        }
+        if ($this->isSuperUser()) {
+            return true;
+        }
+
+        return ! $this->companies()->exists();
     }
 
     /**
@@ -615,9 +661,14 @@ class User extends SnipeModel implements AuthenticatableContract, AuthorizableCo
      *
      * @return Relation
      */
+    /**
+     * @deprecated Use companies() for multi-company support. This resolves via
+     * the legacy_company_id mirror, which is kept in sync with the pivot but is
+     * not authoritative and may be dropped in a future release.
+     */
     public function company()
     {
-        return $this->belongsTo(Company::class, 'company_id');
+        return $this->belongsTo(Company::class, 'legacy_company_id');
     }
 
     public function companies(): BelongsToMany
@@ -627,39 +678,65 @@ class User extends SnipeModel implements AuthenticatableContract, AuthorizableCo
 
     /**
      * Returns whether an FMCS company check should allow this user to receive
-     * an asset that belongs to the given company.
+     * an item that belongs to the given company (null = uncompanied item).
      *
-     * - If the user has no company associations at all: returns true (no restriction).
-     * - If the user has associations: returns true only when $companyId is among them.
+     * Mirrors the rules in CompanyableTrait::canCheckoutTo so the User-target
+     * branch behaves the same as every other companyable target:
+     *  - Both sides uncompanied → allowed (null↔null).
+     *  - Item uncompanied, user companied → only when null_company_is_floater
+     *    is on (floater mode treats null-company items as system-wide).
+     *  - Item companied, user uncompanied → only when null_company_is_floater
+     *    is on (floater users see everything).
+     *  - Both sides companied → user's pivot must contain the item's company.
      */
-    public function canReceiveFromCompany(int $companyId): bool
+    public function canReceiveFromCompany(?int $companyId): bool
     {
-        // Items with no company association are unrestricted — anyone can receive them.
-        if (! $companyId) {
-            return true;
-        }
-
         // Query the pivot directly to avoid the Company model's FMCS global scope,
         // which would restrict results to the current actor's visible companies.
         $userCompanyIds = DB::table('company_user')
             ->where('user_id', $this->id)
             ->pluck('company_id');
 
+        if (is_null($companyId)) {
+            if ((bool) Setting::getSettings()->null_company_is_floater) {
+                return true;
+            }
+
+            return $userCompanyIds->isEmpty();
+        }
+
         if ($userCompanyIds->isEmpty()) {
             return (bool) Setting::getSettings()->null_company_is_floater;
         }
 
-        return $userCompanyIds->contains($companyId);
+        if ($userCompanyIds->contains($companyId)) {
+            return true;
+        }
+
+        // Membership in a parent company implies access to its children — accept
+        // an item from a child company when the user belongs to its parent.
+        return DB::table('companies')
+            ->where('id', $companyId)
+            ->whereIn('parent_id', $userCompanyIds)
+            ->exists();
     }
 
     /**
-     * Returns all companies this user belongs to — union of the primary company_id
-     * column and the many-to-many pivot — as a deduplicated Collection.
+     * Returns all companies this user has access to — the pivot memberships plus
+     * any child companies of those memberships (one-level-deep hierarchy).
      * Used to scope FMCS dropdowns to companies the user is allowed to work with.
      */
     public function allCompanies(): Collection
     {
-        return $this->companies->unique('id')->values();
+        $direct = $this->companies->unique('id');
+
+        if ($direct->isEmpty()) {
+            return $direct->values();
+        }
+
+        $children = Company::whereIn('parent_id', $direct->pluck('id'))->get();
+
+        return $direct->concat($children)->unique('id')->values();
     }
 
     /**
@@ -675,6 +752,8 @@ class User extends SnipeModel implements AuthenticatableContract, AuthorizableCo
         $oldIds = $this->companies()->orderBy('companies.id')->pluck('companies.id')->toArray();
         $this->companies()->sync($companyIds);
         $newIds = $this->companies()->orderBy('companies.id')->pluck('companies.id')->toArray();
+
+        $this->syncLegacyCompanyIdMirror();
 
         if ($oldIds === $newIds) {
             return;
@@ -700,6 +779,44 @@ class User extends SnipeModel implements AuthenticatableContract, AuthorizableCo
         $logAction->created_by = auth()->id();
         $logAction->log_meta = json_encode($companyChange);
         $logAction->logaction('update');
+    }
+
+    /**
+     * Update the legacy users.company_id column so that it mirrors the
+     * company_user pivot: empty pivot writes NULL; a non-empty pivot writes
+     * the lowest-id pivot entry (arbitrary but stable).
+     *
+     * The column is a compatibility mirror maintained only for external
+     * consumers that historically read it (the API transformer, CSV export
+     * templates, SCIM schema mappings). It has NO role in FMCS scoping,
+     * checkout eligibility, or any internal application logic. Do not read
+     * it from application code.
+     *
+     * Call this after any write to the company_user pivot so the mirror
+     * stays consistent. Writes via the query builder so it doesn't trigger
+     * the User model's save events (which would recurse through
+     * UserObserver::updating and produce a spurious change log entry).
+     */
+    public function syncLegacyCompanyIdMirror(): void
+    {
+        if (! $this->exists) {
+            return;
+        }
+
+        $lowestPivotId = DB::table('company_user')
+            ->where('user_id', $this->id)
+            ->orderBy('company_id')
+            ->value('company_id');
+
+        $target = $lowestPivotId ? (int) $lowestPivotId : null;
+
+        if ((int) $this->legacy_company_id === (int) $target && ($target !== null || is_null($this->legacy_company_id))) {
+            return;
+        }
+
+        DB::table('users')->where('id', $this->id)->update(['legacy_company_id' => $target]);
+        $this->legacy_company_id = $target;
+        $this->syncOriginalAttribute('legacy_company_id');
     }
 
     /**
@@ -1182,6 +1299,28 @@ class User extends SnipeModel implements AuthenticatableContract, AuthorizableCo
      * @param  string  $query
      * @return string
      */
+    /**
+     * Verify that a resolved local user's stored username byte-exactly matches
+     * the externally-supplied identifier. The MySQL/MariaDB default collation
+     * utf8mb4_unicode_ci folds accents and case, so `WHERE username = ?` on
+     * that engine can silently route 'snípeitreport3' or 'Admin' to the row
+     * for 'snipeitreport3' or 'admin'. Federated/SSO auth flows (SAML, LDAP,
+     * REMOTE_USER, Google OAuth) must call this after their username lookup
+     * so an attacker-controlled external identifier can't authenticate as a
+     * different local account. hash_equals runs in constant time so this
+     * check doesn't leak any timing signal.
+     *
+     * Returns the user when the strings match byte-for-byte, null otherwise.
+     */
+    public static function verifyExactUsernameMatch(?self $user, string $expected): ?self
+    {
+        if ($user === null) {
+            return null;
+        }
+
+        return hash_equals((string) $user->username, $expected) ? $user : null;
+    }
+
     public static function generateEmailFromFullName($name)
     {
         $username = self::generateFormattedNameFromFullName($name, Setting::getSettings()->email_format);
@@ -1509,9 +1648,14 @@ class User extends SnipeModel implements AuthenticatableContract, AuthorizableCo
      */
     public function scopeOrderCompany($query, $order)
     {
+        // The MIN(...) aggregate has to go through DB::raw, which bypasses
+        // Laravel's grammar — so the `companies` table reference inside the
+        // raw string won't get DB_PREFIX applied automatically. Same pattern
+        // as Api\AssetsController::index's natural-sort branch.
+        $prefix = DB::getTablePrefix();
         $sub = DB::table('company_user')
             ->join('companies', 'companies.id', '=', 'company_user.company_id')
-            ->select('company_user.user_id', DB::raw('MIN(companies.name) as min_company_name'))
+            ->select('company_user.user_id', DB::raw('MIN('.$prefix.'companies.name) as min_company_name'))
             ->groupBy('company_user.user_id');
 
         return $query

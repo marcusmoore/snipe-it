@@ -6,11 +6,11 @@
 <!-- Tasks: style can be found in dropdown.less -->
 <?php
     $alert_items = \App\Helpers\Helper::checkLowInventory();
-    $deprecations = \App\Helpers\Helper::deprecationCheck();
+$deprecations = \App\Helpers\Helper::deprecationCheck();
 ?>
 
 <li class="dropdown tasks-menu">
-    <a href="#" class="dropdown-toggle" data-toggle="dropdown">
+    <a href="#" class="dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
         <x-icon type="alerts" />
         <span class="sr-only">{{ trans('general.alerts') }}</span>
         @if(count($alert_items) + count($deprecations))

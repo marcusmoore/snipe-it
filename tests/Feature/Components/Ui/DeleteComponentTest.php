@@ -86,7 +86,7 @@ class DeleteComponentTest extends TestCase implements TestsFullMultipleCompanies
 
         [$companyA, $companyB] = Company::factory()->count(2)->create();
 
-        $userInCompanyA = User::factory()->for($companyA)->create();
+        $userInCompanyA = User::factory()->forCompany($companyA)->create();
         $componentForCompanyB = Component::factory()->for($companyB)->create();
 
         $this->actingAs($userInCompanyA)

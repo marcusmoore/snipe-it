@@ -21,7 +21,7 @@ class LocationParentCompanyTest extends TestCase
     {
         $this->settings->enableMultipleFullCompanySupport();
 
-        $acme   = Company::factory()->create(['name' => 'Acme']);
+        $acme = Company::factory()->create(['name' => 'Acme']);
         $globex = Company::factory()->create(['name' => 'Globex']);
 
         $parentLocation = Location::factory()->create(['company_id' => $acme->id]);
@@ -29,9 +29,9 @@ class LocationParentCompanyTest extends TestCase
         $this->actingAs(User::factory()->superuser()->create())
             ->from(route('locations.create'))
             ->post(route('locations.store'), [
-                'name'       => 'Location B',
+                'name' => 'Location B',
                 'company_id' => $globex->id,
-                'parent_id'  => $parentLocation->id,
+                'parent_id' => $parentLocation->id,
             ])
             ->assertRedirect(route('locations.create'))
             ->assertSessionHas('error');
@@ -49,9 +49,9 @@ class LocationParentCompanyTest extends TestCase
 
         $this->actingAs(User::factory()->superuser()->create())
             ->post(route('locations.store'), [
-                'name'       => 'Location B',
+                'name' => 'Location B',
                 'company_id' => $acme->id,
-                'parent_id'  => $parentLocation->id,
+                'parent_id' => $parentLocation->id,
             ])
             ->assertRedirect(route('locations.index'))
             ->assertSessionHasNoErrors();
@@ -63,16 +63,16 @@ class LocationParentCompanyTest extends TestCase
     {
         $this->settings->disableMultipleFullCompanySupport();
 
-        $acme   = Company::factory()->create(['name' => 'Acme']);
+        $acme = Company::factory()->create(['name' => 'Acme']);
         $globex = Company::factory()->create(['name' => 'Globex']);
 
         $parentLocation = Location::factory()->create(['company_id' => $acme->id]);
 
         $this->actingAs(User::factory()->superuser()->create())
             ->post(route('locations.store'), [
-                'name'       => 'Location B',
+                'name' => 'Location B',
                 'company_id' => $globex->id,
-                'parent_id'  => $parentLocation->id,
+                'parent_id' => $parentLocation->id,
             ])
             ->assertRedirect(route('locations.index'))
             ->assertSessionHasNoErrors();
@@ -88,18 +88,18 @@ class LocationParentCompanyTest extends TestCase
     {
         $this->settings->enableMultipleFullCompanySupport();
 
-        $acme   = Company::factory()->create(['name' => 'Acme']);
+        $acme = Company::factory()->create(['name' => 'Acme']);
         $globex = Company::factory()->create(['name' => 'Globex']);
 
         $parentLocation = Location::factory()->create(['company_id' => $acme->id]);
-        $location       = Location::factory()->create(['name' => 'Location B', 'company_id' => $globex->id]);
+        $location = Location::factory()->create(['name' => 'Location B', 'company_id' => $globex->id]);
 
         $this->actingAs(User::factory()->superuser()->create())
             ->from(route('locations.edit', $location))
             ->put(route('locations.update', $location), [
-                'name'       => 'Location B',
+                'name' => 'Location B',
                 'company_id' => $globex->id,
-                'parent_id'  => $parentLocation->id,
+                'parent_id' => $parentLocation->id,
             ])
             ->assertRedirect(route('locations.edit', $location))
             ->assertSessionHas('error');
@@ -114,13 +114,13 @@ class LocationParentCompanyTest extends TestCase
         $acme = Company::factory()->create(['name' => 'Acme']);
 
         $parentLocation = Location::factory()->create(['company_id' => $acme->id]);
-        $location       = Location::factory()->create(['name' => 'Location B', 'company_id' => $acme->id]);
+        $location = Location::factory()->create(['name' => 'Location B', 'company_id' => $acme->id]);
 
         $this->actingAs(User::factory()->superuser()->create())
             ->put(route('locations.update', $location), [
-                'name'       => 'Location B',
+                'name' => 'Location B',
                 'company_id' => $acme->id,
-                'parent_id'  => $parentLocation->id,
+                'parent_id' => $parentLocation->id,
             ])
             ->assertRedirect(route('locations.index'))
             ->assertSessionHasNoErrors();
@@ -132,17 +132,17 @@ class LocationParentCompanyTest extends TestCase
     {
         $this->settings->disableMultipleFullCompanySupport();
 
-        $acme   = Company::factory()->create(['name' => 'Acme']);
+        $acme = Company::factory()->create(['name' => 'Acme']);
         $globex = Company::factory()->create(['name' => 'Globex']);
 
         $parentLocation = Location::factory()->create(['company_id' => $acme->id]);
-        $location       = Location::factory()->create(['name' => 'Location B', 'company_id' => $globex->id]);
+        $location = Location::factory()->create(['name' => 'Location B', 'company_id' => $globex->id]);
 
         $this->actingAs(User::factory()->superuser()->create())
             ->put(route('locations.update', $location), [
-                'name'       => 'Location B',
+                'name' => 'Location B',
                 'company_id' => $globex->id,
-                'parent_id'  => $parentLocation->id,
+                'parent_id' => $parentLocation->id,
             ])
             ->assertRedirect(route('locations.index'))
             ->assertSessionHasNoErrors();

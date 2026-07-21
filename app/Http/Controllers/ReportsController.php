@@ -789,7 +789,11 @@ class ReportsController extends Controller
                 if ($request->filled('purchase_cost_end')) {
                     $assets->whereBetween('assets.purchase_cost', [$request->input('purchase_cost_start'), $request->input('purchase_cost_end')]);
                 } else {
-                    $assets->where('assets.purchase_cost', '>', $request->input('purchase_cost_start'));
+                    // >= for consistency with the whereBetween branch above,
+                    // which is inclusive on both sides. Previously '>', so a
+                    // user filtering "cost >= 0" got nothing at exactly 0, and
+                    // "cost >= 100" quietly hid assets bought for 100.
+                    $assets->where('assets.purchase_cost', '>=', $request->input('purchase_cost_start'));
                 }
             }
 
@@ -840,7 +844,15 @@ class ReportsController extends Controller
             }
 
             if (($request->filled('last_updated_start')) && ($request->filled('last_updated_end'))) {
-                $assets->whereBetween('assets.updated_at', [$request->input('last_updated_start'), $request->input('last_updated_end')]);
+                // updated_at is a timestamp, not a DATE, so a raw string
+                // whereBetween is silently exclusive on the end side (the picker
+                // returns Y-m-d which MySQL widens to Y-m-d 00:00:00, dropping
+                // everything on the end day after midnight). Match the created_at
+                // handling above and normalize to start/end of day.
+                $last_updated_start = Carbon::parse($request->input('last_updated_start'))->startOfDay();
+                $last_updated_end = Carbon::parse($request->input('last_updated_end'))->endOfDay();
+
+                $assets->whereBetween('assets.updated_at', [$last_updated_start, $last_updated_end]);
             }
 
             if (($request->filled('last_updated_before'))) {

@@ -276,7 +276,14 @@ class LicenseCheckoutController extends Controller
 
         $usersQuery = User::whereNull('deleted_at')->where('autoassign_licenses', '=', 1)->with('licenses');
         if (Setting::getSettings()->full_multiple_companies_support && $license->company_id) {
-            $usersQuery->where('company_id', '=', $license->company_id);
+            // Filter to users pivoted to the license's company. The scalar
+            // users.company_id column is deprecated; membership lives in the
+            // company_user pivot only.
+            $usersQuery->whereIn('users.id', function ($sub) use ($license) {
+                $sub->select('user_id')
+                    ->from('company_user')
+                    ->where('company_id', $license->company_id);
+            });
         }
         $users = $usersQuery->get();
         Log::debug($avail_count.' will be assigned');

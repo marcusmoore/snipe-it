@@ -125,8 +125,12 @@ class AssetCheckinController extends Controller
             ->where('deployable', 1)
             ->exists();
 
-        if ($request->boolean('set_requestable') && $isDeployableStatus) {
-            $asset->requestable = true;
+        // Requestable is only meaningful when the selected status is deployable
+        // (the view hides the wrapper otherwise). Under a deployable status,
+        // apply the checkbox value: checked = true, unchecked (or absent) =
+        // false, per Laravel's boolean() default.
+        if ($isDeployableStatus) {
+            $asset->requestable = $request->boolean('requestable');
         }
 
         // Add any custom fields that should be included in the checkout

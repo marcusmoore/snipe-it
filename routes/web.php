@@ -7,7 +7,11 @@ use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\ResetPasswordController;
 use App\Http\Controllers\BulkCategoriesController;
+use App\Http\Controllers\BulkCompaniesController;
+use App\Http\Controllers\BulkDepartmentsController;
+use App\Http\Controllers\BulkDepreciationsController;
 use App\Http\Controllers\BulkManufacturersController;
+use App\Http\Controllers\BulkStatuslabelsController;
 use App\Http\Controllers\BulkSuppliersController;
 use App\Http\Controllers\CategoriesController;
 use App\Http\Controllers\CompaniesController;
@@ -22,8 +26,8 @@ use App\Http\Controllers\ManufacturersController;
 use App\Http\Controllers\ModalController;
 use App\Http\Controllers\NotesController;
 use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\Reports\CustomComponentReportController;
 use App\Http\Controllers\QrCodeController;
+use App\Http\Controllers\Reports\CustomComponentReportController;
 use App\Http\Controllers\ReportsController;
 use App\Http\Controllers\ReportTemplatesController;
 use App\Http\Controllers\SettingsController;
@@ -46,6 +50,8 @@ Route::group(['middleware' => 'auth'], function () {
     Route::resource('companies', CompaniesController::class, [
         'parameters' => ['company' => 'company_id'],
     ]);
+
+    Route::post('companies/bulk/delete', [BulkCompaniesController::class, 'destroy'])->name('companies.bulk.delete');
 
     /*
     * Categories
@@ -100,15 +106,21 @@ Route::group(['middleware' => 'auth'], function () {
      */
     Route::resource('depreciations', DepreciationsController::class);
 
+    Route::post('depreciations/bulk/delete', [BulkDepreciationsController::class, 'destroy'])->name('depreciations.bulk.delete');
+
     /*
     * Status Labels
      */
     Route::resource('statuslabels', StatuslabelsController::class);
 
+    Route::post('statuslabels/bulk/delete', [BulkStatuslabelsController::class, 'destroy'])->name('statuslabels.bulk.delete');
+
     /*
     * Departments
     */
     Route::resource('departments', DepartmentsController::class);
+
+    Route::post('departments/bulk/delete', [BulkDepartmentsController::class, 'destroy'])->name('departments.bulk.delete');
 });
 
 /*

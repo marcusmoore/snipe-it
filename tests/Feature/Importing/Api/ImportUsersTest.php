@@ -119,6 +119,44 @@ class ImportUsersTest extends ImportDataTestCase implements TestsPermissionsRequ
     }
 
     #[Test]
+    public function parses_non_iso_start_and_end_dates(): void
+    {
+        $row = ImportFileBuilder::new()->definition();
+        $row['start_date'] = '07/28/2025';
+        $row['end_date'] = '12/31/2025';
+
+        $importFileBuilder = new ImportFileBuilder([$row]);
+        $import = Import::factory()->users()->create(['file_path' => $importFileBuilder->saveToImportsDirectory()]);
+
+        $this->actingAsForApi(User::factory()->superuser()->create());
+        $this->importFileResponse(['import' => $import->id])->assertOk();
+
+        $newUser = User::query()->where('username', $row['username'])->sole();
+
+        $this->assertEquals('2025-07-28', $newUser->start_date);
+        $this->assertEquals('2025-12-31', $newUser->end_date);
+    }
+
+    #[Test]
+    public function stores_null_when_start_or_end_date_is_unparseable(): void
+    {
+        $row = ImportFileBuilder::new()->definition();
+        $row['start_date'] = 'not-a-date';
+        $row['end_date'] = 'also-not-a-date';
+
+        $importFileBuilder = new ImportFileBuilder([$row]);
+        $import = Import::factory()->users()->create(['file_path' => $importFileBuilder->saveToImportsDirectory()]);
+
+        $this->actingAsForApi(User::factory()->superuser()->create());
+        $this->importFileResponse(['import' => $import->id])->assertOk();
+
+        $newUser = User::query()->where('username', $row['username'])->sole();
+
+        $this->assertNull($newUser->start_date);
+        $this->assertNull($newUser->end_date);
+    }
+
+    #[Test]
     public function will_ignore_unknown_columns_when_file_contains_unknown_columns(): void
     {
         $row = ImportFileBuilder::new()->definition();
@@ -240,6 +278,11 @@ class ImportUsersTest extends ImportDataTestCase implements TestsPermissionsRequ
             'updated_at',
             'phone',
             'jobtitle',
+            // The import changes the user's company via the company_user pivot.
+            // syncLegacyCompanyIdMirror() then updates the users.legacy_company_id
+            // mirror to reflect that change, so it also legitimately differs
+            // between $user (pre-import) and $updatedUser (post-import).
+            'legacy_company_id',
         ];
 
         $this->assertEquals($row['email'], $updatedUser->email);
@@ -405,9 +448,9 @@ class ImportUsersTest extends ImportDataTestCase implements TestsPermissionsRequ
                 'email' => 'hijacked@evil.com',
             ]),
         ]);
-        $import = Import::factory()->users()->create(['file_path' => $importFileBuilder->saveToImportsDirectory()]);
 
         $this->actingAsForApi(User::factory()->canImport()->create());
+        $import = Import::factory()->users()->create(['file_path' => $importFileBuilder->saveToImportsDirectory()]);
         $this->importFileResponse(['import' => $import->id, 'import-update' => true])->assertOk();
 
         $this->assertEquals('original@example.com', $victim->refresh()->email);
@@ -427,9 +470,9 @@ class ImportUsersTest extends ImportDataTestCase implements TestsPermissionsRequ
                 'email' => 'updated@example.com',
             ]),
         ]);
-        $import = Import::factory()->users()->create(['file_path' => $importFileBuilder->saveToImportsDirectory()]);
 
         $this->actingAsForApi(User::factory()->canImport()->editUsers()->create());
+        $import = Import::factory()->users()->create(['file_path' => $importFileBuilder->saveToImportsDirectory()]);
         $this->importFileResponse(['import' => $import->id, 'import-update' => true])->assertOk();
 
         $this->assertEquals('updated@example.com', $target->refresh()->email);

@@ -35,7 +35,7 @@ class UpdateAccessoryTest extends TestCase
 
         [$companyA, $companyB] = Company::factory()->count(2)->create();
         $accessoryForCompanyA = Accessory::factory()->for($companyA)->create();
-        $userForCompanyB = User::factory()->for($companyB)->editAccessories()->create();
+        $userForCompanyB = User::factory()->forCompany($companyB)->editAccessories()->create();
 
         $this->actingAs($userForCompanyB)
             ->get(route('accessories.edit', $accessoryForCompanyA->id))

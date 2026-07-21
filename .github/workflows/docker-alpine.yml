@@ -43,6 +43,8 @@ jobs:
       # https://github.com/actions/checkout
       - name: Checkout codebase
         uses: actions/checkout@v7
+        with:
+          persist-credentials: false
 
       # https://github.com/docker/setup-buildx-action
       - name: Setup Docker Buildx

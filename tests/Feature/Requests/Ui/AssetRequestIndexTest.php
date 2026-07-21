@@ -36,7 +36,7 @@ class AssetRequestIndexTest extends TestCase
 
         $assetA = Asset::factory()->create(['company_id' => $companyA->id]);
         $request = CheckoutRequest::factory()->create(['requestable_id' => $assetA->id, 'requestable_type' => Asset::class]);
-        $viewer = User::factory()->viewAssets()->create(['company_id' => $companyA->id]);
+        $viewer = User::factory()->viewAssets()->forCompany($companyA->id)->create();
 
         $this->actingAs($viewer)
             ->get(route('assets.requested'))
@@ -52,7 +52,7 @@ class AssetRequestIndexTest extends TestCase
 
         $assetB = Asset::factory()->create(['company_id' => $companyB->id]);
         $crossCompanyRequest = CheckoutRequest::factory()->create(['requestable_id' => $assetB->id, 'requestable_type' => Asset::class]);
-        $viewer = User::factory()->viewAssets()->create(['company_id' => $companyA->id]);
+        $viewer = User::factory()->viewAssets()->forCompany($companyA->id)->create();
 
         $this->actingAs($viewer)
             ->get(route('assets.requested'))
@@ -71,7 +71,7 @@ class AssetRequestIndexTest extends TestCase
 
         $assetB = Asset::factory()->create(['company_id' => $companyB->id]);
         $crossCompanyRequest = CheckoutRequest::factory()->create(['requestable_id' => $assetB->id, 'requestable_type' => Asset::class]);
-        $viewer = User::factory()->viewAssets()->create(['company_id' => null]);
+        $viewer = User::factory()->viewAssets()->withoutCompany()->create();
         $viewer->companies()->sync([$companyA->id]);
 
         $this->actingAs($viewer)
@@ -92,7 +92,7 @@ class AssetRequestIndexTest extends TestCase
 
         $floaterAsset = Asset::factory()->create(['company_id' => null]);
         $request = CheckoutRequest::factory()->create(['requestable_id' => $floaterAsset->id, 'requestable_type' => Asset::class]);
-        $viewer = User::factory()->viewAssets()->create(['company_id' => $companyA->id]);
+        $viewer = User::factory()->viewAssets()->forCompany($companyA->id)->create();
 
         $this->actingAs($viewer)
             ->get(route('assets.requested'))
@@ -113,7 +113,7 @@ class AssetRequestIndexTest extends TestCase
         $assetB = Asset::factory()->create(['company_id' => $companyB->id]);
         $requestA = CheckoutRequest::factory()->create(['requestable_id' => $assetA->id, 'requestable_type' => Asset::class]);
         $requestB = CheckoutRequest::factory()->create(['requestable_id' => $assetB->id, 'requestable_type' => Asset::class]);
-        $superuser = User::factory()->superuser()->create(['company_id' => $companyA->id]);
+        $superuser = User::factory()->superuser()->forCompany($companyA->id)->create();
 
         $this->actingAs($superuser)
             ->get(route('assets.requested'))
@@ -130,7 +130,7 @@ class AssetRequestIndexTest extends TestCase
 
         $assetB = Asset::factory()->create(['company_id' => $companyB->id]);
         $request = CheckoutRequest::factory()->create(['requestable_id' => $assetB->id, 'requestable_type' => Asset::class]);
-        $viewer = User::factory()->viewAssets()->create(['company_id' => $companyA->id]);
+        $viewer = User::factory()->viewAssets()->forCompany($companyA->id)->create();
 
         $this->actingAs($viewer)
             ->get(route('assets.requested'))

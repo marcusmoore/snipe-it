@@ -34,8 +34,8 @@ class ViewUserTest extends TestCase
 
         [$companyA, $companyB] = Company::factory()->count(2)->create();
 
-        $actor = User::factory()->for($companyA)->viewUsers()->create();
-        $user = User::factory()->for($companyB)->create();
+        $actor = User::factory()->forCompany($companyA)->viewUsers()->create();
+        $user = User::factory()->forCompany($companyB)->create();
 
         $this->actingAs($actor)
             ->get(route('users.show', $user))

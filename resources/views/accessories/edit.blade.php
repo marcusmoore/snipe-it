@@ -13,11 +13,14 @@
 {{-- Page content --}}
 @section('content')
 
-<x-container class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+<x-container class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1 col-sm-12 col-sm-offset-0">
 
     <x-form :$item route="{{ isset($item->id) ? route('accessories.update', ['accessory' => $item->id]) : route('accessories.store') }}">
 
-        <x-box>
+        <x-box top_submit>
+            @if ($item->id)
+                <x-slot:header>{{ $item->name }}</x-slot:header>
+            @endif
 
             <x-input.company-select
                 :label="trans('general.company')"
@@ -69,17 +72,13 @@
                 name="order_number"
             />
 
-            <div class="form-group {{ $errors->has('purchase_date') ? 'has-error' : '' }}">
-                <label for="purchase_date" class="col-md-3 control-label">{{ trans('general.purchase_date') }}</label>
-                <div class="input-group col-md-4">
-                    <x-input.datepicker
-                        name="purchase_date"
-                        id="purchase_date"
-                        :value="old('purchase_date', $item->purchase_date ? date('Y-m-d', strtotime($item->purchase_date)) : '')"
-                    />
-                    {!! $errors->first('purchase_date', '<span class="alert-msg" aria-hidden="true"><i class="fas fa-times" aria-hidden="true"></i> :message</span>') !!}
-                </div>
-            </div>
+            <x-form.row
+                :label="trans('general.purchase_date')"
+                name="purchase_date"
+                type="datepicker"
+                :item="$item"
+                input_div_class="col-md-4"
+            />
 
             <x-input.purchase-cost
                 :label="trans('general.unit_cost')"
@@ -98,7 +97,9 @@
                 type="textarea"
             />
 
-            @include ('partials.forms.edit.image-upload', ['image_path' => app('accessories_upload_path')])
+            <x-input.image-upload :item="$item" :imagePath="app('accessories_upload_path')" :clonedModel="$cloned_model ?? null" />
+
+            @include ('partials.forms.edit.requestable', ['requestable_text' => trans('admin/accessories/general.requestable')])
 
             <x-slot:customfooter>
                 <x-redirect_submit_options

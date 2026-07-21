@@ -297,7 +297,7 @@
         <x-info-panel.supplier :infoPanelObj="$infoPanelObj"/>
         <x-info-panel.manufacturer :infoPanelObj="$infoPanelObj" :manufacturer="($infoPanelObj->manufacturer ?? $infoPanelObj->model?->manufacturer)"/>
 
-        @if ((isset($infoPanelObj->parent)) && ($infoPanelObj->parent))
+        @if (($infoPanelObj instanceof \App\Models\Location) && (isset($infoPanelObj->parent)) && ($infoPanelObj->parent))
             @php
                 $locationAncestors = [];
                 $ancestorCursor = $infoPanelObj->parent;
@@ -361,12 +361,32 @@
             </x-info-element>
         @endif
 
+        @if (isset($infoPanelObj->support_email) && $infoPanelObj->support_email)
+            <x-info-element icon_type="email" title="{{ trans('admin/manufacturers/table.support_email') }}">
+                <x-copy-to-clipboard class="pull-right" copy_what="support_email">
+                    <x-info-element.email>
+                        {{ $infoPanelObj->support_email }}
+                    </x-info-element.email>
+                </x-copy-to-clipboard>
+            </x-info-element>
+        @endif
+
 
         @if ($infoPanelObj->phone)
             <x-info-element icon_type="phone" title="{{ trans('general.phone') }}">
                 <x-copy-to-clipboard class="pull-right" copy_what="phone">
                     <x-info-element.phone>
                     {{ $infoPanelObj->phone }}
+                    </x-info-element.phone>
+                </x-copy-to-clipboard>
+            </x-info-element>
+        @endif
+
+        @if (isset($infoPanelObj->support_phone) && $infoPanelObj->support_phone)
+            <x-info-element icon_type="phone" title="{{ trans('admin/manufacturers/table.support_phone') }}">
+                <x-copy-to-clipboard class="pull-right" copy_what="support_phone">
+                    <x-info-element.phone>
+                        {{ $infoPanelObj->support_phone }}
                     </x-info-element.phone>
                 </x-copy-to-clipboard>
             </x-info-element>
@@ -390,11 +410,37 @@
             </x-info-element>
         @endif
 
-        <x-info-element icon_type="external-link" title="{{ trans('general.url') }}">
-            <x-info-element.url>
-                {{ $infoPanelObj->url }}
-            </x-info-element.url>
-        </x-info-element>
+        @if ($infoPanelObj->url)
+            <x-info-element icon_type="external-link" title="{{ trans('general.url') }}">
+                <x-info-element.url>
+                    {{ $infoPanelObj->url }}
+                </x-info-element.url>
+            </x-info-element>
+        @endif
+
+        @if (isset($infoPanelObj->support_url) && $infoPanelObj->support_url)
+            <x-info-element icon_type="external-link" title="{{ trans('admin/manufacturers/table.support_url') }}">
+                <x-info-element.url>
+                    {{ $infoPanelObj->support_url }}
+                </x-info-element.url>
+            </x-info-element>
+        @endif
+
+        @if (isset($infoPanelObj->warranty_lookup_url) && $infoPanelObj->warranty_lookup_url)
+            <x-info-element icon_type="external-link" title="{{ trans('admin/manufacturers/table.warranty_lookup_url') }}">
+                <x-info-element.url>
+                    {{ $infoPanelObj->warranty_lookup_url }}
+                </x-info-element.url>
+            </x-info-element>
+        @endif
+
+        @if (isset($infoPanelObj->website) && $infoPanelObj->website)
+            <x-info-element icon_type="external-link" title="{{ trans('general.website') }}">
+                <x-info-element.url>
+                    {{ $infoPanelObj->website }}
+                </x-info-element.url>
+            </x-info-element>
+        @endif
 
 
         @if (($infoPanelObj->present()->displayAddress) && (config('services.google.maps_api_key')))

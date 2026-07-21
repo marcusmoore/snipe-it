@@ -197,9 +197,9 @@ class AccessoryCheckoutTest extends TestCase implements TestsPermissionsRequirem
 
         [$companyA, $companyB] = Company::factory()->count(2)->create();
 
-        $superuser = User::factory()->superuser()->create(['company_id' => null]);
+        $superuser = User::factory()->superuser()->withoutCompany()->create();
         $accessoryInCompanyA = Accessory::factory()->for($companyA)->create(['qty' => 1]);
-        $userInCompanyB = User::factory()->for($companyB)->create();
+        $userInCompanyB = User::factory()->forCompany($companyB)->create();
 
         $this->actingAsForApi($superuser)
             ->postJson(route('api.accessories.checkout', $accessoryInCompanyA), [

@@ -231,7 +231,8 @@ class AssetModelFilesTest extends TestCase
         $superUser = User::factory()->superuser()->create();
         $normalUser = User::factory()
             ->manageModelFiles()
-            ->create(['company_id' => $company->id]);
+            ->forCompany($company)
+            ->create();
 
         // Superuser uploads a file (company_id on the log will be null)
         $this->actingAsForApi($superUser)

@@ -47,24 +47,18 @@
                             </x-form.legend>
 
                             <!-- Menu Alerts Enabled -->
-                            <div class="form-group{{ $errors->has('show_alerts_in_menu') ? ' error' : '' }}">
-                                <div class="col-md-9 col-md-offset-3">
-                                    <label class="form-control">
-                                        <input type="checkbox" name="show_alerts_in_menu" value="1" @checked(old('show_alerts_in_menu', $setting->show_alerts_in_menu))>
-                                        {{ trans('admin/settings/general.show_alerts_in_menu') }}
-                                    </label>
-                                </div>
-                            </div>
+                            <x-form.checkbox-row
+                                name="show_alerts_in_menu"
+                                :label="trans('admin/settings/general.show_alerts_in_menu')"
+                                :item="$setting"
+                            />
 
                             <!-- Alerts Enabled -->
-                            <div class="form-group {{ $errors->has('alerts_enabled') ? 'error' : '' }}">
-                                <div class="col-md-9 col-md-offset-3">
-                                    <label class="form-control">
-                                        <input type="checkbox" name="alerts_enabled" value="1" @checked(old('alerts_enabled', $setting->alerts_enabled))>
-                                        {{  trans('admin/settings/general.alerts_enabled') }}
-                                    </label>
-                                </div>
-                            </div>
+                            <x-form.checkbox-row
+                                name="alerts_enabled"
+                                :label="trans('admin/settings/general.alerts_enabled')"
+                                :item="$setting"
+                            />
 
                         </fieldset>
 
@@ -86,7 +80,7 @@
                                 </div>
                                 <div class="col-md-8 col-md-offset-3">
                                     <p class="help-block">{{ trans('admin/settings/general.alert_email_help') }}</p>
-                                    {!! $errors->first('alert_email', '<span class="alert-msg" aria-hidden="true">:message</span><br>') !!}
+                                    <x-form.error name="alert_email" /><br>
                                 </div>
                             </div>
 
@@ -103,31 +97,17 @@
                                 </div>
                                 <div class="col-md-8 col-md-offset-3">
                                     <p class="help-block">{{ trans('admin/settings/general.admin_cc_email_help') }}</p>
-                                    {!! $errors->first('admin_cc_email', '<span class="alert-msg" aria-hidden="true">:message</span><br>') !!}
+                                    <x-form.error name="admin_cc_email" /><br>
                                 </div>
                             </div>
-                            <div class="form-group">
-                                <div class="col-md-9 col-md-offset-3">
-                                    <label class="form-control">
-                                        <input
-                                            type="radio"
-                                            name="admin_cc_always"
-                                            value="1"
-                                            @checked($setting->admin_cc_always == 1)
-                                        >
-                                        {{ trans('admin/settings/general.admin_cc_always') }}
-                                    </label>
-                                    <label class="form-control">
-                                        <input
-                                            type="radio"
-                                            name="admin_cc_always"
-                                            value="0"
-                                            @checked($setting->admin_cc_always == 0)
-                                        >
-                                        {{ trans('admin/settings/general.admin_cc_when_acceptance_required') }}
-                                    </label>
-                                </div>
-                            </div>
+                            <x-form.radio-row
+                                name="admin_cc_always"
+                                :item="$setting"
+                                :options="[
+                                    '1' => trans('admin/settings/general.admin_cc_always'),
+                                    '0' => trans('admin/settings/general.admin_cc_when_acceptance_required'),
+                                ]"
+                            />
                         </fieldset>
 
                         <fieldset name="remote-login">
@@ -143,7 +123,7 @@
 
                                 <div class="col-md-8">
                                     <input class="form-control" placeholder="5" maxlength="3" style="width: 100px;" name="alert_threshold" type="number" value="{{ old('alert_threshold', $setting->alert_threshold) }}" id="alert_threshold">
-                                    {!! $errors->first('alert_threshold', '<span class="alert-msg" aria-hidden="true">:message</span>') !!}
+                                    <x-form.error name="alert_threshold" />
                                 </div>
                             </div>
 
@@ -155,7 +135,7 @@
                                 <div class="input-group col-xs-10 col-sm-6 col-md-4 col-lg-3 col-xl-3">
                                     <input class="form-control" placeholder="30" maxlength="3" name="alert_interval" type="number" value="{{ old('alert_interval', $setting->alert_interval) }}" id="alert_interval">
                                     <span class="input-group-addon">{{ trans('general.days') }}</span>
-                                    {!! $errors->first('alert_interval', '<span class="alert-msg" aria-hidden="true">:message</span>') !!}
+                                    <x-form.error name="alert_interval" />
                                 </div>
                             </div>
 
@@ -169,7 +149,7 @@
                                     <span class="input-group-addon">{{ trans('general.days') }}</span>
                                 </div>
                                 <div class="col-md-8 col-md-offset-3">
-                                    {!! $errors->first('due_checkin_days', '<span class="alert-msg" aria-hidden="true">:message</span>') !!}
+                                    <x-form.error name="due_checkin_days" />
                                     <p class="help-block">{{ trans('admin/settings/general.due_checkin_days_help') }}</p>
                                 </div>
                             </div>
@@ -183,7 +163,7 @@
                                     <span class="input-group-addon">{{ trans('general.days') }}</span>
                                 </div>
                                 <div class="col-md-8 col-md-offset-3">
-                                    {!! $errors->first('audit_warning_days', '<span class="alert-msg" aria-hidden="true">:message</span>') !!}
+                                    <x-form.error name="audit_warning_days" />
                                     <p class="help-block">{{ trans('admin/settings/general.audit_warning_days_help') }}</p>
                                 </div>
                             </div>
@@ -198,7 +178,7 @@
                                     <span class="input-group-addon">{{ trans('general.months') }}</span>
                                 </div>
                                 <div class="col-md-8 col-md-offset-3">
-                                    {!! $errors->first('audit_interval', '<span class="alert-msg" aria-hidden="true">:message</span>') !!}
+                                    <x-form.error name="audit_interval" />
                                     <p class="help-block">
                                         {{ trans('admin/settings/general.audit_interval_help') }}
                                     </p>

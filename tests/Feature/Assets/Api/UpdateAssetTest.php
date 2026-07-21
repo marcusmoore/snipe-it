@@ -429,8 +429,8 @@ class UpdateAssetTest extends TestCase
         [$companyA, $companyB] = Company::factory()->count(2)->create();
 
         $asset = Asset::factory()->for($companyA)->create(['name' => 'Original Name']);
-        $actorInCompanyA = User::factory()->editAssets()->for($companyA)->create();
-        $targetUserInCompanyB = User::factory()->for($companyB)->create();
+        $actorInCompanyA = User::factory()->editAssets()->forCompany($companyA)->create();
+        $targetUserInCompanyB = User::factory()->forCompany($companyB)->create();
 
         $this->actingAsForApi($actorInCompanyA)
             ->patchJson(route('api.assets.update', $asset->id), [
@@ -480,7 +480,7 @@ class UpdateAssetTest extends TestCase
         $this->assertEquals($originalAssignedTo, $asset->assigned_to, 'assigned_to must not change via the raw pair');
         $this->assertDatabaseMissing('action_logs', [
             'item_type' => Asset::class,
-            'item_id'   => $asset->id,
+            'item_id' => $asset->id,
             'action_type' => 'checkout',
         ]);
     }
@@ -643,12 +643,8 @@ class UpdateAssetTest extends TestCase
 
         $companyA = Company::factory()->create();
         $companyB = Company::factory()->create();
-        $userA = User::factory()->editAssets()->create([
-            'company_id' => $companyA->id,
-        ]);
-        $userB = User::factory()->editAssets()->create([
-            'company_id' => $companyB->id,
-        ]);
+        $userA = User::factory()->editAssets()->forCompany($companyA)->create();
+        $userB = User::factory()->editAssets()->forCompany($companyB)->create();
         $asset = Asset::factory()->create([
             'created_by' => $userA->id,
             'company_id' => $companyA->id,

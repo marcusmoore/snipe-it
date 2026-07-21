@@ -175,4 +175,74 @@ class AssetModelTest extends TestCase
 
         $this->assertEquals(100.0, $model->percentRemaining());
     }
+
+    public function test_percent_remaining_returns_zero_when_eager_loaded_total_is_zero_but_available_is_not(): void
+    {
+        // Regression for a production DivisionByZeroError at
+        // AssetModel::percentRemaining. In principle
+        //   availableAssets ⊆ assets
+        // so `remaining > 0 && assets_count === 0` shouldn't happen, but a race
+        // between the two correlated withCount subqueries — or a data anomaly
+        // where an asset row is visible to one count but not the other — has
+        // produced exactly that shape in the wild. percentRemaining must
+        // absorb it, not throw.
+        $category = Category::factory()->create(['category_type' => 'asset']);
+        $model = AssetModel::factory()->create(['category_id' => $category->id]);
+        $model->forceFill(['remaining' => 3, 'assets_count' => 0]);
+
+        $this->assertSame(0, $model->percentRemaining());
+    }
+
+    public function test_percent_remaining_returns_zero_when_eager_loaded_counts_are_string_zero(): void
+    {
+        // PDO with MySQL/MariaDB in the default (emulated-prepares) mode
+        // returns COUNT() as PHP string, not int. Eloquent doesn't cast
+        // withCount aliases (no $casts entry for `remaining` / `assets_count`),
+        // so the value lands on the model as-is. A strict `=== 0` guard misses
+        // string "0" — and PHP 8's arithmetic operators auto-convert numeric
+        // strings, so the ratio below still throws DivisionByZeroError. The
+        // fix is to cast to int at read time before the guard fires.
+        //
+        // Real trace from the reporting production instance targeted the
+        // ratio line even with a === 0 guard sitting above it, which is only
+        // possible if $total was "0" (string), not 0 (int).
+        $category = Category::factory()->create(['category_type' => 'asset']);
+        $model = AssetModel::factory()->create(['category_id' => $category->id]);
+        $model->forceFill(['remaining' => '3', 'assets_count' => '0']);
+
+        $this->assertSame(0, $model->percentRemaining());
+    }
+
+    public function test_percent_remaining_returns_zero_when_runtime_total_is_zero_but_available_is_not(): void
+    {
+        // Same guard, exercised through the non-eager-loaded fallback path
+        // (Api\AssetModelsController::show and any callers that render a
+        // single model without the index endpoint's withCount).
+        $model = new class extends AssetModel
+        {
+            public function availableAssets()
+            {
+                return new class
+                {
+                    public function count()
+                    {
+                        return 3;
+                    }
+                };
+            }
+
+            public function assets()
+            {
+                return new class
+                {
+                    public function count()
+                    {
+                        return 0;
+                    }
+                };
+            }
+        };
+
+        $this->assertSame(0, $model->percentRemaining());
+    }
 }

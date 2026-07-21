@@ -115,7 +115,7 @@
 
                 @if ($errors->first('username'))
                     <div class="col-md-8 col-md-offset-3">
-                        {!! $errors->first('username', '<span class="alert-msg" aria-hidden="true">:message</span>') !!}
+                        <x-form.error name="username" />
                     </div>
                 @endif
 
@@ -137,7 +137,7 @@
                               <span class="sr-only">{{ trans('general.toggle_password_visibility') }}</span>
                             </span>
                           </div>
-                              {!! $errors->first('password', '<span class="alert-msg" aria-hidden="true">:message</span>') !!}
+                              <x-form.error name="password" />
                         @else
                               <p class="form-control-static">
                               {{ trans('general.managed_ldap') }}
@@ -198,7 +198,7 @@
                                 {{ trans('admin/users/table.lock_passwords') }}
                               </p>
                         @endif
-                        {!! $errors->first('password_confirmation', '<span class="alert-msg" aria-hidden="true">:message</span>') !!}
+                        <x-form.error name="password_confirmation" />
                       </div>
                     </div>
                 @endif
@@ -275,7 +275,7 @@
                               </p>
                           @endif
 
-                        {!! $errors->first('email', '<span class="alert-msg" aria-hidden="true">:message</span>') !!}
+                        <x-form.error name="email" />
 
 
                   </div>
@@ -305,7 +305,7 @@
                   @endif
 
                   
-                  @include ('partials.forms.edit.image-upload', ['fieldname' => 'avatar', 'image_path' => app('users_upload_path')])
+                  <x-input.image-upload :item="$user" fieldname="avatar" :imagePath="app('users_upload_path')" :clonedModel="$cloned_model ?? null" />
 
 
                   <!-- begin optional disclosure arrow stuff -->
@@ -338,34 +338,79 @@
                                               id="display_name"
                                               value="{{ old('display_name', $user->getRawOriginal('display_name')) }}"
                                       />
-                                      {!! $errors->first('display_name', '<span class="alert-msg" aria-hidden="true">:message</span>') !!}
+                                      <x-form.error name="display_name" />
                                   </div>
                               </div>
 
 
                               <!-- Company -->
-                              @if ((Gate::allows('canEditAuthFields', $user)) && (\App\Models\Company::canManageUsersCompanies()))
-                                  @include ('partials.forms.edit.company-select', [
-                                      'translated_name' => trans('general.company'),
-                                      'fieldname' => 'company_ids',
-                                      'multiple' => 'true',
-                                      'selected' => old('company_ids', $user->companies->isNotEmpty() ? $user->companies->pluck('id')->toArray() : ($user->company_id ? [$user->company_id] : [])),
-                                  ])
-                              @else
-                                  @if ($user->companies->isNotEmpty())
-                                      <div class="form-group">
-                                          <label class="col-md-3 control-label" for="locale">{{ trans('general.company') }}</label>
-                                          <div class="col-md-6">
-                                              <p class="form-control-static">
+                              {{-- When the actor has the rights and the FMCS pivot
+                                   to actually manage companies, we render the dropdown; otherwise
+                                   the target's current companies (or "(none)") in read-only labels.
+                                   Either way one or two help-blocks may follow. --}}
+                              <div id="company_ids" class="form-group{{ $errors->has('company_ids') ? ' has-error' : '' }}">
+                                  <label for="company_ids" class="col-md-3 control-label">{{ trans('general.company') }}</label>
+                                  <div class="col-md-6">
+                                      @if ((Gate::allows('canEditAuthFields', $user)) && (\App\Models\Company::canManageUsersCompanies()))
+                                          <select class="js-data-ajax" data-endpoint="companies" data-placeholder="{{ trans('general.select_company') }}" name="company_ids[]" style="width: 100%" multiple='multiple'>
+                                              {{-- selected reads from the company_user pivot only; the legacy
+                                                   users.company_id scalar can lag behind (LDAP sync, pre-observer
+                                                   rows, etc.) so we never fall back to it. --}}
+                                              @foreach (old('company_ids', $user->companies->pluck('id')->toArray()) as $selectedCompanyId)
+                                                  <option value="{{ $selectedCompanyId }}" selected="selected" role="option" aria-selected="true">
+                                                      {{ \App\Models\Company::find($selectedCompanyId)?->name }}
+                                                  </option>
+                                              @endforeach
+                                          </select>
+                                      @else
+                                          <p class="form-control-static">
+                                              @if ($user->companies->isNotEmpty())
                                                   @foreach ($user->companies as $company)
                                                       <span class="label label-light">{!! $company->present()->formattedNameLink !!}</span>
                                                   @endforeach
+                                              @else
+                                                  <em class="text-muted">{{ trans('admin/users/general.no_companies_assigned') }}</em>
+                                              @endif
+                                          </p>
+                                      @endif
+                                  </div>
 
+                                  {{-- Help-block column rendered unconditionally so the grid stays
+                                       stable; the @if/@else picks which <p class="help-block"> lines
+                                       go inside. --}}
+                                  <div class="col-md-6 col-md-offset-3">
+                                      @if ((Gate::allows('canEditAuthFields', $user)) && (\App\Models\Company::canManageUsersCompanies()))
+                                          @if ($snipeSettings->full_multiple_companies_support == '1')
+                                              @cannot('superadmin')
+                                                  <p class="help-block">
+                                                      <x-icon type="tip" class="text-info"/> {{ trans('general.fmcs_company_select_note') }}
+                                                  </p>
+                                              @endcannot
+                                              @can('superadmin')
+                                                  <p class="help-block">
+                                                      <x-icon type="tip"/> {{ trans('general.fmcs_company_select_superadmin_note') }}
+                                                  </p>
+                                              @endcan
+                                          @endif
+                                          @if (! auth()->user()->canGrantFloaterStatus())
+                                              <p class="help-block">
+                                                  <x-icon type="warning" class="text-warning"/> {{ trans('admin/users/general.floater_mode_warning_help') }}
                                               </p>
-                                          </div>
-                                      </div>
-                                  @endif
-                              @endif
+                                          @endif
+                                      @else
+                                          <p class="help-block">
+                                              <x-icon type="tip"/>
+                                              @if (! Gate::allows('canEditAuthFields', $user))
+                                                  {{ trans('admin/users/general.cannot_edit_privileged_user_companies') }}
+                                              @else
+                                                  {{ trans('admin/users/general.cannot_manage_companies_without_membership') }}
+                                              @endif
+                                          </p>
+                                      @endif
+                                  </div>
+
+                                  <div class="col-md-8 col-md-offset-3"><x-form.error name="company_ids" /></div>
+                              </div>
 
 
                               <!-- language -->
@@ -373,7 +418,7 @@
                                   <label class="col-md-3 control-label" for="locale">{{ trans('general.language') }}</label>
                                   <div class="col-md-6">
                                       <x-input.locale-select name="locale" :selected="old('locale', $user->locale)" />
-                                      {!! $errors->first('locale', '<span class="alert-msg" aria-hidden="true">:message</span>') !!}
+                                      <x-form.error name="locale" />
                                   </div>
                               </div>
 
@@ -390,7 +435,7 @@
                                               id="employee_num"
                                               value="{{ old('employee_num', $user->employee_num) }}"
                                       />
-                                      {!! $errors->first('employee_num', '<span class="alert-msg" aria-hidden="true">:message</span>') !!}
+                                      <x-form.error name="employee_num" />
                                   </div>
                               </div>
 
@@ -407,13 +452,13 @@
                                               id="jobtitle"
                                               value="{{ old('jobtitle', $user->jobtitle) }}"
                                       />
-                                      {!! $errors->first('jobtitle', '<span class="alert-msg" aria-hidden="true">:message</span>') !!}
+                                      <x-form.error name="jobtitle" />
                                   </div>
                               </div>
 
 
                               <!-- Manager -->
-                              @include ('partials.forms.edit.user-select', ['translated_name' => trans('admin/users/table.manager'), 'fieldname' => 'manager_id', 'exclude_id' => isset($item) ? $item->id : null])
+                              @include ('partials.forms.edit.user-select', ['translated_name' => trans('admin/users/table.manager'), 'fieldname' => 'manager_id', 'exclude_id' => $user->id ?? null])
 
                               <!--  Department -->
                               @include ('partials.forms.edit.department-select', ['translated_name' => trans('general.department'), 'fieldname' => 'department_id'])
@@ -472,7 +517,7 @@
                                   <label class="col-md-3 control-label" for="phone">{{ trans('admin/users/table.phone') }}</label>
                                   <div class="col-md-6">
                                       <input class="form-control" type="text" name="phone" id="phone" value="{{ old('phone', $user->phone) }}" maxlength="191" />
-                                      {!! $errors->first('phone', '<span class="alert-msg" aria-hidden="true">:message</span>') !!}
+                                      <x-form.error name="phone" />
                                   </div>
                               </div>
 
@@ -481,7 +526,7 @@
                                   <label class="col-md-3 control-label" for="phone">{{ trans('admin/users/table.mobile') }}</label>
                                   <div class="col-md-6">
                                       <input class="form-control" type="text" name="mobile" id="mobile" value="{{ old('mobile', $user->mobile) }}" maxlength="191" />
-                                      {!! $errors->first('mobile', '<span class="alert-msg" aria-hidden="true">:message</span>') !!}
+                                      <x-form.error name="mobile" />
                                   </div>
                               </div>
 
@@ -490,7 +535,7 @@
                                   <label for="website" class="col-md-3 control-label">{{ trans('general.website') }}</label>
                                   <div class="col-md-6">
                                       <input class="form-control" type="url" name="website" id="website" value="{{ old('website', $user->website) }}" maxlength="191" />
-                                      {!! $errors->first('website', '<span class="alert-msg" aria-hidden="true"><i class="fas fa-times" aria-hidden="true"></i> :message</span>') !!}
+                                      <x-form.error name="website" />
                                   </div>
                               </div>
 
@@ -499,7 +544,7 @@
                                   <label class="col-md-3 control-label" for="address">{{ trans('general.address') }}</label>
                                   <div class="col-md-6">
                                       <input class="form-control" type="text" name="address" id="address" value="{{ old('address', $user->address) }}" maxlength="191" />
-                                      {!! $errors->first('address', '<span class="alert-msg" aria-hidden="true">:message</span>') !!}
+                                      <x-form.error name="address" />
                                   </div>
                               </div>
 
@@ -508,7 +553,7 @@
                                   <label class="col-md-3 control-label" for="city">{{ trans('general.city') }}</label>
                                   <div class="col-md-6">
                                       <input class="form-control" type="text" name="city" id="city" aria-label="city" value="{{ old('city', $user->city) }}" maxlength="191" />
-                                      {!! $errors->first('city', '<span class="alert-msg" aria-hidden="true">:message</span>') !!}
+                                      <x-form.error name="city" />
                                   </div>
                               </div>
 
@@ -517,7 +562,7 @@
                                   <label class="col-md-3 control-label" for="state">{{ trans('general.state') }}</label>
                                   <div class="col-md-6">
                                       <input class="form-control" type="text" name="state" id="state" value="{{ old('state', $user->state) }}" maxlength="191" />
-                                      {!! $errors->first('state', '<span class="alert-msg" aria-hidden="true">:message</span>') !!}
+                                      <x-form.error name="state" />
                                   </div>
                               </div>
 
@@ -532,7 +577,7 @@
                                       />
 
                                       <p class="help-block">{{ trans('general.countries_manually_entered_help') }}</p>
-                                      {!! $errors->first('country', '<span class="alert-msg" aria-hidden="true">:message</span>') !!}
+                                      <x-form.error name="country" />
                                   </div>
                               </div>
 
@@ -541,7 +586,7 @@
                                   <label class="col-md-3 control-label" for="zip">{{ trans('general.zip') }}</label>
                                   <div class="col-md-3 text-right">
                                       <input class="form-control" type="text" name="zip" id="zip" value="{{ old('zip', $user->zip) }}" maxlength="10" />
-                                      {!! $errors->first('zip', '<span class="alert-msg" aria-hidden="true">:message</span>') !!}
+                                      <x-form.error name="zip" />
                                   </div>
                               </div>
 
@@ -550,7 +595,7 @@
                                   <label for="notes" class="col-md-3 control-label">{{ trans('admin/users/table.notes') }}</label>
                                   <div class="col-md-6">
                                       <textarea class="form-control" rows="5" id="notes" name="notes">{{ old('notes', $user->notes) }}</textarea>
-                                      {!! $errors->first('notes', '<span class="alert-msg" aria-hidden="true"><i class="fas fa-times" aria-hidden="true"></i> :message</span>') !!}
+                                      <x-form.error name="notes" />
                                   </div>
                               </div>
 
@@ -670,20 +715,17 @@
               <x-form.legend help_text="{{ trans('permissions.use_groups') }}"/>
 
               @if (auth()->user()->isAdmin() && !auth()->user()->isSuperUser())
-                  <p class="alert alert-info">
-                      <x-icon type="info"/>
+                  <x-alert type="info" icon="info">
                       {{ trans('admin/users/general.superadmin_permission_warning') }}
-                  </p>
+                  </x-alert>
               @elseif (!auth()->user()->isAdmin() && !auth()->user()->isSuperUser() && auth()->id() === $user->id)
-                  <p class="alert alert-danger">
-                      <x-icon type="alert"/>
+                  <x-alert type="danger" icon="warning">
                       {{ trans('admin/users/general.self_permission_warning') }}
-                  </p>
+                  </x-alert>
               @elseif (!auth()->user()->isAdmin() && !auth()->user()->isSuperUser() && auth()->id() !== $user->id)
-                  <p class="alert alert-danger">
-                      <x-icon type="warning"/>
+                  <x-alert type="danger" icon="warning">
                       {{ trans('admin/users/general.admin_permission_warning') }}
-                  </p>
+                  </x-alert>
               @endif
 
               @if (auth()->user()->isSuperUser() || auth()->user()->isAdmin() || (auth()->id() !== $user->id && !$user->isSuperUser()))

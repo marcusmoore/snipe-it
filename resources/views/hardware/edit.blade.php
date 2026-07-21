@@ -33,8 +33,8 @@
           <div class="col-md-7 col-sm-12">
 
           <input class="form-control" type="text" name="asset_tags[1]" id="asset_tag" value="{{ old('asset_tag', $item->asset_tag) }}" required>
-              {!! $errors->first('asset_tags', '<span class="alert-msg"><i class="fas fa-times"></i> :message</span>') !!}
-              {!! $errors->first('asset_tag', '<span class="alert-msg"><i class="fas fa-times"></i> :message</span>') !!}
+              <x-form.error name="asset_tags" />
+              <x-form.error name="asset_tag" />
           </div>
       @else
           <!-- we are creating a new asset - let people use more than one asset tag -->
@@ -42,8 +42,8 @@
               <input class="form-control"
                      type="text" name="asset_tags[1]" id="asset_tag"
                      value="{{ old('asset_tags.1', \App\Models\Asset::autoincrement_asset()) }}" required>
-              {!! $errors->first('asset_tags.1', '<span class="alert-msg"><i class="fas fa-times"></i> :message</span>') !!}
-              {!! $errors->first('asset_tag', '<span class="alert-msg"><i class="fas fa-times"></i> :message</span>') !!}
+              <x-form.error name="asset_tags.1" />
+              <x-form.error name="asset_tag" />
           </div>
           <div class="col-md-2 col-sm-12">
               <button class="add_field_button btn btn-sm btn-theme" name="add_field_button">
@@ -83,7 +83,7 @@
                         <input type="text" class="form-control" name="asset_tags[{{ $i }}]"
                                value="{{ old('asset_tags.'.$i) }}"
                                required>
-              {!! $errors->first('asset_tags.'.$i, '<span class="alert-msg"><i class="fas fa-times"></i> :message</span>') !!}
+              <x-form.error :name="'asset_tags.'.$i" />
                     </div>
                     <div class="col-md-2 col-sm-12">
                         <a href="#" class="remove_field btn btn-sm btn-theme"><x-icon type="minus"/></a>
@@ -111,7 +111,7 @@
 
 
 
-    @include ('partials.forms.edit.image-upload', ['image_path' => app('assets_upload_path')])
+    <x-input.image-upload :item="$item" :imagePath="app('assets_upload_path')" />
 
 
     <div id='custom_fields_content'>
@@ -148,7 +148,14 @@
             <div id="optional_details" class="col-md-12" style="display:none">
                 @include ('partials.forms.edit.name', ['translated_name' => trans('admin/hardware/form.name')])
                 @include ('partials.forms.edit.warranty')
-                @include ('partials.forms.edit.datepicker', ['translated_name' => trans('admin/hardware/form.expected_checkin'),'fieldname' => 'expected_checkin'])
+                <x-form.row
+                    :label="trans('admin/hardware/form.expected_checkin')"
+                    name="expected_checkin"
+                    type="datetimepicker"
+                    :item="$item"
+                    :default_now="false"
+                    input_div_class="input-group col-md-5"
+                />
                 @include ('partials.forms.edit.datepicker', ['translated_name' => trans('general.next_audit_date'),'fieldname' => 'next_audit_date', 'help_text' => trans('general.next_audit_date_help')])
                 <!-- byod checkbox -->
                 <div class="form-group byod">
@@ -239,6 +246,11 @@
                 success: function (data) {
                     $('#custom_fields_content').html(data);
                     $('#custom_fields_content select').select2(); //enable select2 on any custom fields that are select-boxes
+                    // Re-init eonasdan datetimepickers on any DATE/DATETIME
+                    // custom fields that came with the new HTML. Without
+                    // this, the pickers would just be plain text inputs
+                    // until page reload.
+                    window.snipeitInitDatetimepickers('#custom_fields_content');
                     //now re-populate the custom fields based on the previously saved values
                     $('#custom_fields_content').find('input,select,textarea').each(function (index,elem) {
                         if(transformed_oldvals[elem.name]) {
@@ -320,7 +332,11 @@
         });
 
         @if (isset($cloned_model))
-        $('input[name="serials[1]"]').trigger('focus');
+            @if ($snipeSettings->auto_increment_assets == '1')
+                $('input[name="serials[1]"]').trigger('focus');
+            @else
+                $('#asset_tag').trigger('focus');
+            @endif
         @endif
     });
 

@@ -28,7 +28,7 @@ class DeleteAcceptanceAuthorizationTest extends TestCase
         [$companyA] = Company::factory()->count(2)->create();
 
         $asset = Asset::factory()->create(['company_id' => $companyA->id]);
-        $reporter = User::factory()->canViewReports()->create(['company_id' => $companyA->id]);
+        $reporter = User::factory()->canViewReports()->forCompany($companyA)->create();
         $acceptance = CheckoutAcceptance::factory()->pending()->for($asset, 'checkoutable')->create();
 
         $this->actingAs($reporter)
@@ -46,7 +46,7 @@ class DeleteAcceptanceAuthorizationTest extends TestCase
         [$companyA, $companyB] = Company::factory()->count(2)->create();
 
         $assetB = Asset::factory()->create(['company_id' => $companyB->id]);
-        $reporter = User::factory()->canViewReports()->create(['company_id' => $companyA->id]);
+        $reporter = User::factory()->canViewReports()->forCompany($companyA)->create();
         $acceptance = CheckoutAcceptance::factory()->pending()->for($assetB, 'checkoutable')->create();
 
         $this->actingAs($reporter)
@@ -64,7 +64,7 @@ class DeleteAcceptanceAuthorizationTest extends TestCase
         [$companyA, $companyB] = Company::factory()->count(2)->create();
 
         $assetB = Asset::factory()->create(['company_id' => $companyB->id]);
-        $superuser = User::factory()->superuser()->create(['company_id' => $companyA->id]);
+        $superuser = User::factory()->superuser()->forCompany($companyA)->create();
         $acceptance = CheckoutAcceptance::factory()->pending()->for($assetB, 'checkoutable')->create();
 
         $this->actingAs($superuser)
@@ -82,7 +82,7 @@ class DeleteAcceptanceAuthorizationTest extends TestCase
         [$companyA, $companyB] = Company::factory()->count(2)->create();
 
         $assetB = Asset::factory()->create(['company_id' => $companyB->id]);
-        $reporter = User::factory()->canViewReports()->create(['company_id' => null]);
+        $reporter = User::factory()->canViewReports()->withoutCompany()->create();
         $reporter->companies()->sync([$companyA->id]);
 
         $acceptance = CheckoutAcceptance::factory()->pending()->for($assetB, 'checkoutable')->create();
@@ -102,7 +102,7 @@ class DeleteAcceptanceAuthorizationTest extends TestCase
         [$companyA, $companyB] = Company::factory()->count(2)->create();
 
         $assetB = Asset::factory()->create(['company_id' => $companyB->id]);
-        $reporter = User::factory()->canViewReports()->create(['company_id' => $companyA->id]);
+        $reporter = User::factory()->canViewReports()->forCompany($companyA)->create();
         $acceptance = CheckoutAcceptance::factory()->pending()->for($assetB, 'checkoutable')->create();
 
         $this->actingAs($reporter)

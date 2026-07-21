@@ -60,7 +60,7 @@ class UpdateAccessoryTest extends TestCase implements TestsFullMultipleCompanies
     {
         [$companyA, $companyB] = Company::factory()->count(2)->create();
         $accessory = Accessory::factory()->for($companyA)->create();
-        $userInCompanyA = User::factory()->for($companyA)->editAccessories()->create();
+        $userInCompanyA = User::factory()->forCompany($companyA)->editAccessories()->create();
 
         $this->settings->enableMultipleFullCompanySupport();
 
@@ -77,7 +77,7 @@ class UpdateAccessoryTest extends TestCase implements TestsFullMultipleCompanies
     {
         [$companyA, $companyB] = Company::factory()->count(2)->create();
         $accessory = Accessory::factory()->for($companyA)->create();
-        $superuser = User::factory()->superuser()->create(['company_id' => null]);
+        $superuser = User::factory()->superuser()->withoutCompany()->create();
 
         $this->settings->enableMultipleFullCompanySupport();
 

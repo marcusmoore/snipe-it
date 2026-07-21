@@ -89,7 +89,8 @@ class ItemImporter extends Importer
 
         $this->item['purchase_date'] = null;
         if ($this->findCsvMatch($row, 'purchase_date') != '') {
-            $this->item['purchase_date'] = date('Y-m-d', strtotime($this->findCsvMatch($row, 'purchase_date')));
+            $this->item['purchase_date'] = $this->findCsvMatch($row, 'purchase_date');
+            $this->item['purchase_date'] = $this->parseOrNullDate('purchase_date');
         }
 
         // NO need to call this method if we're running the user import.

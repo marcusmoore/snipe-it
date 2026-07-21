@@ -519,6 +519,10 @@ img.navbar-brand-img, .navbar-brand>img {
   max-height: 50px;
 }
 
+.asset-qr-img img {
+  image-rendering: pixelated;
+}
+
 .input-daterange, .input-daterange input:first-child, .input-daterange input:last-child {
   border-radius: 0px !important;
 }
@@ -1433,5 +1437,48 @@ Radio toggle styles for permission settings and check/uncheck all
       }
 
     }
+  }
+
+// Advanced-search "Clear all" pill. AdminLTE's default anchor styles pull the
+// color toward the theme's link tint on :hover / :focus, which reads black on
+// the red pill background. Pin white in every interactive state so the pill
+// stays legible.
+.snipe-advanced-search-tags-clear-all,
+.snipe-advanced-search-tags-clear-all:link,
+.snipe-advanced-search-tags-clear-all:visited,
+.snipe-advanced-search-tags-clear-all:hover,
+.snipe-advanced-search-tags-clear-all:focus,
+.snipe-advanced-search-tags-clear-all:active {
+  color: #fff !important;
+  text-decoration: none;
+}
+}
+
+// Spin the help-icon (life-ring) on hover/focus of the info tooltip anchor.
+// Uses Font Awesome's built-in fa-spin animation. Gated by the
+// prefers-reduced-motion rule below.
+.tooltip-spin-hover:hover i,
+.tooltip-spin-hover:focus i {
+  animation: fa-spin 2s infinite linear;
+}
+
+// Respect the user's OS-level "reduce motion" preference. The Font Awesome
+// spinners (.fa-spin) and Font Awesome Animation pulses (.faa-pulse, .animated)
+// loop indefinitely, which can trigger vestibular symptoms. One-shot animations
+// (like the confetti burst on save) are left alone since they don't loop.
+@media (prefers-reduced-motion: reduce) {
+  // Catch-all for any Font Awesome Animation utility (faa-pulse, faa-spin,
+  // faa-tada, faa-shake, faa-bounce, faa-burst, faa-flash, faa-float,
+  // faa-horizontal, faa-vertical, faa-passing, faa-ring, faa-slide, etc.)
+  // regardless of whether the animation is always-on (.animated) or hover-
+  // triggered (.animated-hover:hover). Attribute selector keeps this rule
+  // safe against future FA-Animation class additions.
+  [class*="faa-"].animated,
+  [class*="faa-"].animated-hover:hover,
+  .tooltip-spin-hover:hover i,
+  .tooltip-spin-hover:focus i,
+  .fa-spin,
+  .fa-pulse {
+    animation: none !important;
   }
 }

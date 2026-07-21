@@ -1,6 +1,21 @@
 @push('css')
     <link rel="stylesheet" href="{{ url(mix('css/dist/bootstrap-table.css')) }}">
 
+    {{-- Bootstrap's default a:hover paints links Bootstrap-blue on hover.
+         For the advanced-search "clear all" pill and the individual
+         tag-remove pills, we want the label chip's white text to stay
+         white on hover (they already carry a colored background). --}}
+    <style>
+        .snipe-advanced-search-tags .snipe-advanced-search-tags-clear-all,
+        .snipe-advanced-search-tags .snipe-advanced-search-tags-clear-all:hover,
+        .snipe-advanced-search-tags .snipe-advanced-search-tags-clear-all:focus,
+        .snipe-advanced-search-tags .snipe-advanced-search-tag-remove,
+        .snipe-advanced-search-tags .snipe-advanced-search-tag-remove:hover,
+        .snipe-advanced-search-tags .snipe-advanced-search-tag-remove:focus {
+            color: #fff !important;
+            text-decoration: none !important;
+        }
+    </style>
 @endpush
 
 @push('js')
@@ -29,10 +44,61 @@
         var advancedSearchOperatorLabel = @json(trans('general.search_operator'));
         var advancedSearchAndText = @json(trans('general.and'));
         var advancedSearchOrText = @json(trans('general.or'));
+        var advancedSearchClearAllText = @json(trans('general.clear_all_filters'));
         var advancedSearchOperatorStorageKey = 'snipeit.bs.table.advancedSearchOperator';
 
         var normalizeAdvancedSearchOperator = function (operator) {
             return (operator || defaultAdvancedSearchOperator).toString().toLowerCase() === 'or' ? 'or' : 'and';
+        };
+
+        // Shared teardown for the transport-error state onLoadError puts up.
+        // Called from onLoadSuccess (retry succeeded), onRefresh (user clicked
+        // the reload button), and any future entry points that should return
+        // the table to its clean baseline.
+        var clearBootstrapTableLoadError = function (instance) {
+            if (!instance || !instance.$el) {
+                return;
+            }
+            var $wrap = instance.$el.closest('.bootstrap-table');
+            $wrap.find('.table-load-error').remove();
+            $wrap.find('.fixed-table-body').show();
+            $wrap.find('.fixed-table-pagination').show();
+        };
+
+        // Both onLoadError banners (session-expired 401/419 and the generic
+        // 500-level failure) share the same DOM shape, insertion point, and
+        // cleanup rules. innerHtml must already be XSS-safe — callers HTML-
+        // encode dynamic pieces before passing them in.
+        //
+        // aria-live=polite is always emitted. role="alert" alone implies
+        // assertive, which interrupts screen readers mid-utterance; a table
+        // that failed to load doesn't warrant that. Polite queues the
+        // announcement for the next natural pause.
+        var renderBootstrapTableLoadErrorCallout = function (options) {
+            var $wrap = options.wrap;
+            $wrap.find('.table-load-error').remove();
+            $wrap.find('.fixed-table-body').hide();
+            $wrap.find('.fixed-table-pagination').hide();
+
+            // Insert below the advanced-search pill container if it's present
+            // (populated by an active filter), otherwise below the toolbar.
+            // Either way the banner ends up above .fixed-table-container.
+            var $tagContainer = $wrap.children('.snipe-advanced-search-tags');
+            var $anchor = $tagContainer.length && $tagContainer.children().length
+                ? $tagContainer
+                : $wrap.find('.fixed-table-toolbar').first();
+
+            // Marker class table-load-error MUST live on the outermost wrapper
+            // so the cleanup selector removes the whole banner in one shot.
+            // A nested layout would leave orphan outer wells behind on each
+            // re-render and stack up.
+            $anchor.after(
+                '<div class="row table-load-error" style="padding-left: 5px;right: 5px;"><div class="well well-sm "' +
+                ' role="alert" aria-live="polite"' +
+                ' style="margin: 10px; position: relative; z-index: 5; text-align: center;">' +
+                options.innerHtml +
+                '</div></div>',
+            );
         };
 
         var getStoredAdvancedSearchOperator = function () {
@@ -55,6 +121,24 @@
 
             var escapeAdvancedSearchValue = function (value) {
                 return $('<div/>').text(value == null ? '' : value).html();
+            };
+
+            // Safely decode HTML entities in a string WITHOUT parsing it as HTML.
+            // `<textarea>` innerHTML is RCDATA — the parser decodes entity
+            // references like `&lt;` but does not interpret `<tag>` as an
+            // element. Contrast with the naive `$('<div/>').html(value).text()`
+            // pattern, which parses value as HTML into a detached div — an
+            // entity-encoded payload like `&lt;img src=x onerror=alert(1)&gt;`
+            // decodes into a real <img>, and browsers fire onerror even for
+            // detached images. Using a textarea avoids that DOM instantiation
+            // entirely.
+            var decodeHtmlEntitiesSafely = function (value) {
+                if (value == null) {
+                    return '';
+                }
+                var textarea = document.createElement('textarea');
+                textarea.innerHTML = String(value);
+                return textarea.value;
             };
 
             Object.assign($.fn.bootstrapTable.locales, {
@@ -197,6 +281,17 @@
                         '" style="color:#fff;margin-left:6px;text-decoration:none;">&times;</a></span>';
                 });
 
+                // "Clear all" pill: same shortcut as opening the modal and hitting
+                // the cancel button, but done from the tags row so the user doesn't
+                // have to open the modal just to wipe every filter.
+                var safeClearAllLabel = escapeAdvancedSearchValue(advancedSearchClearAllText);
+                html += '<a href="javascript:void(0)" class="label label-danger snipe-advanced-search-tags-clear-all"' +
+                    ' title="' + safeClearAllLabel + '"' +
+                    ' aria-label="' + safeClearAllLabel + '"' +
+                    ' style="font-size: 11px; margin-right:6px; display:inline-block; margin-bottom:6px; color:#fff; text-decoration:none; cursor:pointer;">' +
+                    '<i class="fas fa-trash" aria-hidden="true" style="margin-right:4px;"></i>' + safeClearAllLabel +
+                    '</a>';
+
                 $tagContainer
                     .html(html)
                     .off('click.snipeAdvancedSearchTags')
@@ -211,6 +306,16 @@
                             _this.trigger('column-advanced-search', _this.filterColumnsPartial, _this.getAdvancedSearchOperator());
 
                             _this.renderAdvancedSearchTags();
+                        }
+                    })
+                    .on('click.snipeAdvancedSearchTags', '.snipe-advanced-search-tags-clear-all', function (e) {
+                        e.preventDefault();
+                        // Reuse cancelAdvancedSearch: it already wipes filterColumnsPartial,
+                        // resets the modal's inputs (in case the user opens it later), fires
+                        // the column-advanced-search event (so our patched updateHistoryState
+                        // strips filter[...] from the URL), and refetches via initSearch.
+                        if (typeof _this.cancelAdvancedSearch === 'function') {
+                            _this.cancelAdvancedSearch();
                         }
                     });
 
@@ -275,18 +380,26 @@
                     var column = this.columns[columnIndex];
 
                     if (!column.checkbox && column.visible && column.searchable) {
-                        var title = $('<div/>').html(column.title).text().trim();
+                        // column.title is presenter-supplied and can be entity-encoded
+                        // user input (e.g. AssetPresenter emits `e($field->name)` for
+                        // custom fields). Decode via a textarea so we get the intended
+                        // display string without ever instantiating an <img>/<script>
+                        // element, then escape when interpolating into the HTML template
+                        // — the label, name, and placeholder all get untrusted content.
+                        var title = decodeHtmlEntitiesSafely(column.title).trim();
                         var value = filterColumnsPartial[column.field] || '';
+                        var safeTitle = escapeAdvancedSearchValue(title);
+                        var safeField = escapeAdvancedSearchValue(column.field);
 
                         html.push(`
                             <div class="form-group row">
-                                <label class="col-sm-4 control-label">${title}</label>
+                                <label class="col-sm-4 control-label">${safeTitle}</label>
                                 <div class="col-sm-6">
                                     <input
                                         type="text"
                                         class="form-control ${this.constants.classes.input}"
-                                        name="${column.field}"
-                                        placeholder="${escapeAdvancedSearchValue(title)}"
+                                        name="${safeField}"
+                                        placeholder="${safeTitle}"
                                         value="${escapeAdvancedSearchValue(value)}"
                                     >
                                 </div>
@@ -475,26 +588,91 @@
 
         /** End handling the responsive tab UI on view detail pages **/
 
+        // Stamp aria-sort on the sorted column's <th> so assistive tech can
+        // announce the current sort direction. Bootstrap-table's own render
+        // draws a visual arrow but doesn't emit aria state. Called from both
+        // onSort (user clicked a header) and onPostHeader (initial paint or
+        // layout re-init), since bootstrap-table doesn't re-render the head
+        // on sort clicks.
+        var updateAriaSort = function ($tableEl, sortName, sortOrder) {
+            // scope="col" is emitted by the column presenters (see e.g.
+            // AssetPresenter::dataTableLayout). aria-sort will move upstream
+            // once we're on a bootstrap-table version that includes
+            // https://github.com/wenzhixin/bootstrap-table/pull/8005; until
+            // then we stamp it here.
+            $tableEl.find('thead th').each(function () {
+                var $th = $(this);
+                if (sortName && $th.data('field') === sortName) {
+                    $th.attr('aria-sort', sortOrder === 'desc' ? 'descending' : 'ascending');
+                } else {
+                    $th.removeAttr('aria-sort');
+                }
+            });
+        };
+
         $('.snipe-table').bootstrapTable('destroy').each(function () {
 
             data_export_options = $(this).attr('data-export-options');
             export_options = data_export_options ? JSON.parse(data_export_options) : {};
             export_options['htmlContent'] = false; // this is already the default; but let's be explicit about it
+            // DejaVuSans is registered into jsPDF's VFS via
+            // jspdf-dejavu-fonts.js (bundled into public/js/dist/bootstrap-table.js
+            // right after jspdf.umd.min.js — see webpack.mix.js). Referencing
+            // it here is what actually swaps out the default Helvetica fallback
+            // and produces readable output for Cyrillic / Greek / Hebrew / etc.
+            // exports. Fixes #19270.
             export_options['jspdf'] = {
                 "orientation": "l",
                 "autotable": {
                         "styles": {
+                            font: 'DejaVuSans',
+                            fontStyle: 'normal',
                             overflow: 'linebreak'
                         },
                         tableWidth: 'wrap'
                 }
             };
             // tableWidth: 'wrap',
-            // the following callback method is necessary to prevent XSS vulnerabilities
-            // (this is taken from Bootstrap Tables's default wrapper around jQuery Table Export)
+            // ⚠️ SECURITY: DO NOT change the wrapping of `.text()` inside
+            //    `htmlEncodeForExport(...)` below without reading this entire
+            //    block. The bare `.text()` was the previous shape and it is
+            //    an XSS.
+            //
+            // XSS defense on export cell data. The tableExport plugin's
+            // E function (see bundled bootstrap-table.js around line 32110)
+            // pipes our return value through jQuery's .html() setter on a
+            // scratch <div> before serializing. If we return raw text that
+            // happens to look like HTML (e.g. a column titled
+            // `<img src=x onerror=alert(1)>`), that .html() call parses it
+            // and instantiates a real <img onerror=...> element, firing the
+            // payload as soon as the user clicks Export.
+            //
+            // Encoding the returned string turns any tag-shaped characters
+            // into entity refs; the downstream .html() call then treats
+            // them as text-content (browser text-decodes back to chars in a
+            // text-node, no elements created), and the final PDF/CSV output
+            // still shows the visible text the header displayed on-screen.
+            //
+            // Repro before the fix (kept as a regression pin):
+            //   1. Create a custom field named `<img src=x onerror=alert(1)>`
+            //   2. Visit the assets index (header shows the string as text)
+            //   3. Export → CSV (or PDF): alert(1) fires because tableExport
+            //      re-injects our returned text via .html() on a scratch div.
+            // If a future edit here reintroduces the bug, that exact repro
+            // will fire alert(1) again.
+            var htmlEncodeForExport = function (value) {
+                if (value == null) return '';
+                return String(value)
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#39;');
+            };
             export_options['onCellHtmlData'] = function (cell, rowIndex, colIndex, htmlData) {
                 if (cell.is('th')) {
-                    return cell.find('.th-inner').text()
+                    // ⚠️ MUST stay wrapped in htmlEncodeForExport(). See block above.
+                    return htmlEncodeForExport(cell.find('.th-inner').text());
                 }
                 // Convert <br> tags to newlines so that line breaks in notes and
                 // textarea fields survive HTML-stripping during export
@@ -530,6 +708,13 @@
             var initialAdvancedSearchOperator = getStoredAdvancedSearchOperator() || normalizeAdvancedSearchOperator(data_with_default('advanced-search-operator', defaultAdvancedSearchOperator));
 
             $(this).data('advanced-search-filter-operator', initialAdvancedSearchOperator);
+
+            // Capture the table element for use inside bootstrap-table callbacks.
+            // bootstrap-table 1.24 invokes those callbacks with `.apply(options, args)`,
+            // so `this` inside them is the options object, not the DOM element —
+            // any $(this).find(...) call silently no-ops. The closure lets the
+            // callbacks reach the real table.
+            var $bootstrapTableEl = $(this);
 
             $(this).bootstrapTable({
 
@@ -639,8 +824,111 @@
                 exportTypes: ['xlsx', 'csv', 'pdf', 'json', 'xml', 'txt', 'sql', 'doc'],
                 onLoadSuccess: function () { // possible 'fixme'? this might be for contents, not for headers?
                     $('[data-tooltip="true"]').tooltip(); // Needed to attach tooltips after ajax call
+
+                    // Clear any lingering "load failed" banner + restore the table body
+                    // that onLoadError hid. Bootstrap-table appends the table instance as
+                    // the last callback arg and binds `this` to the options bag (not the
+                    // DOM), so reach for the table element via arguments rather than
+                    // $(this).
+                    var instance = arguments[arguments.length - 1];
+                    if (instance && instance.$el) {
+                        clearBootstrapTableLoadError(instance);
+                    }
+                },
+                onRefresh: function () {
+                    // Fires the moment the user clicks the toolbar's refresh button,
+                    // before the retry AJAX call is issued. Clear the callout + restore
+                    // the body/pagination up-front so that even if the retry also
+                    // errors, we're not stacking state on top of the previous error.
+                    // If the retry succeeds, onLoadSuccess is a no-op reassertion.
+                    // If the retry errors, onLoadError re-hides the body and re-shows
+                    // the callout with the new status.
+                    var instance = arguments[arguments.length - 1];
+                    if (instance && instance.$el) {
+                        clearBootstrapTableLoadError(instance);
+                    }
+                },
+                onLoadError: function (status, jqXHR) {
+                    // Fires on any real transport-level failure (500, 502, 504, network
+                    // error, 419 CSRF expiry, 401 unauthenticated, etc). Snipe's API
+                    // convention is to return {status: "error"} at HTTP 200 for
+                    // validation/business errors, so anything reaching this callback
+                    // is a genuine "the request itself failed" case that would
+                    // otherwise render as an empty "No matching records found", a
+                    // silent, misleading empty-state.
+                    //
+                    // Blade's JSON directive below is what makes each translation
+                    // string safe to embed in this JS context. It produces a
+                    // properly quoted JS string literal that handles any characters
+                    // the translation might contain (quotes, backslashes, newlines,
+                    // unicode). Every dynamic value from the server response is then
+                    // HTML-encoded via jQuery's .text().html() idiom before we
+                    // concat it into the callout markup, so a poisoned
+                    // responseJSON.message cannot inject script tags or event handlers.
+                    //
+                    // `this` inside bootstrap-table event callbacks is the options
+                    // bag, not the DOM element. The library appends the table
+                    // instance as the trailing callback arg, so we reach the
+                    // wrapper via arguments[last].$el.
+                    var instance = arguments[arguments.length - 1];
+                    if (!instance || !instance.$el) {
+                        return;
+                    }
+                    var $wrap = instance.$el.closest('.bootstrap-table');
+
+                    // 401 / 419 mean the user's session died; show the session-
+                    // expired message and reload so the login redirect can take over.
+                    if (jqXHR && (jqXHR.status === 401 || jqXHR.status === 419)) {
+                        renderBootstrapTableLoadErrorCallout({
+                            wrap: $wrap,
+                            innerHtml:
+                                '<i class="fa fa-exclamation-triangle text-warning" aria-hidden="true" style="margin-right: 6px;"></i>' +
+                                $('<div/>').text(@json(trans('table.load_error_session_expired'))).html(),
+                        });
+                        window.setTimeout(function () {
+                            window.location.reload();
+                        }, 1500);
+                        return;
+                    }
+
+                    // Deliberately do NOT surface the raw server response body /
+                    // statusText / responseJSON.message. On PHP fatals, Laravel's
+                    // debug renderer can leak PDO DSN strings (with hostnames), file
+                    // paths from the stack trace, and other environment detail that
+                    // shouldn't reach a browser. The HTTP status alone is enough
+                    // signal for the user to know something's wrong and enough
+                    // signal for an admin to correlate in the app log.
+                    var httpStatus = (jqXHR && jqXHR.status) || status || '?';
+
+                    renderBootstrapTableLoadErrorCallout({
+                        wrap: $wrap,
+                        innerHtml:
+                            '<div style="font-size: 1.35em;">' +
+                            '<i class="fa fa-exclamation-triangle text-warning" aria-hidden="true" style="margin-right: 6px;"></i>' +
+                            '<strong>' + $('<div/>').text(@json(trans('table.load_error_title'))).html() + '</strong>' +
+                            '</div>' +
+                            '<div style="margin-top: 8px;">' +
+                            $('<div/>').text(@json(trans('table.load_error_body'))).html() +
+                            ' <code>' + $('<div/>').text(@json(trans('table.load_error_http_status'))).html() + ': ' +
+                            $('<div/>').text(httpStatus).html() + '</code>' +
+                            '</div>',
+                    });
+                },
+                onSort: function (sortName, sortOrder) {
+                    // User-triggered sort: bootstrap-table re-renders the body
+                    // (client-side sort) or re-queries the server, but does
+                    // NOT re-render the <thead>, so onPostHeader won't fire
+                    // and aria-sort would go stale. Update the header directly.
+                    updateAriaSort($bootstrapTableEl, sortName, sortOrder);
                 },
                 onPostHeader: function () {
+                    // Initial header render (and any layout re-init) — reflect
+                    // whatever sort state the table booted with, so a table
+                    // configured with data-sort-name/data-sort-order announces
+                    // correctly on first paint too.
+                    var options = $bootstrapTableEl.bootstrapTable('getOptions');
+                    updateAriaSort($bootstrapTableEl, options && options.sortName, options && options.sortOrder);
+
                     var lookup = {};
                     var lookup_initialized = false;
                     var ths = $('th');
@@ -706,6 +994,176 @@
 
             if (bootstrapTableInstance && typeof bootstrapTableInstance.renderAdvancedSearchTags === 'function') {
                 bootstrapTableInstance.renderAdvancedSearchTags();
+            }
+
+            // -----------------------------------------------------------------
+            // Advanced-search URL deeplink (prototype: assets/hardware only).
+            //
+            // - `?filter[field]=value` per-field + `?filter_operator=and|or`,
+            //   matching the API's own querystring so what the browser shows
+            //   is what the server actually receives.
+            // - Distinct from `?search=` (basic search) so both can coexist.
+            // - Opt-in via `data-advanced-search-deeplink="true"` on the table.
+            //
+            // Two interacting quirks make this non-trivial:
+            //
+            // 1. Snipe's override of applyAdvancedSearch (this file, line ~220)
+            //    is a no-op for sidePagination='server' beyond setting state
+            //    and rendering pills — it never refetches, and never fires the
+            //    `column-advanced-search` event. So a `on('column-advanced-search')`
+            //    listener won't hear anything when the user applies via the
+            //    modal on a server-side table.
+            //
+            // 2. addrbar (bootstrap-table's URL extension) owns the query
+            //    string. It re-pushes `page`/`size`/`order`/`sort`/`search`
+            //    on every onLoadSuccess. If we just replaceState() our own
+            //    `filter[...]`, the next refetch clobbers them.
+            //
+            // Fix: patch two methods on this specific plugin instance.
+            //
+            //   - applyAdvancedSearch: after Snipe's version runs, force a
+            //     refetch + fire the event on server-side. That triggers the
+            //     addrbar → updateHistoryState path, which we've also patched.
+            //
+            //   - updateHistoryState: before addrbar's push, strip any stale
+            //     `filter[...]`/`filter_operator` from its cached URLSearchParams
+            //     and re-serialize from the current filterColumnsPartial. This
+            //     handles adds, edits, and removes (empty filters remove keys).
+            // -----------------------------------------------------------------
+            if (bootstrapTableInstance && data_with_default('advanced-search-deeplink', false)) {
+                var advDeeplinkKeyPrefix = 'filter';
+                var advDeeplinkOpParam = 'filter_operator';
+                var advDeeplinkKeyRegex = new RegExp('^' + advDeeplinkKeyPrefix + '\\[(.+)\\]$');
+
+                // --- Patch updateHistoryState: emit filter[...] alongside addrbar's keys.
+                if (typeof bootstrapTableInstance.updateHistoryState === 'function') {
+                    var origUpdateHistoryState = bootstrapTableInstance.updateHistoryState;
+                    bootstrapTableInstance.updateHistoryState = function (prefix) {
+                        var params = this.searchParams;
+
+                        // Strip stale filter[...] and filter_operator so cleared
+                        // filters don't linger from a previous state.
+                        if (params) {
+                            var toDelete = [];
+                            params.forEach(function (value, key) {
+                                if (key === advDeeplinkOpParam || advDeeplinkKeyRegex.test(key)) {
+                                    toDelete.push(key);
+                                }
+                            });
+                            toDelete.forEach(function (key) { params.delete(key); });
+
+                            // Re-add from current filterColumnsPartial state.
+                            var filters = this.filterColumnsPartial || {};
+                            var count = 0;
+                            Object.keys(filters).forEach(function (field) {
+                                var val = filters[field];
+                                if (val !== undefined && val !== null && val !== '') {
+                                    params.set(advDeeplinkKeyPrefix + '[' + field + ']', val);
+                                    count++;
+                                }
+                            });
+                            if (count > 0 && typeof this.getAdvancedSearchOperator === 'function') {
+                                params.set(advDeeplinkOpParam, this.getAdvancedSearchOperator());
+                            }
+                        }
+
+                        return origUpdateHistoryState.apply(this, arguments);
+                    };
+                }
+
+                // --- Patch applyAdvancedSearch: server-side apply must refetch
+                //     + fire the event so addrbar (and any listeners) run. Also
+                //     clear the basic-search input so the two modes stay mutually
+                //     exclusive (the backend already prefers `filter` over `search`,
+                //     but leaving text in the basic input is a confusing UX and can
+                //     let a stray search word survive into the next state change).
+                if (typeof bootstrapTableInstance.applyAdvancedSearch === 'function') {
+                    var origApplyAdvancedSearch = bootstrapTableInstance.applyAdvancedSearch;
+                    bootstrapTableInstance.applyAdvancedSearch = function () {
+                        origApplyAdvancedSearch.apply(this, arguments);
+                        if (this.options.sidePagination === 'server') {
+                            // Clear basic-search state without going through
+                            // resetSearch()/onSearch() — that path would fire a
+                            // separate refetch, and would re-enter our own
+                            // onSearch override below.
+                            var utils = $.fn.bootstrapTable && $.fn.bootstrapTable.utils;
+                            if (utils && typeof utils.getSearchInput === 'function') {
+                                var $searchInput = utils.getSearchInput(this);
+                                if ($searchInput && $searchInput.length) {
+                                    $searchInput.val('');
+                                }
+                            }
+                            this.searchText = '';
+                            this.options.searchText = '';
+
+                            this.options.pageNumber = 1;
+                            this.refresh();
+                            this.trigger('column-advanced-search', this.filterColumnsPartial, this.getAdvancedSearchOperator());
+                        }
+                    };
+                }
+
+                // --- Patch onSearch: basic search clears advanced filters so the
+                //     two modes stay mutually exclusive. Runs BEFORE the plugin's
+                //     onSearch → initSearch → server refetch, so the AJAX that
+                //     ships in the same tick already has an empty filterColumnsPartial.
+                if (typeof bootstrapTableInstance.onSearch === 'function') {
+                    var origOnSearch = bootstrapTableInstance.onSearch;
+                    bootstrapTableInstance.onSearch = function (event, overwriteSearchText) {
+                        var newText = '';
+                        if (event && event.currentTarget) {
+                            newText = String($(event.currentTarget).val() || '').trim();
+                        }
+                        // Only clear filters when the user is actively typing a
+                        // non-empty search. Empty transitions (resetSearch(''), a
+                        // stray blur on an already-empty input) leave filters alone.
+                        if (
+                            newText !== ''
+                            && this.filterColumnsPartial
+                            && Object.keys(this.filterColumnsPartial).length > 0
+                        ) {
+                            this.filterColumnsPartial = {};
+                            if (typeof this.renderAdvancedSearchTags === 'function') {
+                                this.renderAdvancedSearchTags();
+                            }
+                            if (typeof this.updateAdvancedSearchButtonState === 'function') {
+                                this.updateAdvancedSearchButtonState();
+                            }
+                        }
+                        return origOnSearch.apply(this, arguments);
+                    };
+                }
+
+                // --- Read path: rehydrate from URL if filter[...] is present.
+                var initialFilters = {};
+                var initialOp = null;
+                var initialParams = new URLSearchParams(window.location.search);
+                initialParams.forEach(function (value, key) {
+                    var m = key.match(advDeeplinkKeyRegex);
+                    if (m) {
+                        initialFilters[m[1]] = value;
+                    } else if (key === advDeeplinkOpParam) {
+                        initialOp = value;
+                    }
+                });
+
+                if (Object.keys(initialFilters).length > 0) {
+                    bootstrapTableInstance.filterColumnsPartial = Object.assign({}, initialFilters);
+                    if (initialOp && typeof bootstrapTableInstance.setAdvancedSearchOperator === 'function') {
+                        bootstrapTableInstance.setAdvancedSearchOperator(initialOp);
+                    }
+
+                    // Refetch with the seeded filter. onLoadSuccess → patched
+                    // updateHistoryState → URL is re-emitted with filter[...] intact.
+                    bootstrapTableInstance.refresh();
+
+                    if (typeof bootstrapTableInstance.renderAdvancedSearchTags === 'function') {
+                        bootstrapTableInstance.renderAdvancedSearchTags();
+                    }
+                    if (typeof bootstrapTableInstance.updateAdvancedSearchButtonState === 'function') {
+                        bootstrapTableInstance.updateAdvancedSearchButtonState();
+                    }
+                }
             }
 
             // Add btn-advanced-search class to the advanced search button for styling
@@ -2007,6 +2465,36 @@
         window[formatters[i] + 'InOutFormatter'] = genericCheckinCheckoutFormatter(formatters[i]);
     }
 
+    // Maintenances need a custom actions formatter (adds the green
+    // "mark complete" button between update and delete). Defined AFTER the
+    // generic-formatter loop above so it overrides the auto-generated
+    // maintenancesActionsFormatter.
+    window.maintenancesActionsFormatter = function (value, row) {
+        var actions = '<nobr>';
+
+        if ((row.available_actions) && (row.available_actions.update === true)) {
+            actions += '<a href="{{ config('app.url') }}/maintenances/' + row.id + '/edit" class="actions btn btn-sm btn-warning hidden-print" data-tooltip="true" title="{{ trans('general.update') }}"><x-icon type="edit" class="fa-fw" /><span class="sr-only">{{ trans('general.update') }}</span></a>&nbsp;';
+        }
+
+        if ((row.available_actions) && (row.available_actions.complete === true)) {
+            actions += '<button type="button" class="actions btn btn-sm btn-success hidden-print complete-maintenance" data-tooltip="true" title="{{ trans('admin/maintenances/form.mark_complete') }}" data-url="{{ config('app.url') }}/maintenances/' + row.id + '/complete"><x-icon type="checkmark" class="fa-fw" /><span class="sr-only">{{ trans('admin/maintenances/form.mark_complete') }}</span></button>&nbsp;';
+        } else {
+            actions += '<button type="button" class="actions btn btn-sm btn-default hidden-print disabled" disabled data-tooltip="true" title="{{ trans('admin/maintenances/form.already_complete') }}"><x-icon type="checkmark" class="fa-fw" /><span class="sr-only">{{ trans('admin/maintenances/form.already_complete') }}</span></button>&nbsp;';
+        }
+
+        if ((row.available_actions) && (row.available_actions.delete === true)) {
+            actions += '<a href="{{ config('app.url') }}/maintenances/' + row.id + '" '
+                + ' class="actions btn btn-danger btn-sm delete-asset hidden-print" data-tooltip="true" '
+                + ' data-toggle="modal" data-icon="fa-trash"'
+                + ' data-content="{{ trans('general.sure_to_delete') }}: ' + row.name + '?" '
+                + ' data-title="{{ trans('general.delete') }}" onClick="return false;">'
+                + '<x-icon type="delete" class="fa-fw" /><span class="sr-only">{{ trans('general.delete') }}</span></a>&nbsp;';
+        }
+
+        actions += '</nobr>';
+        return actions;
+    };
+
     var child_formatters = [
         ['kits', 'models'],
         ['kits', 'licenses'],
@@ -2127,8 +2615,8 @@
     function minAmtFormatter(row, value) {
 
         if ((row) && (row!=undefined)) {
-            
-            if (value.remaining <= value.min_amt) {
+
+            if (value.remaining < value.min_amt) {
                 return  '<span class="text-danger text-bold" data-tooltip="true" title="{{ trans('admin/licenses/general.below_threshold_short') }}"><x-icon type="warning" class="text-yellow" /> ' + value.min_amt + '</span>';
             }
             return value.min_amt
@@ -2260,21 +2748,72 @@
         }
     }
 
+    // Renders a single company tag. `isInherited` is decided by the caller —
+    // it's true only when (a) we're on the companies show page (viewing context
+    // is set), (b) the row didn't get included via direct membership, and (c)
+    // THIS specific tag is the parent or a child of the viewing company. Other
+    // unrelated memberships on the same row render unmarked.
+    function renderCompanyTag(c, isInherited) {
+        var color = (c.tag_color)
+            ? '<i class="fa-solid fa-square" style="color: ' + c.tag_color + ';" aria-hidden="true"></i> '
+            : '';
+        if (isInherited) {
+            return '<a href="{{ config('app.url') }}/companies/' + c.id + '"'
+                + ' class="label label-light"'
+                + ' data-tooltip="true"'
+                + ' title="{{ trans('admin/companies/table.inherited_help') }}">'
+                + '<i class="fa-solid fa-link" aria-hidden="true"></i> '
+                + color + c.name
+                + ' <span class="sr-only">({{ trans('admin/companies/table.inherited') }})</span>'
+                + '</a>';
+        }
+        return '<a href="{{ config('app.url') }}/companies/' + c.id + '" class="label label-light">'
+            + color + c.name
+            + '</a>';
+    }
+
+    // A tag is "inherited" when (1) we're on a company show page, (2) the row
+    // didn't include the viewing company itself (i.e. the user/asset isn't a
+    // direct member), AND (3) this specific tag IS in the viewing company's
+    // hierarchy set (parent or one of the children). Tags unrelated to the
+    // hierarchy never get marked, even on otherwise-inherited rows.
+    function isCompanyTagInherited(tagId, rowCompanyIds) {
+        if (typeof window.viewingCompanyId === 'undefined' || window.viewingCompanyId === null) {
+            return false;
+        }
+        if (typeof window.viewingCompanyHierarchyIds === 'undefined' || !window.viewingCompanyHierarchyIds) {
+            return false;
+        }
+
+        var viewing = parseInt(window.viewingCompanyId, 10);
+        var tag = parseInt(tagId, 10);
+
+        // Row is direct (some company on the row matches viewing) — nothing
+        // on this row counts as inherited.
+        var rowIsDirect = rowCompanyIds.some(function (id) { return parseInt(id, 10) === viewing; });
+        if (rowIsDirect) {
+            return false;
+        }
+
+        // Only tags that are part of the hierarchy set get the badge.
+        return window.viewingCompanyHierarchyIds.some(function (id) { return parseInt(id, 10) === tag; })
+            && tag !== viewing;
+    }
+
     function companiesLinkObjFormatter(value, row) {
         if (!value) {
             return '';
         }
-        var icon = (value.tag_color) ? '<i class="fa-solid fa-square" style="color: ' + value.tag_color + ';" aria-hidden="true"></i> ' : '';
-        return '<a href="{{ config('app.url') }}/companies/' + value.id + '" class="label label-light">' + icon + value.name + '</a>';
+        return renderCompanyTag(value, isCompanyTagInherited(value.id, [value.id]));
     }
 
     function companiesArrayLinkFormatter(value, row) {
         if (!value || !value.length) {
             return '';
         }
+        var rowCompanyIds = value.map(function (c) { return c.id; });
         return value.map(function (c) {
-            var icon = (c.tag_color) ? '<i class="fa-solid fa-square" style="color: ' + c.tag_color + ';" aria-hidden="true"></i> ' : '';
-            return '<a href="{{ config('app.url') }}/companies/' + c.id + '" class="label label-light">' + icon + c.name + '</a></span>';
+            return renderCompanyTag(c, isCompanyTagInherited(c.id, rowCompanyIds));
         }).join(' ');
     }
 

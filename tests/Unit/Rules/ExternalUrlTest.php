@@ -4,6 +4,7 @@ namespace Tests\Unit\Rules;
 
 use App\Rules\ExternalUrl;
 use Illuminate\Support\Facades\Validator;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 class ExternalUrlTest extends TestCase
@@ -60,9 +61,7 @@ class ExternalUrlTest extends TestCase
         ];
     }
 
-    /**
-     * @dataProvider rejectedProvider
-     */
+    #[DataProvider('rejectedProvider')]
     public function test_rejects_dangerous_or_malformed_urls(string $url)
     {
         $this->assertFalse($this->passes($url), 'Should have been rejected: '.$url);

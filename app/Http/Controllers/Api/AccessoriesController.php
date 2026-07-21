@@ -83,7 +83,13 @@ class AccessoriesController extends Controller
         }
 
         if ($request->filled('company_id')) {
-            $accessories->where('accessories.company_id', '=', $request->input('company_id'));
+            // expand_company_hierarchy=1 opts the company show-page tabs into the
+            // parent/child rollup so a child shows items inherited from its parent.
+            if ($request->boolean('expand_company_hierarchy')) {
+                $accessories->whereIn('accessories.company_id', Company::reachableCompanyIds($request->input('company_id')));
+            } else {
+                $accessories->where('accessories.company_id', '=', $request->input('company_id'));
+            }
         }
 
         if ($request->filled('order_number')) {

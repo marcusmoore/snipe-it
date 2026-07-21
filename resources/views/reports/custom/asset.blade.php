@@ -72,7 +72,7 @@
                                 value="{{ $template->name }}"
                                 required
                             >
-                            {!! $errors->first('name', '<span class="alert-msg" aria-hidden="true"><i class="fas fa-times" aria-hidden="true"></i> :message</span>') !!}
+                            <x-form.error name="name" />
                         </div>
                         @if ($template->created_by == auth()->id())
                             <div class="col-md-3">
@@ -434,17 +434,20 @@
           <!-- Purchase Date -->
             <div class="form-group purchase-range{{ ($errors->has('purchase_start') || $errors->has('purchase_end')) ? ' has-error' : '' }}">
               <label for="purchase_start" class="col-md-3 control-label">{{ trans('general.purchase_date') }}</label>
-              <div class="input-daterange input-group col-md-7" id="purchase-range-datepicker">
-
-                  <input type="text" placeholder="{{ trans('general.select_date') }}" class="form-control" name="purchase_start" aria-label="purchase_start" value="{{ $template->textValue('purchase_start', old('purchase_start')) }}">
-                  <span class="input-group-addon"> - </span>
-                  <input type="text" placeholder="{{ trans('general.select_date') }}" class="form-control" name="purchase_end" aria-label="purchase_end" value="{{ $template->textValue('purchase_end', old('purchase_end')) }}">
-              </div>
+              <x-input.date-range
+                  class="col-md-7"
+                  id="purchase-range-datepicker"
+                  name_start="purchase_start"
+                  name_end="purchase_end"
+                  :value_start="$template->textValue('purchase_start', old('purchase_start'))"
+                  :value_end="$template->textValue('purchase_end', old('purchase_end'))"
+                  max_date="today"
+              />
 
                 @if ($errors->has('purchase_start') || $errors->has('purchase_end'))
                     <div class="col-md-9 col-lg-offset-3">
-                        {!! $errors->first('purchase_start', '<span class="alert-msg" aria-hidden="true"><i class="fas fa-times" aria-hidden="true"></i> :message</span>') !!}
-                        {!! $errors->first('purchase_end', '<span class="alert-msg" aria-hidden="true"><i class="fas fa-times" aria-hidden="true"></i> :message</span>') !!}
+                        <x-form.error name="purchase_start" />
+                        <x-form.error name="purchase_end" />
                     </div>
                 @endif
 
@@ -461,8 +464,8 @@
 
               @if ($errors->has('purchase_cost_start') || $errors->has('purchase_cost_end'))
                   <div class="col-md-9 col-lg-offset-3">
-                      {!! $errors->first('purchase_cost_start', '<span class="alert-msg" aria-hidden="true"><i class="fas fa-times" aria-hidden="true"></i> :message</span>') !!}
-                      {!! $errors->first('purchase_cost_end', '<span class="alert-msg" aria-hidden="true"><i class="fas fa-times" aria-hidden="true"></i> :message</span>') !!}
+                      <x-form.error name="purchase_cost_start" />
+                      <x-form.error name="purchase_cost_end" />
                   </div>
               @endif
 
@@ -471,16 +474,20 @@
           <!-- Created Date -->
             <div class="form-group created-range{{ ($errors->has('created_start') || $errors->has('created_end')) ? ' has-error' : '' }}">
               <label for="created_start" class="col-md-3 control-label">{{ trans('general.created_at') }} </label>
-              <div class="input-daterange input-group col-md-7" id="created-range-datepicker">
-                  <input type="text" placeholder="{{ trans('general.select_date') }}" class="form-control" name="created_start" aria-label="created_start" value="{{ $template->textValue('created_start', old('created_start')) }}">
-                  <span class="input-group-addon"> - </span>
-                  <input type="text" placeholder="{{ trans('general.select_date') }}" class="form-control" name="created_end" aria-label="created_end" value="{{ $template->textValue('created_end', old('created_end')) }}">
-              </div>
+              <x-input.date-range
+                  class="col-md-7"
+                  id="created-range-datepicker"
+                  name_start="created_start"
+                  name_end="created_end"
+                  :value_start="$template->textValue('created_start', old('created_start'))"
+                  :value_end="$template->textValue('created_end', old('created_end'))"
+                  max_date="today"
+              />
 
                 @if ($errors->has('created_start') || $errors->has('created_end'))
                     <div class="col-md-9 col-lg-offset-3">
-                        {!! $errors->first('created_start', '<span class="alert-msg" aria-hidden="true"><i class="fas fa-times" aria-hidden="true"></i> :message</span>') !!}
-                        {!! $errors->first('created_end', '<span class="alert-msg" aria-hidden="true"><i class="fas fa-times" aria-hidden="true"></i> :message</span>') !!}
+                        <x-form.error name="created_start" />
+                        <x-form.error name="created_end" />
                     </div>
                 @endif
             </div>
@@ -488,16 +495,20 @@
           <!-- Checkout Date -->
           <div class="form-group checkout-range{{ ($errors->has('checkout_date_start') || $errors->has('checkout_date_end')) ? ' has-error' : '' }}">
               <label for="checkout_date" class="col-md-3 control-label">{{ trans('general.checkout') }} </label>
-              <div class="input-daterange input-group col-md-7" id="checkout-range-datepicker">
-                  <input type="text" placeholder="{{ trans('general.select_date') }}"  class="form-control" name="checkout_date_start" aria-label="checkout_date_start" value="{{ $template->textValue('checkout_date_start', old('checkout_date_start')) }}">
-                  <span class="input-group-addon"> - </span>
-                  <input type="text" placeholder="{{ trans('general.select_date') }}" class="form-control" name="checkout_date_end" aria-label="checkout_date_end" value="{{ $template->textValue('checkout_date_end', old('checkout_date_end')) }}">
-              </div>
+              <x-input.date-range
+                  class="col-md-7"
+                  id="checkout-range-datepicker"
+                  name_start="checkout_date_start"
+                  name_end="checkout_date_end"
+                  :value_start="$template->textValue('checkout_date_start', old('checkout_date_start'))"
+                  :value_end="$template->textValue('checkout_date_end', old('checkout_date_end'))"
+                  max_date="today"
+              />
 
               @if ($errors->has('checkout_date_start') || $errors->has('checkout_date_end'))
                   <div class="col-md-9 col-lg-offset-3">
-                      {!! $errors->first('checkout_date_start', '<span class="alert-msg" aria-hidden="true"><i class="fas fa-times" aria-hidden="true"></i> :message</span>') !!}
-                      {!! $errors->first('checkout_date_end', '<span class="alert-msg" aria-hidden="true"><i class="fas fa-times" aria-hidden="true"></i> :message</span>') !!}
+                      <x-form.error name="checkout_date_start" />
+                      <x-form.error name="checkout_date_end" />
                   </div>
               @endif
 
@@ -506,16 +517,20 @@
           <!-- Last Checkin Date -->
           <div class="form-group checkin-range{{ ($errors->has('checkin_date_start') || $errors->has('checkin_date_end')) ? ' has-error' : '' }}">
               <label for="checkin_date" class="col-md-3 control-label">{{ trans('admin/hardware/table.last_checkin_date') }}</label>
-              <div class="input-daterange input-group col-md-7" id="checkin-range-datepicker">
-                  <input type="text" placeholder="{{ trans('general.select_date') }}" class="form-control" name="checkin_date_start" aria-label="checkin_date_start" value="{{ $template->textValue('checkin_date_start', old('checkin_date_start')) }}">
-                  <span class="input-group-addon"> - </span>
-                  <input type="text" placeholder="{{ trans('general.select_date') }}" class="form-control" name="checkin_date_end" aria-label="checkin_date_end" value="{{ $template->textValue('checkin_date_end', old('checkin_date_end')) }}">
-              </div>
+              <x-input.date-range
+                  class="col-md-7"
+                  id="checkin-range-datepicker"
+                  name_start="checkin_date_start"
+                  name_end="checkin_date_end"
+                  :value_start="$template->textValue('checkin_date_start', old('checkin_date_start'))"
+                  :value_end="$template->textValue('checkin_date_end', old('checkin_date_end'))"
+                  max_date="today"
+              />
 
               @if ($errors->has('checkin_date_start') || $errors->has('checkin_date_end'))
                   <div class="col-md-9 col-lg-offset-3">
-                      {!! $errors->first('checkin_date_start', '<span class="alert-msg" aria-hidden="true"><i class="fas fa-times" aria-hidden="true"></i> :message</span>') !!}
-                      {!! $errors->first('checkin_date_end', '<span class="alert-msg" aria-hidden="true"><i class="fas fa-times" aria-hidden="true"></i> :message</span>') !!}
+                      <x-form.error name="checkin_date_start" />
+                      <x-form.error name="checkin_date_end" />
                   </div>
               @endif
           </div>
@@ -523,16 +538,19 @@
             <!-- Expected Checkin Date -->
             <div class="form-group expected_checkin-range{{ ($errors->has('expected_checkin_start') || $errors->has('expected_checkin_end')) ? ' has-error' : '' }}">
               <label for="expected_checkin_start" class="col-md-3 control-label">{{ trans('admin/hardware/form.expected_checkin') }}</label>
-              <div class="input-daterange input-group col-md-7" id="expected_checkin-range-datepicker">
-                  <input type="text" placeholder="{{ trans('general.select_date') }}" class="form-control" name="expected_checkin_start" aria-label="expected_checkin_start" value="{{ $template->textValue('expected_checkin_start', old('expected_checkin_start')) }}">
-                  <span class="input-group-addon"> - </span>
-                  <input type="text" placeholder="{{ trans('general.select_date') }}" class="form-control" name="expected_checkin_end" aria-label="expected_checkin_end" value="{{ $template->textValue('expected_checkin_end', old('expected_checkin_end')) }}">
-              </div>
+              <x-input.date-range
+                  class="col-md-7"
+                  id="expected_checkin-range-datepicker"
+                  name_start="expected_checkin_start"
+                  name_end="expected_checkin_end"
+                  :value_start="$template->textValue('expected_checkin_start', old('expected_checkin_start'))"
+                  :value_end="$template->textValue('expected_checkin_end', old('expected_checkin_end'))"
+              />
 
                 @if ($errors->has('expected_checkin_start') || $errors->has('expected_checkin_end'))
                     <div class="col-md-9 col-lg-offset-3">
-                        {!! $errors->first('expected_checkin_start', '<span class="alert-msg" aria-hidden="true"><i class="fas fa-times" aria-hidden="true"></i> :message</span>') !!}
-                        {!! $errors->first('expected_checkin_end', '<span class="alert-msg" aria-hidden="true"><i class="fas fa-times" aria-hidden="true"></i> :message</span>') !!}
+                        <x-form.error name="expected_checkin_start" />
+                        <x-form.error name="expected_checkin_end" />
                     </div>
                 @endif
 
@@ -541,16 +559,19 @@
               <!-- EoL Date -->
               <div class="form-group asset_eol_date-range {{ ($errors->has('asset_eol_date_start') || $errors->has('asset_eol_date_end')) ? ' has-error' : '' }}">
                   <label for="asset_eol_date" class="col-md-3 control-label">{{ trans('admin/hardware/form.eol_date') }}</label>
-                  <div class="input-daterange input-group col-md-7" id="asset_eol_date-range-datepicker">
-                      <input type="text" placeholder="{{ trans('general.select_date') }}" class="form-control" name="asset_eol_date_start" aria-label="asset_eol_date_start" value="{{ $template->textValue('asset_eol_date_start', old('asset_eol_date_start')) }}">
-                      <span class="input-group-addon"> - </span>
-                      <input type="text" placeholder="{{ trans('general.select_date') }}" class="form-control" name="asset_eol_date_end" aria-label="asset_eol_date_end" value="{{ $template->textValue('asset_eol_date_end', old('asset_eol_date_end')) }}">
-                  </div>
+                  <x-input.date-range
+                      class="col-md-7"
+                      id="asset_eol_date-range-datepicker"
+                      name_start="asset_eol_date_start"
+                      name_end="asset_eol_date_end"
+                      :value_start="$template->textValue('asset_eol_date_start', old('asset_eol_date_start'))"
+                      :value_end="$template->textValue('asset_eol_date_end', old('asset_eol_date_end'))"
+                  />
 
                   @if ($errors->has('asset_eol_date_start') || $errors->has('asset_eol_date_end'))
                       <div class="col-md-9 col-lg-offset-3">
-                          {!! $errors->first('asset_eol_date_start', '<span class="alert-msg" aria-hidden="true"><i class="fas fa-times" aria-hidden="true"></i> :message</span>') !!}
-                          {!! $errors->first('asset_eol_date_end', '<span class="alert-msg" aria-hidden="true"><i class="fas fa-times" aria-hidden="true"></i> :message</span>') !!}
+                          <x-form.error name="asset_eol_date_start" />
+                          <x-form.error name="asset_eol_date_end" />
                       </div>
                   @endif
               </div>
@@ -558,16 +579,20 @@
               <!-- Last Audit Date -->
               <div class="form-group last_audit-range{{ ($errors->has('last_audit_start') || $errors->has('last_audit_end')) ? ' has-error' : '' }}">
                   <label for="last_audit_start" class="col-md-3 control-label">{{ trans('general.last_audit') }}</label>
-                  <div class="input-daterange input-group col-md-7" id="last_audit-range-datepicker">
-                      <input type="text" placeholder="{{ trans('general.select_date') }}"  class="form-control" name="last_audit_start" aria-label="last_audit_start" value="{{ $template->textValue('last_audit_start', old('last_audit_start')) }}">
-                      <span class="input-group-addon"> - </span>
-                      <input type="text" placeholder="{{ trans('general.select_date') }}"  class="form-control" name="last_audit_end" aria-label="last_audit_end" value="{{ $template->textValue('last_audit_end', old('last_audit_end')) }}">
-                  </div>
+                  <x-input.date-range
+                      class="col-md-7"
+                      id="last_audit-range-datepicker"
+                      name_start="last_audit_start"
+                      name_end="last_audit_end"
+                      :value_start="$template->textValue('last_audit_start', old('last_audit_start'))"
+                      :value_end="$template->textValue('last_audit_end', old('last_audit_end'))"
+                      max_date="today"
+                  />
 
                   @if ($errors->has('last_audit_start') || $errors->has('last_audit_end'))
                       <div class="col-md-9 col-lg-offset-3">
-                          {!! $errors->first('last_audit_start', '<span class="alert-msg" aria-hidden="true"><i class="fas fa-times" aria-hidden="true"></i> :message</span>') !!}
-                          {!! $errors->first('last_audit_end', '<span class="alert-msg" aria-hidden="true"><i class="fas fa-times" aria-hidden="true"></i> :message</span>') !!}
+                          <x-form.error name="last_audit_start" />
+                          <x-form.error name="last_audit_end" />
                       </div>
                   @endif
               </div>
@@ -575,16 +600,19 @@
               <!-- Next Audit Date -->
               <div class="form-group next_audit-range{{ ($errors->has('next_audit_start') || $errors->has('next_audit_end')) ? ' has-error' : '' }}">
                   <label for="next_audit_start" class="col-md-3 control-label">{{ trans('general.next_audit_date') }}</label>
-                  <div class="input-daterange input-group col-md-7" id="next_audit-range-datepicker">
-                      <input type="text" placeholder="{{ trans('general.select_date') }}"  class="form-control" name="next_audit_start" aria-label="next_audit_start" value="{{ $template->textValue('next_audit_start', old('next_audit_start')) }}">
-                      <span class="input-group-addon"> - </span>
-                      <input type="text" placeholder="{{ trans('general.select_date') }}"  class="form-control" name="next_audit_end" aria-label="next_audit_end" value="{{ $template->textValue('next_audit_end', old('next_audit_end')) }}">
-                  </div>
+                  <x-input.date-range
+                      class="col-md-7"
+                      id="next_audit-range-datepicker"
+                      name_start="next_audit_start"
+                      name_end="next_audit_end"
+                      :value_start="$template->textValue('next_audit_start', old('next_audit_start'))"
+                      :value_end="$template->textValue('next_audit_end', old('next_audit_end'))"
+                  />
 
                   @if ($errors->has('next_audit_start') || $errors->has('next_audit_end'))
                       <div class="col-md-9 col-lg-offset-3">
-                          {!! $errors->first('next_audit_start', '<span class="alert-msg" aria-hidden="true"><i class="fas fa-times" aria-hidden="true"></i> :message</span>') !!}
-                          {!! $errors->first('next_audit_end', '<span class="alert-msg" aria-hidden="true"><i class="fas fa-times" aria-hidden="true"></i> :message</span>') !!}
+                          <x-form.error name="next_audit_start" />
+                          <x-form.error name="next_audit_end" />
                       </div>
                   @endif
               </div>
@@ -592,16 +620,20 @@
               <!-- Last updated Date -->
               <div class="form-group last_updated-range{{ ($errors->has('last_updated_start') || $errors->has('last_updated_end')) ? ' has-error' : '' }}">
                   <label for="last_updated_start" class="col-md-3 control-label">{{ trans('general.updated_at') }}</label>
-                  <div class="input-daterange input-group col-md-7" id="last_updated-range-datepicker">
-                      <input type="text" placeholder="{{ trans('general.select_date') }}"  class="form-control" name="last_updated_start" aria-label="last_updated_start" value="{{ $template->textValue('last_updated_start', old('last_updated_start')) }}">
-                      <span class="input-group-addon"> - </span>
-                      <input type="text" placeholder="{{ trans('general.select_date') }}"  class="form-control" name="last_updated_end" aria-label="last_updated_end" value="{{ $template->textValue('last_updated_end', old('last_updated_end')) }}">
-                  </div>
+                  <x-input.date-range
+                      class="col-md-7"
+                      id="last_updated-range-datepicker"
+                      name_start="last_updated_start"
+                      name_end="last_updated_end"
+                      :value_start="$template->textValue('last_updated_start', old('last_updated_start'))"
+                      :value_end="$template->textValue('last_updated_end', old('last_updated_end'))"
+                      max_date="today"
+                  />
 
                   @if ($errors->has('last_updated_start') || $errors->has('last_updated_end'))
                       <div class="col-md-9 col-lg-offset-3">
-                          {!! $errors->first('last_updated_start', '<span class="alert-msg" aria-hidden="true"><i class="fas fa-times" aria-hidden="true"></i> :message</span>') !!}
-                          {!! $errors->first('last_updated_end', '<span class="alert-msg" aria-hidden="true"><i class="fas fa-times" aria-hidden="true"></i> :message</span>') !!}
+                          <x-form.error name="last_updated_start" />
+                          <x-form.error name="last_updated_end" />
                       </div>
                   @endif
               </div>
@@ -616,7 +648,7 @@
 
                   @if ($errors->has('last_updated_before'))
                       <div class="col-md-9 col-lg-offset-3">
-                          {!! $errors->first('last_updated_before', '<span class="alert-msg" aria-hidden="true"><i class="fas fa-times" aria-hidden="true"></i> :message</span>') !!}
+                          <x-form.error name="last_updated_before" />
                       </div>
                   @endif
               </div>
@@ -790,7 +822,7 @@
                             value="{{ $template->name }}"
                             required
                         >
-                        {!! $errors->first('name', '<span class="alert-msg" aria-hidden="true"><i class="fas fa-times" aria-hidden="true"></i> :message</span>') !!}
+                        <x-form.error name="name" />
                     </div>
                     <button class="btn btn-primary" style="width: 100%">
                         {{ trans('admin/reports/general.save_template') }}
@@ -813,76 +845,6 @@
 
 @section('moar_scripts')
   <script>
-
-      $('.purchase-range .input-daterange').datepicker({
-          clearBtn: true,
-          todayHighlight: true,
-          endDate: '0d',
-          format: 'yyyy-mm-dd',
-          keepEmptyValues: true,
-      });
-
-      $('.created-range .input-daterange').datepicker({
-          clearBtn: true,
-          todayHighlight: true,
-          endDate: '0d',
-          format: 'yyyy-mm-dd',
-          keepEmptyValues: true,
-      });
-
-      $('.checkout-range .input-daterange').datepicker({
-          clearBtn: true,
-          todayHighlight: true,
-          endDate: '0d',
-          format: 'yyyy-mm-dd',
-          keepEmptyValues: true,
-      });
-
-      $('.checkin-range .input-daterange').datepicker({
-          clearBtn: true,
-          todayHighlight: true,
-          endDate: '0d',
-          format: 'yyyy-mm-dd',
-          keepEmptyValues: true,
-      });
-
-      $('.expected_checkin-range .input-daterange').datepicker({
-          clearBtn: true,
-          todayHighlight: true,
-          format: 'yyyy-mm-dd',
-          keepEmptyValues: true,
-      });
-
-      $('.asset_eol_date-range .input-daterange').datepicker({
-          clearBtn: true,
-          todayHighlight: true,
-          format: 'yyyy-mm-dd',
-          keepEmptyValues: true,
-      });
-
-      $('.last_audit-range .input-daterange').datepicker({
-          clearBtn: true,
-          todayHighlight: true,
-          endDate:'0d',
-          format: 'yyyy-mm-dd',
-          keepEmptyValues: true,
-      });
-
-      $('.next_audit-range .input-daterange').datepicker({
-          clearBtn: true,
-          todayHighlight: true,
-          format: 'yyyy-mm-dd',
-          keepEmptyValues: true,
-      });
-
-      $('.last_updated-range .input-daterange').datepicker({
-          clearBtn: true,
-          todayHighlight: true,
-          endDate:'0d',
-          format: 'yyyy-mm-dd',
-          keepEmptyValues: true,
-      });
-
 
       $("#checkAll").change(function () {
         $("#included_fields_wrapper input:checkbox").prop('checked', $(this).prop("checked"));

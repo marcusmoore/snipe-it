@@ -368,7 +368,12 @@ class Location extends SnipeModel
      * @param  text  $order  Order
      * @return Illuminate\Database\Query\Builder Modified query builder
      */
-    public static function indenter($locations_with_children, $parent_id = null, $prefix = '')
+    /**
+     * The map's keys are parent_id values, with `0` used for "no parent / top-
+     * level". Using 0 (not null) avoids PHP 8.4's deprecation of null array
+     * offsets when callers build the map from `$location->parent_id`.
+     */
+    public static function indenter($locations_with_children, int $parent_id = 0, $prefix = '')
     {
         $results = [];
 

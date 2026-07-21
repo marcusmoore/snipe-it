@@ -19,7 +19,6 @@ use App\Models\Setting;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 
 class LocationsController extends Controller
@@ -473,11 +472,6 @@ class LocationsController extends Controller
             'locations.tag_color',
         ]);
 
-        $page = 1;
-        if ($request->filled('page')) {
-            $page = $request->input('page');
-        }
-
         if ($request->filled('search')) {
             $locations = $locations->where('locations.name', 'LIKE', '%'.$request->input('search').'%');
         }
@@ -486,15 +480,22 @@ class LocationsController extends Controller
             $locations->where('locations.id', '!=', (int) $request->input('excludeId'));
         }
 
+        if ((Setting::getSettings()->full_multiple_companies_support == '1') && $request->filled('companyId')) {
+            $locations->where('locations.company_id', '=', (int) $request->input('companyId'));
+        }
+
         $locations = $locations->orderBy('name', 'ASC')->get();
 
         $locations_with_children = [];
 
+        // Use 0 (not null) for the top-level bucket — null array offsets are
+        // deprecated in PHP 8.4 and Location::indenter expects an int key.
         foreach ($locations as $location) {
-            if (! array_key_exists($location->parent_id, $locations_with_children)) {
-                $locations_with_children[$location->parent_id] = [];
+            $parentKey = (int) $location->parent_id;
+            if (! array_key_exists($parentKey, $locations_with_children)) {
+                $locations_with_children[$parentKey] = [];
             }
-            $locations_with_children[$location->parent_id][] = $location;
+            $locations_with_children[$parentKey][] = $location;
         }
 
         if ($request->filled('search')) {
@@ -504,9 +505,7 @@ class LocationsController extends Controller
             $locations_formatted = new Collection($location_options);
         }
 
-        $paginated_results = new LengthAwarePaginator($locations_formatted->forPage($page, 500), $locations_formatted->count(), 500, $page, []);
-
-        return (new SelectlistTransformer)->transformSelectlist($paginated_results);
+        return (new SelectlistTransformer)->transformSelectlist(Helper::paginateCollection($locations_formatted));
     }
 
     public function history(Request $request, Location $location): JsonResponse|array

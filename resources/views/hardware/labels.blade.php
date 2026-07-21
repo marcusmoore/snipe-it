@@ -112,14 +112,14 @@ $qr_size = ($settings->alt_barcode_enabled=='1') && ($settings->label2_1d_type!=
 
         @if ($settings->qr_code=='1')
             <div class="qr_img">
-                <img src="{{ route('qr_code/common', ['object_type' => 'hardware', 'id' => $asset->id]) }}" class="qr_img">
+                <img src="{{ route('qr_code/common', ['object_type' => 'hardware', 'id' => $asset->id]) }}" class="qr_img" alt="">
             </div>
         @endif
 
         <div class="qr_text">
             @if ($settings->label_logo)
                 <div class="label-logo">
-                    <img class="label-logo" src="{{ Storage::disk('public')->url('').e($snipeSettings->label_logo) }}">
+                    <img class="label-logo" src="{{ Storage::disk('public')->url('').e($snipeSettings->label_logo) }}" alt="">
                 </div>
             @endif
             @if ($settings->qr_text!='')
@@ -158,7 +158,7 @@ $qr_size = ($settings->alt_barcode_enabled=='1') && ($settings->label2_1d_type!=
 
         @if ((($settings->alt_barcode_enabled=='1') && $settings->label2_1d_type!=''))
             <div class="barcode_container">
-                <img src="{{ config('app.url') }}/hardware/{{ $asset->id }}/barcode" class="barcode">
+                <img src="{{ config('app.url') }}/hardware/{{ $asset->id }}/barcode" class="barcode" alt="">
             </div>
         @endif
 

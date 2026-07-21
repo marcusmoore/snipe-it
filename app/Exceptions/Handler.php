@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 use Intervention\Image\Exception\NotSupportedException;
 use JsonException;
+use Laravel\Passport\Exceptions\OAuthServerException as PassportOAuthServerException;
 use League\OAuth2\Server\Exception\OAuthServerException;
 use Livewire\Exceptions\ComponentNotFoundException;
 use Livewire\Exceptions\PublicPropertyNotFoundException;
@@ -40,6 +41,7 @@ class Handler extends ExceptionHandler
         ValidationException::class,
         NotSupportedException::class,
         OAuthServerException::class,
+        PassportOAuthServerException::class,
         JsonException::class,
         SCIMException::class, // these generally don't need to be reported
         InvalidFormatException::class,

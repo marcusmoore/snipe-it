@@ -3,12 +3,43 @@
 namespace Tests\Unit\Helpers;
 
 use App\Helpers\Helper;
+use App\Models\Location;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Session;
 use Tests\TestCase;
 
 class HelperTest extends TestCase
 {
+    /**
+     * Regression: `<x-form.row type="datetimepicker">` on transient checkout
+     * forms (hardware/checkout, bulk-checkout, kits/checkout, etc.) passes
+     * `$item = null` down to `Helper::checkIfRequired`. Without the null guard
+     * this hit `null::rules()` and threw "Class name must be a valid object or
+     * a string", 500ing the whole page. When there's no bound model to
+     * introspect, we treat the field as not required.
+     */
+    public function test_check_if_required_returns_false_when_class_is_null()
+    {
+        $this->assertFalse(Helper::checkIfRequired(null, 'name'));
+    }
+
+    public function test_check_if_required_detects_required_field_on_a_real_model()
+    {
+        // Location::$rules declares 'name' => 'required|max:255|unique_undeleted'
+        $this->assertTrue(Helper::checkIfRequired(new Location, 'name'));
+    }
+
+    public function test_check_if_required_returns_false_for_a_non_required_field()
+    {
+        // Location's 'address' is 'max:191|nullable' — no required rule.
+        $this->assertFalse(Helper::checkIfRequired(new Location, 'address'));
+    }
+
+    public function test_check_if_required_returns_false_for_unknown_field()
+    {
+        $this->assertFalse(Helper::checkIfRequired(new Location, 'no_such_field_on_location'));
+    }
+
     public function test_default_chart_colors_method_handles_high_values()
     {
         $this->assertIsString(Helper::defaultChartColors(1000));

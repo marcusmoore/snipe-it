@@ -6,6 +6,7 @@ use App\Models\Traits\Acceptable;
 use App\Models\Traits\CompanyableTrait;
 use App\Models\Traits\HasUploads;
 use App\Models\Traits\Loggable;
+use App\Models\Traits\Requestable;
 use App\Models\Traits\Searchable;
 use App\Presenters\AccessoryPresenter;
 use App\Presenters\Presentable;
@@ -29,6 +30,7 @@ class Accessory extends SnipeModel
     use HasUploads;
     use Loggable;
     use Presentable;
+    use Requestable;
     use Searchable;
     use SoftDeletes;
     use ValidatingTrait;
@@ -153,6 +155,15 @@ class Accessory extends SnipeModel
             $value = null;
         }
         $this->attributes['requestable'] = filter_var($value, FILTER_VALIDATE_BOOLEAN);
+    }
+
+    /**
+     * Scope query to only requestable accessories. Unlike assets, accessories
+     * have no deployable status to check, so the flag is all we need here.
+     */
+    public function scopeRequestableAccessories($query)
+    {
+        return $query->where('accessories.requestable', '1');
     }
 
     /**

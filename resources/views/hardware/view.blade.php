@@ -18,18 +18,16 @@
 
         @if (!$asset->model)
             <div class="col-md-12">
-                <div class="callout callout-danger">
-                    <p>
-                        <strong>{{ trans('admin/models/message.no_association') }}</strong> {{ trans('admin/models/message.no_association_fix') }}
-                    </p>
-                </div>
+                <x-callout type="danger" live="assertive">
+                    <strong>{{ trans('admin/models/message.no_association') }}</strong> {{ trans('admin/models/message.no_association_fix') }}
+                </x-callout>
             </div>
         @endif
 
         @if ($asset->checkInvalidNextAuditDate())
             <div class="col-md-12">
-                <div class="callout callout-warning">
-                    <p><strong>{{ trans('general.warning',
+                <x-callout type="warning" live="assertive">
+                    <strong>{{ trans('general.warning',
                         [
                             'warning' => trans('admin/hardware/message.warning_audit_date_mismatch',
                                     [
@@ -38,17 +36,16 @@
                                     ]
                                     )
                         ]
-                        ) }}</strong></p>
-                </div>
+                        ) }}</strong>
+                </x-callout>
             </div>
         @endif
 
         @if ($asset->deleted_at!='')
             <div class="col-md-12">
-                <div class="callout callout-warning">
-                    <x-icon type="warning"/>
+                <x-callout type="warning" icon="warning" live="assertive">
                     {{ trans('general.asset_deleted_warning') }}
-                </div>
+                </x-callout>
             </div>
         @endif
 
@@ -72,7 +69,7 @@
                     />
                     <x-tabs.note-tab :item="$asset" count="{{ $asset->journal->count() }}"/>
                     <x-tabs.files-tab :item="$asset" count="{{ $asset->uploads()->count() }}"/>
-                    <x-tabs.model-files-tab count="{{ $asset->model?->uploads()->count() }}"/>
+                    <x-tabs.model-files-tab :item="$asset->model" count="{{ $asset->model?->uploads()->count() }}"/>
                     <x-tabs.history-tab count="{{ $asset->history()->count() }}" :model="$asset"/>
                     <x-tabs.upload-tab :item="$asset"/>
                 </x-slot:tabnav>
@@ -114,7 +111,7 @@
                                 <x-icon type="expected_checkin" class="fa-fw"/>
                                 <strong>{{ trans('general.expected_checkin') }}</strong>
                                 @if ($asset->expected_checkin!='')
-                                    {{ Helper::getFormattedDateObject($asset->expected_checkin, 'date', false) }}
+                                    {{ Helper::getFormattedDateObject($asset->expected_checkin, 'datetime', false) }}
                                     <span class="text-muted hidden-sm hidden-md">{{ Carbon::parse($asset->expected_checkin)->diffForHumans(['parts' => 2]) }}</span>
                                 @else
                                     {{ trans('general.na') }}
@@ -374,7 +371,7 @@
                             buttons="accessoryButtons"
                             api_url="{{ route('api.assets.assigned_accessories', ['asset' => $asset]) }}"
                             :presenter="\App\Presenters\AssetPresenter::assignedAccessoriesDataTableLayout()"
-                            export_filename="export-maintenances-{{ str_slug($asset->name) }}-{{ date('Y-m-d') }}"
+                            export_filename="export-accessories-{{ str_slug($asset->name) }}-{{ date('Y-m-d') }}"
                         />
                     </x-tabs.pane>
 
@@ -472,6 +469,7 @@
         @include ('modals.add-note', ['type' => 'asset', 'id' => $asset->id])
     @endcan
         @include ('partials.bootstrap-table')
+        <x-modals.maintenance-complete />
     @endsection
 
 @stop

@@ -8,7 +8,7 @@
                 placeholder="{{ trans('general.select_date') }}"
                 required="{{ Helper::checkIfRequired($item, 'start_date') }}"
         />
-        {!! $errors->first($fieldname, '<span class="alert-msg" aria-hidden="true"><i class="fas fa-times" aria-hidden="true"></i> :message</span>') !!}
+        <x-form.error :name="$fieldname" />
     </div>
     @if  (isset($help_text))
         <div class="col-md-8 col-md-offset-3">

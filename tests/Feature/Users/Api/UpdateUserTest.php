@@ -313,14 +313,14 @@ class UpdateUserTest extends TestCase
         $companyA = Company::factory()->create(['name' => 'Company A']);
         $companyB = Company::factory()->create(['name' => 'Company B']);
 
-        $adminA = User::factory(['company_id' => $companyA->id])->admin()->create();
-        $adminB = User::factory(['company_id' => $companyB->id])->admin()->create();
-        $adminNoCompany = User::factory(['company_id' => null])->admin()->create();
+        $adminA = User::factory()->forCompany($companyA)->admin()->create();
+        $adminB = User::factory()->forCompany($companyB)->admin()->create();
+        $adminNoCompany = User::factory()->withoutCompany()->admin()->create();
 
         // Create users that belongs to company A and B and one that is unscoped
-        $scoped_user_in_companyA = User::factory()->create(['company_id' => $companyA->id]);
-        $scoped_user_in_companyB = User::factory()->create(['company_id' => $companyB->id]);
-        $scoped_user_in_no_company = User::factory()->create(['company_id' => null]);
+        $scoped_user_in_companyA = User::factory()->forCompany($companyA->id)->create();
+        $scoped_user_in_companyB = User::factory()->forCompany($companyB->id)->create();
+        $scoped_user_in_no_company = User::factory()->withoutCompany()->create();
 
         // Admin for Company A should allow updating user from Company A
         $this->actingAsForApi($adminA)
@@ -522,9 +522,7 @@ class UpdateUserTest extends TestCase
         $companyA = Company::factory()->create();
         $companyB = Company::factory()->create();
 
-        $user = User::factory()->create([
-            'company_id' => $companyA->id,
-        ]);
+        $user = User::factory()->forCompany($companyA)->create();
         $superUser = User::factory()->superuser()->create();
 
         $asset = Asset::factory()->create([
@@ -567,9 +565,7 @@ class UpdateUserTest extends TestCase
         $companyA = Company::factory()->create();
         $companyB = Company::factory()->create();
 
-        $user = User::factory()->create([
-            'company_id' => $companyA->id,
-        ]);
+        $user = User::factory()->forCompany($companyA)->create();
         $superUser = User::factory()->superuser()->create();
 
         $asset = Asset::factory()->create([

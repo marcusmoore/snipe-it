@@ -10,6 +10,7 @@ return [
     'user_not_found' => 'User does not exist or you do not have permission to view them.',
     'user_login_required' => 'The login field is required',
     'user_has_no_assets_assigned' => 'No assets currently assigned to user.',
+    'nothing_currently_assigned' => 'Nothing currently assigned.',
     'user_password_required' => 'The password is required.',
     'insufficient_permissions' => 'Insufficient Permissions.',
     'user_deleted_warning' => 'This user has been deleted. You will have to restore this user to edit them or assign them new assets.',
@@ -19,6 +20,15 @@ return [
     'password_reset_sent' => 'A password reset link has been sent to :email!',
     'user_has_no_email' => 'This user does not have an email address in their profile.',
     'log_record_not_found' => 'A matching log record for this user could not be found.',
+
+    'impersonate' => [
+        'started' => 'You are now logged in as :name.',
+        'stopped' => 'You are back to your own account.',
+        'cannot_impersonate_self' => 'You cannot log in as yourself.',
+        'cannot_impersonate_superuser' => 'You cannot log in as another superuser.',
+        'target_not_active' => 'That user is deactivated or deleted and cannot be logged in as.',
+        'impersonator_missing' => 'The original account for this impersonation session no longer exists. Please log in again.',
+    ],
 
     'success' => [
         'create' => 'User was successfully created.',

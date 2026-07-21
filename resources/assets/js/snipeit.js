@@ -21,7 +21,9 @@ require('jquery-slimscroll');
 require('jquery.iframe-transport'); //probably not needed anymore, if I'm honest
 require('blueimp-file-upload')
 require('bootstrap-colorpicker')
-require('bootstrap-datepicker')
+// eonasdan-bootstrap-datetimepicker (BS3) needs moment on window before it loads
+window.moment = require('moment')
+require('eonasdan-bootstrap-datetimepicker')
 require('ekko-lightbox') //TODO - this doesn't seem jquery-ish, we might need to do something weird here
                          // it *does* require Bootstrap, which requires jquery, so maybe that's OK
                          // it seems to work...
@@ -137,6 +139,16 @@ $(function () {
         return false;
     });
 
+    // Mark-a-maintenance-complete modal (green checkmark button in the
+    // maintenances table actions column). Sets the modal form's action to
+    // the row's completion URL and opens it.
+    $el.on('click', '.complete-maintenance', function () {
+        var url = $(this).data('url');
+        $('#completeMaintenanceForm').attr('action', url);
+        $('#completionNote').val('');
+        $('#completeMaintenanceModal').modal('show');
+    });
+
     // confirm delete modal
     $el.on('click', '.delete-asset', function (evnt) {
         var $context = $(this);
@@ -212,6 +224,11 @@ $(function () {
                         statusType: link.data("asset-status-type"),
                         companyId: link.data("company-ids") || link.data("company-id"),
                         excludeId: link.data("exclude-id"),
+                        // When true, the companies selectlist marks child companies
+                        // (those with a parent of their own) as disabled — used by
+                        // the parent-company picker so users can't choose options
+                        // that would fail the parent_must_be_top_level validator.
+                        onlyTopLevel: link.data("only-top-level"),
                     };
                     return data;
                 },
@@ -517,6 +534,37 @@ $(function () {
         $('a[href="' + $(this).attr('href') + '"]').tab('show');
     });
 
+    // Bootstrap-table's fixed-columns extension computes the overlay widths
+    // at init time. Tables inside a hidden tab pane initialize with a
+    // zero-width container and the fixed left/right columns never recover
+    // on their own once the pane becomes visible. Force a resetView on any
+    // snipe-tables inside the newly-shown pane so fixed columns line up.
+    $('body').on('shown.bs.tab', 'a[data-toggle="tab"]', function (e) {
+        var pane = $(e.target).attr('href');
+        if (!pane) return;
+        $(pane).find('.snipe-table').each(function () {
+            if ($(this).data('bootstrap.table')) {
+                $(this).bootstrapTable('resetView');
+            }
+        });
+    });
+
+    // Same story for viewport resizes: the fixed-columns overlay caches
+    // widths from the initial layout and doesn't recompute when the window
+    // width changes. Debounce so a drag-resize doesn't fire resetView on
+    // every intermediate pixel.
+    var snipeTableResizeTimer;
+    $(window).on('resize', function () {
+        clearTimeout(snipeTableResizeTimer);
+        snipeTableResizeTimer = setTimeout(function () {
+            $('.snipe-table').each(function () {
+                if ($(this).data('bootstrap.table')) {
+                    $(this).bootstrapTable('resetView');
+                }
+            });
+        }, 150);
+    });
+
     // ------------------------------------------------
     // End Deep Linking for Bootstrap tabs
     // ------------------------------------------------
@@ -623,6 +671,115 @@ $(document).ready(function () {
             input.attr("type", "password");
         }
     });
+
+    // Auto-init eonasdan datetimepickers. bootstrap-datepicker has a native
+    // data-provide auto-init; eonasdan does not, so we do it ourselves.
+    // Options are read from data-attributes on the wrapper so blade components
+    // can tune format/side-by-side without touching this JS.
+    //
+    // Icon set is overridden to Font Awesome — the picker defaults to
+    // Glyphicon classes, which we do not ship, so up/down arrows and clock
+    // glyphs would otherwise render as empty boxes.
+    // Exposed so callers who insert new [data-provide="datetimepicker"]
+    // wrappers into the DOM post-load (e.g., AJAX-loaded custom fields on
+    // asset create/edit when the model changes) can re-run the init on the
+    // freshly-inserted elements. Pass a jQuery scope to narrow the search;
+    // omit to init every uninitialised picker on the page.
+    window.snipeitInitDatetimepickers = function (scope) {
+        var $targets = scope ? $(scope).find('[data-provide="datetimepicker"]') : $('[data-provide="datetimepicker"]');
+        $targets.each(initDatetimepicker);
+    };
+
+    function initDatetimepicker() {
+        var $wrapper = $(this);
+        // Skip if this wrapper already has an eonasdan instance attached
+        // (data('DateTimePicker') is set by the library on init).
+        if ($wrapper.data('DateTimePicker')) {
+            return;
+        }
+        var $input = $wrapper.find('input');
+        var existingValue = ($input.val() || '').trim();
+
+        var options = {
+            format: $wrapper.data('format') || 'YYYY-MM-DD HH:mm:ss',
+            // Default to the compact (collapsed) view — calendar shows first
+            // and a small clock icon toggles the time view. Callers that want
+            // date + time visible side by side can set data-side-by-side="true".
+            sideBySide: $wrapper.data('side-by-side') === true,
+            showClear: true,
+            showClose: true,
+            showTodayButton: true,
+            // In sideBySide mode the toolbar row (Today/Clear/Close) is only
+            // rendered when placement is explicitly 'top' or 'bottom'; the
+            // library drops it entirely on the default 'default' placement.
+            toolbarPlacement: 'bottom',
+            // Open the popup on any focus/click of the input (not just the
+            // calendar addon icon), matching the behavior of the bootstrap
+            // datepicker used elsewhere in the app.
+            allowInputToggle: true,
+            locale: $wrapper.data('locale') || 'en',
+            icons: {
+                time: 'fa-regular fa-clock',
+                date: 'fa-regular fa-calendar',
+                up: 'fa-solid fa-chevron-up',
+                down: 'fa-solid fa-chevron-down',
+                previous: 'fa-solid fa-chevron-left',
+                next: 'fa-solid fa-chevron-right',
+                today: 'fa-solid fa-calendar-day',
+                clear: 'fa-solid fa-trash',
+                close: 'fa-solid fa-xmark',
+            },
+        };
+
+        // Pre-fill empty inputs with the user's current local datetime by
+        // default. Callers that render a picker where "now" is NOT a safe
+        // default (e.g., user-defined custom fields) can opt out by setting
+        // data-default-now="false" on the wrapper.
+        var wantsDefaultNow = $wrapper.data('default-now') !== false;
+        if (existingValue === '' && wantsDefaultNow) {
+            options.defaultDate = moment();
+        }
+
+        // data-max-date="today" caps the picker at today (replaces the
+        // bootstrap-datepicker era's data-date-end-date="0d"); any other
+        // value is parsed as a moment-compatible date string.
+        var maxDate = $wrapper.data('max-date');
+        if (maxDate) {
+            options.maxDate = maxDate === 'today' ? moment().endOf('day') : moment(maxDate);
+        }
+
+        $wrapper.datetimepicker(options);
+    }
+
+    // Wires up the linked-pickers pattern for <x-input.date-range>. Each
+    // .js-date-range wrapper holds a .js-date-range-start and .js-date-range-end
+    // datetimepicker; changing one bounds the other so a user can't pick an
+    // end date before the start (or vice versa). Runs after the plain
+    // datetimepicker init above so both instances already exist.
+    function initDateRangeLinking() {
+        $('.js-date-range').each(function () {
+            var $start = $(this).find('.js-date-range-start');
+            var $end = $(this).find('.js-date-range-end');
+            if (!$start.length || !$end.length) {
+                return;
+            }
+            $start.off('dp.change.snipeitDateRange').on('dp.change.snipeitDateRange', function (e) {
+                var picker = $end.data('DateTimePicker');
+                if (picker) {
+                    picker.minDate(e.date);
+                }
+            });
+            $end.off('dp.change.snipeitDateRange').on('dp.change.snipeitDateRange', function (e) {
+                var picker = $start.data('DateTimePicker');
+                if (picker) {
+                    picker.maxDate(e.date);
+                }
+            });
+        });
+    }
+
+    window.snipeitInitDatetimepickers();
+    initDateRangeLinking();
 });
 
 
@@ -838,3 +995,138 @@ $.fn.sort_select_box = function(){
     // clearing any selections
     $("#"+this.attr('id')+" option").attr('selected', true);
 }
+
+
+/*
+ * Data-attribute driven initializers. Blades attach behavior by adding
+ * `data-toggle="..."` (plus supporting data-* attributes) to elements
+ * instead of shipping an inline <script> block. Add new handlers here
+ * as inline scripts get migrated out of blades.
+ */
+$(function () {
+
+    // Sound preview on account/profile. Fires the URL in data-sound-url
+    // when the user toggles the checkbox on.
+    $(document).on('click', '[data-toggle="sound-test"]', function () {
+        if (!$(this).is(':checked')) return;
+        var url = $(this).data('sound-url');
+        if (!url) return;
+        new Audio(url).play();
+    });
+
+    // Confetti preview on account/profile. Same shape as sound-test.
+    $(document).on('click', '[data-toggle="confetti-test"]', function () {
+        if (!$(this).is(':checked')) return;
+
+        var duration = 1500;
+        var animationEnd = Date.now() + duration;
+        var defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
+
+        function randomInRange(min, max) {
+            return Math.random() * (max - min) + min;
+        }
+
+        var interval = setInterval(function () {
+            var timeLeft = animationEnd - Date.now();
+            if (timeLeft <= 0) {
+                return clearInterval(interval);
+            }
+            var particleCount = 50 * (timeLeft / duration);
+            confetti({
+                ...defaults,
+                particleCount,
+                origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 },
+            });
+            confetti({
+                ...defaults,
+                particleCount,
+                origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 },
+            });
+        }, 250);
+    });
+
+    // Live color preview for the nav-link colorpicker on account/profile.
+    // The colorpicker widget itself is initialized by $(".color").colorpicker()
+    // in the default layout; this just wires the changeColor listener.
+    if ($('#nav-link-color').length) {
+        $('#nav-link-color').on('changeColor', function (e) {
+            var color = e.color.toString('rgba');
+            $('.navbar-nav > li > a:link').attr('style', 'color: ' + color + ' !important');
+            $('.btn-theme').attr('style', 'color: ' + color + ' !important');
+        });
+    }
+
+    // Reset the localStorage theme override when the user clicks the
+    // "system default" link (any element carrying data-theme-toggle-clear).
+    document.querySelectorAll('[data-theme-toggle-clear]').forEach(function (el) {
+        el.addEventListener('click', function () {
+            localStorage.removeItem('theme');
+        });
+    });
+
+    // Master checkbox → target field disabled state. Callers pair a
+    // <input type="checkbox" data-toggle="disable-when-unchecked"
+    // data-disable-target="#some-field"> with a target rendered
+    // server-side with the matching @disabled state (avoids FOUC).
+    // Handler keeps them in sync on change.
+    $(document).on('change', '[data-toggle="disable-when-unchecked"]', function () {
+        var target = $(this).data('disable-target');
+        if (target) {
+            $(target).prop('disabled', !$(this).is(':checked'));
+        }
+    });
+
+    // Disable empty REQUIRED inputs on submit so browser HTML5 validation
+    // doesn't block the request before Laravel's form-request validator
+    // gets a chance to return a nicer error. Non-required empties (like a
+    // "Do not change" select with an explicit value="" option) are left
+    // enabled so they submit their intentional empty value. Opt in per
+    // form with data-disable-empty-on-submit.
+    $(document).on('submit', 'form[data-disable-empty-on-submit]', function () {
+        $(this).find(':input[required]').filter(function () { return !this.value; }).attr('disabled', 'disabled');
+    });
+
+    // Master checkbox → toggle every non-disabled checkbox in the closest
+    // form or table (or a caller-specified selector via data-check-scope).
+    // Used by bulk-delete confirmation pages to select or deselect the
+    // whole list of rows at once.
+    $(document).on('change', '[data-toggle="check-all"]', function () {
+        var $master = $(this);
+        var scope = $master.data('check-scope');
+        var $container = scope ? $(scope) : $master.closest('form, table');
+        $container.find('input[type="checkbox"]').not($master).not(':disabled').prop('checked', $master.prop('checked'));
+    });
+
+    // A <select data-gates-submit> disables the submit button(s) in its
+    // form until a value is chosen. Used by users/confirm-bulk-delete
+    // where the operator must pick a status for the deleted users' assets
+    // before the form can be submitted. Runs once on load to reflect
+    // whatever value was pre-selected (old input after a validation
+    // redirect) and re-syncs on change and on select2's own event.
+    $('select[data-gates-submit]').each(function () {
+        var $select = $(this);
+        var $submits = $select.closest('form').find(':submit');
+        var sync = function () {
+            $submits.prop('disabled', ! $select.val());
+        };
+        sync();
+        $select.on('change select2:select', sync);
+    });
+
+    // Auto-focus the first select2 search input on pages that ask for it.
+    // Bulk-checkout uses this so the operator lands directly on the
+    // assets-to-checkout picker and can start typing immediately. Results
+    // are hidden until the first keystroke so the operator doesn't see a
+    // full-list flash on open.
+    if ($('[data-autofocus-select2-search]').length) {
+        setTimeout(function () {
+            var $searchField = $('.select2-search__field');
+            var $results = $('.select2-results');
+            $searchField.focus();
+            $results.hide();
+            $searchField.on('input', function () {
+                $results.show();
+            });
+        }, 0);
+    }
+});

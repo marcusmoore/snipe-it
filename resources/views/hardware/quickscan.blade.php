@@ -34,7 +34,7 @@
                                     <option value="asset_tag">{{ trans('general.asset_tag') }}</option>
                                     <option value="serial" {{ (($settings->unique_serial != '1') ? 'disabled' : '') }}>{{ trans('general.serial_number') }}</option>
                                 </select>
-                                {!! $errors->first('audit_by_field', '<span class="alert-msg" aria-hidden="true"><i class="fas fa-times" aria-hidden="true"></i> :message</span>') !!}
+                                <x-form.error name="audit_by_field" />
 
                                 <p class="help-block">
                                     <x-icon type="tip"/>
@@ -50,7 +50,7 @@
                             <div class="col-md-8">
                                 <input type="text" class="form-control" name="audit_key" id="audit_key" required
                                        value="{{ old('audit_key') }}">
-                                {!! $errors->first('audit_key', '<span class="alert-msg" aria-hidden="true"><i class="fas fa-times" aria-hidden="true"></i> :message</span>') !!}
+                                <x-form.error name="audit_key" />
                             </div>
                         </div>
 
@@ -77,11 +77,14 @@
                         <div class="form-group {{ $errors->has('next_audit_date') ? 'error' : '' }}">
                             <label for="next_audit_date" class="col-md-3 control-label">{{ trans('general.next_audit_date') }}</label>
                             <div class="col-md-9">
-                                <div class="input-group date col-md-5" data-provide="datepicker" data-date-format="yyyy-mm-dd" data-date-clear-btn="true">
-                                    <input type="text" class="form-control" placeholder="{{ trans('general.next_audit_date') }}" name="next_audit_date" id="next_audit_date" value="{{ old('next_audit_date', $next_audit_date) }}">
-                                    <span class="input-group-addon"><x-icon type="calendar" /></span>
-                                </div>
-                                {!! $errors->first('next_audit_date', '<span class="alert-msg" aria-hidden="true"><i class="fas fa-times" aria-hidden="true"></i> :message</span>') !!}
+                                <x-input.datepicker
+                                    id="next_audit_date"
+                                    name="next_audit_date"
+                                    :value="old('next_audit_date', $next_audit_date)"
+                                    :placeholder="trans('general.next_audit_date')"
+                                    col_size_class="col-md-5"
+                                />
+                                <x-form.error name="next_audit_date" />
                             </div>
                         </div>
 
@@ -91,7 +94,7 @@
                             <label for="note" class="col-md-3 control-label">{{ trans('admin/hardware/form.notes') }}</label>
                             <div class="col-md-8">
                                 <textarea class="col-md-6 form-control" id="note" name="note">{{ old('note') }}</textarea>
-                                {!! $errors->first('note', '<span class="alert-msg" aria-hidden="true"><i class="fas fa-times" aria-hidden="true"></i> :message</span>') !!}
+                                <x-form.error name="note" />
                             </div>
                         </div>
 
@@ -130,11 +133,11 @@
                     <table id="audited" class="table table-striped snipe-table">
                         <thead>
                         <tr>
-                            <th>{{ trans('general.audit') }}</th>
-                            <th>{{ trans('general.bulkaudit_status') }}</th>
-                            <th>{{ trans('general.status') }}</th>
-                            <th>{{ trans('general.notes') }}</th>
-                            <th></th>
+                            <th scope="col">{{ trans('general.audit') }}</th>
+                            <th scope="col">{{ trans('general.bulkaudit_status') }}</th>
+                            <th scope="col">{{ trans('general.status') }}</th>
+                            <th scope="col">{{ trans('general.notes') }}</th>
+                            <th scope="col"></th>
                         </tr>
                         <tr id="audit-loader" style="display: none;">
                             <td colspan="3">

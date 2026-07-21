@@ -112,11 +112,29 @@ class AssetImporter extends ItemImporter
 
         $this->item['notes'] = trim($this->findCsvMatch($row, 'asset_notes'));
         $this->item['image'] = basename(trim($this->findCsvMatch($row, 'image')));
-        $this->item['requestable'] = trim(($this->fetchHumanBoolean($this->findCsvMatch($row, 'requestable'))) == 1) ? '1' : 0;
-        $asset->requestable = $this->item['requestable'];
+
+        /**
+         * Boolean fields need special handling. On create, a missing or blank value
+         * defaults to 0. On update, only touch the flag when the CSV actually provides
+         * a value — otherwise a file without the column would silently reset the flag
+         * on every updated asset. The coerced value is also assigned directly to the
+         * model because sanitizeItemForUpdating() strips falsy values, which would
+         * make it impossible to explicitly clear a flag in update mode.
+         */
+        $requestable = trim((string) $this->findCsvMatch($row, 'requestable'));
+        if ((! $this->updating) || ($requestable !== '')) {
+            $this->item['requestable'] = ($this->fetchHumanBoolean($requestable) == 1) ? '1' : 0;
+            $asset->requestable = $this->item['requestable'];
+        }
+
+        $byod = trim((string) $this->findCsvMatch($row, 'byod'));
+        if ((! $this->updating) || ($byod !== '')) {
+            $this->item['byod'] = ($this->fetchHumanBoolean($byod) == 1) ? '1' : 0;
+            $asset->byod = $this->item['byod'];
+        }
+
         $this->item['warranty_months'] = intval(trim($this->findCsvMatch($row, 'warranty_months')));
         $this->item['model_id'] = $this->createOrFetchAssetModel($row);
-        $this->item['byod'] = ($this->fetchHumanBoolean(trim($this->findCsvMatch($row, 'byod'))) == 1) ? '1' : 0;
         $this->item['last_checkin'] = trim($this->findCsvMatch($row, 'last_checkin'));
         $this->item['last_checkout'] = trim($this->findCsvMatch($row, 'last_checkout'));
         $this->item['expected_checkin'] = trim($this->findCsvMatch($row, 'expected_checkin'));
@@ -159,7 +177,9 @@ class AssetImporter extends ItemImporter
         }
 
         if ($this->item['expected_checkin'] != '') {
-            $item['expected_checkin'] = $this->parseOrNullDate('expected_checkin');
+            // datetime format preserves any time portion in the CSV. Date-only
+            // values still parse fine and land as 00:00:00.
+            $item['expected_checkin'] = $this->parseOrNullDate('expected_checkin', 'datetime');
         }
 
         if ($this->item['last_audit_date'] != '') {

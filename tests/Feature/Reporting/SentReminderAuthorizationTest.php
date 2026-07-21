@@ -38,9 +38,9 @@ class SentReminderAuthorizationTest extends TestCase
 
         [$companyA] = Company::factory()->count(2)->create();
 
-        $assignee = User::factory()->create(['email' => 'assignee@example.test', 'company_id' => $companyA->id]);
+        $assignee = User::factory()->forCompany($companyA)->create(['email' => 'assignee@example.test']);
         $asset = Asset::factory()->create(['company_id' => $companyA->id]);
-        $reporter = User::factory()->canViewReports()->create(['company_id' => $companyA->id]);
+        $reporter = User::factory()->canViewReports()->forCompany($companyA)->create();
         $acceptance = CheckoutAcceptance::factory()
             ->pending()
             ->for($asset, 'checkoutable')
@@ -64,7 +64,7 @@ class SentReminderAuthorizationTest extends TestCase
 
         $assignee = User::factory()->create(['email' => 'assignee@example.test']);
         $assetB = Asset::factory()->create(['company_id' => $companyB->id]);
-        $reporter = User::factory()->canViewReports()->create(['company_id' => $companyA->id]);
+        $reporter = User::factory()->canViewReports()->forCompany($companyA)->create();
         $acceptance = CheckoutAcceptance::factory()
             ->pending()
             ->for($assetB, 'checkoutable')
@@ -88,7 +88,7 @@ class SentReminderAuthorizationTest extends TestCase
 
         $assignee = User::factory()->create(['email' => 'assignee@example.test']);
         $assetB = Asset::factory()->create(['company_id' => $companyB->id]);
-        $reporter = User::factory()->canViewReports()->create(['company_id' => null]);
+        $reporter = User::factory()->canViewReports()->withoutCompany()->create();
         $reporter->companies()->sync([$companyA->id]);
 
         $acceptance = CheckoutAcceptance::factory()
@@ -114,7 +114,7 @@ class SentReminderAuthorizationTest extends TestCase
 
         $assignee = User::factory()->create(['email' => 'assignee@example.test']);
         $assetB = Asset::factory()->create(['company_id' => $companyB->id]);
-        $superuser = User::factory()->superuser()->create(['company_id' => $companyA->id]);
+        $superuser = User::factory()->superuser()->forCompany($companyA)->create();
         $acceptance = CheckoutAcceptance::factory()
             ->pending()
             ->for($assetB, 'checkoutable')

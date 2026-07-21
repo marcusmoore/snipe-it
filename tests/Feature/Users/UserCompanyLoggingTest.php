@@ -13,7 +13,7 @@ class UserCompanyLoggingTest extends TestCase
     {
         [$companyA, $companyB] = Company::factory()->count(2)->create();
 
-        $user = User::factory()->create(['company_id' => $companyA->id, 'jobtitle' => 'Engineer']);
+        $user = User::factory()->forCompany($companyA->id)->create(['jobtitle' => 'Engineer']);
         $user->companies()->sync([$companyA->id]);
 
         $actor = User::factory()->superuser()->create();
@@ -49,7 +49,7 @@ class UserCompanyLoggingTest extends TestCase
     {
         [$companyA, $companyB] = Company::factory()->count(2)->create();
 
-        $user = User::factory()->create(['company_id' => $companyA->id]);
+        $user = User::factory()->forCompany($companyA->id)->create();
         $user->companies()->sync([$companyA->id]);
 
         $actor = User::factory()->superuser()->create();
@@ -84,7 +84,7 @@ class UserCompanyLoggingTest extends TestCase
     {
         [$companyA, $companyB, $companyC] = Company::factory()->count(3)->create();
 
-        $user = User::factory()->create(['company_id' => $companyA->id]);
+        $user = User::factory()->forCompany($companyA->id)->create();
         $user->companies()->sync([$companyA->id, $companyB->id]);
 
         $actor = User::factory()->superuser()->create();
@@ -122,7 +122,7 @@ class UserCompanyLoggingTest extends TestCase
     {
         $company = Company::factory()->create();
 
-        $user = User::factory()->create(['company_id' => $company->id]);
+        $user = User::factory()->forCompany($company->id)->create();
         $user->companies()->sync([$company->id]);
 
         $actor = User::factory()->superuser()->create();

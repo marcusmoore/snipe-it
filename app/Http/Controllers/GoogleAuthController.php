@@ -52,6 +52,8 @@ class GoogleAuthController extends Controller
             ->whereNull('deleted_at')
             ->first();
 
+        $user = User::verifyExactUsernameMatch($user, (string) $socialUser->getEmail());
+
         if ($user) {
             if (! $user->activated) {
                 Log::debug('Google user '.$socialUser->getEmail().' is deactivated in Snipe-IT');

@@ -17,10 +17,9 @@
 
         @if ($user->deleted_at!='')
             <div class="col-md-12">
-                <div class="callout callout-warning">
-                    <x-icon type="warning"/>
+                <x-callout type="warning" icon="warning" live="assertive">
                     {{ trans('admin/users/message.user_deleted_warning') }}
-                </div>
+                </x-callout>
             </div>
         @endif
 
@@ -292,31 +291,30 @@
                             </x-well>
 
 
-                            @if ( ($user->activated == '1') && (auth()->user()->isSuperUser()) && ($user->two_factor_active_and_enrolled()) && ($snipeSettings->two_factor_enabled!='0') && ($snipeSettings->two_factor_enabled!=''))
-
-                                <!-- 2FA reset -->
-
-                                <a class="btn btn-theme btn-sm" id="two_factor_reset" style="margin-right: 10px; margin-top: 10px;">
-                                    {{ trans('admin/settings/general.two_factor_reset') }}
-                                </a>
-                                <span id="two_factor_reseticon">
-                                </span>
-                                <span id="two_factor_resetresult">
-                                </span>
-                                <span id="two_factor_resetstatus">
-                                </span>
-                                <br>
-                                <p class="help-block" style="line-height: 1.6;">
-                                    {{ trans('admin/settings/general.two_factor_reset_help') }}
-                                </p>
-
-                            @endif
-
-                                @if ($snipeSettings->isQrEnabled())
-                                    <div class="col-md-12 text-center user-qr-img" style="padding-top: 15px;">
-                                        <img src="{{ route('qr_code/common', ['object_type' => 'users', 'id' => $user->id]) }}" class="img-thumbnail" style="height: 150px; width: 150px; margin-right: 10px;" alt="QR code for {{ $user->display_name }}">
-                                    </div>
+                                <!-- Impersonation button -->
+                                @if (Auth::check() && Auth::user()->mayImpersonate($user))
+                                    <button type="button" class="btn btn-danger hidden-print btn-social btn-block" data-toggle="modal" data-target="#confirmImpersonateModal" data-tooltip="true" data-title="{{ trans('admin/users/general.impersonate_user', ['name' => $user->display_name]) }}">
+                                        <x-icon type="impersonate" class="fa-fw" style="font-size: 17px;"/>
+                                        {{ trans('general.impersonate') }}
+                                        <span class="sr-only">{{ trans('admin/users/general.impersonate_user', ['name' => $user->display_name]) }}</span>
+                                    </button>
                                 @endif
+
+
+
+                                @if (auth()->user()->isSuperUser() && $user->twoFactorResettable())
+                                    <!-- 2FA reset -->
+                                    <button type="button" class="btn btn-theme hidden-print btn-social btn-block" data-toggle="modal" data-target="#confirmTwoFactorResetModal" style="margin-right: 10px; margin-top: 10px;">
+                                        <x-icon type="mobile" class="fa-fw"/>
+                                        {{ trans('admin/settings/general.two_factor_reset') }}
+                                    </button>
+                                    <br>
+                                    <p class="help-block" style="line-height: 1.6;">
+                                        {{ trans('admin/settings/general.two_factor_reset_help') }}
+                                    </p>
+                                @endif
+
+
 
                         </x-page-column>
                         <!-- end side stats well column-->
@@ -360,14 +358,14 @@
                             <thead>
                                 <tr>
                                     @can('checkin', \App\Models\License::class)
-                                    <th class="hidden-print"><input type="checkbox" id="userLicenseSelectAll"></th>
+                                    <th scope="col" class="hidden-print"><input type="checkbox" id="userLicenseSelectAll"></th>
                                     @endcan
-                                    <th>{{ trans('general.name') }}</th>
-                                    <th>{{ trans('admin/licenses/form.license_key') }}</th>
-                                    <th data-footer-formatter="sumFormatter" data-fieldname="purchase_cost">{{ trans('general.purchase_cost') }}</th>
-                                    <th>{{ trans('admin/licenses/form.purchase_order') }}</th>
-                                    <th>{{ trans('general.order_number') }}</th>
-                                    <th class="col-md-1 hidden-print">{{ trans('general.action') }}</th>
+                                    <th scope="col">{{ trans('general.name') }}</th>
+                                    <th scope="col">{{ trans('admin/licenses/form.license_key') }}</th>
+                                    <th scope="col" data-footer-formatter="sumFormatter" data-fieldname="purchase_cost">{{ trans('general.purchase_cost') }}</th>
+                                    <th scope="col">{{ trans('admin/licenses/form.purchase_order') }}</th>
+                                    <th scope="col">{{ trans('general.order_number') }}</th>
+                                    <th scope="col" class="col-md-1 hidden-print">{{ trans('general.action') }}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -434,12 +432,12 @@
                     }'>
                             <thead>
                                 <tr>
-                                    <th>{{ trans('general.id') }}</th>
-                                    <th>{{ trans('general.name') }}</th>
-                                    <th>{{ trans('general.date') }}</th>
-                                    <th data-fieldname="note">{{ trans('general.notes') }}</th>
-                                    <th data-footer-formatter="sumFormatter" data-fieldname="purchase_cost">{{ trans('general.unit_cost') }}</th>
-                                    <th class="hidden-print">{{ trans('general.action') }}</th>
+                                    <th scope="col">{{ trans('general.id') }}</th>
+                                    <th scope="col">{{ trans('general.name') }}</th>
+                                    <th scope="col">{{ trans('general.date') }}</th>
+                                    <th scope="col" data-fieldname="note">{{ trans('general.notes') }}</th>
+                                    <th scope="col" data-footer-formatter="sumFormatter" data-fieldname="purchase_cost">{{ trans('general.unit_cost') }}</th>
+                                    <th scope="col" class="hidden-print">{{ trans('general.action') }}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -482,10 +480,10 @@
                     }'>
                             <thead>
                                 <tr>
-                                    <th class="col-md-3">{{ trans('general.name') }}</th>
-                                    <th class="col-md-2" data-footer-formatter="sumFormatter" data-fieldname="purchase_cost">{{ trans('general.unit_cost') }}</th>
-                                    <th class="col-md-2">{{ trans('general.date') }}</th>
-                                    <th class="col-md-5">{{ trans('general.notes') }}</th>
+                                    <th scope="col" class="col-md-3">{{ trans('general.name') }}</th>
+                                    <th scope="col" class="col-md-2" data-footer-formatter="sumFormatter" data-fieldname="purchase_cost">{{ trans('general.unit_cost') }}</th>
+                                    <th scope="col" class="col-md-2">{{ trans('general.date') }}</th>
+                                    <th scope="col" class="col-md-5">{{ trans('general.notes') }}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -543,7 +541,7 @@
                         <x-table.files object_type="users" :object="$user"/>
                     </x-tabs.pane>
 
-                    <x-tabs.pane name="eulas" :count="$user->accessories()->count()">
+                    <x-tabs.pane name="eulas" :count="$user->eulas()->count()">
                         <x-slot:table_header>
                             {{ trans('general.eula') }}
                         </x-slot:table_header>
@@ -566,11 +564,11 @@
                     }'>
                             <thead>
                                 <tr>
-                                    <th data-visible="true" data-field="icon" style="width: 40px;" class="hidden-xs" data-formatter="iconFormatter">{{ trans('admin/hardware/table.icon') }}</th>
-                                    <th data-visible="true" data-field="item.name">{{ trans('general.item') }}</th>
-                                    <th data-visible="true" data-field="created_at" data-sortable="true" data-formatter="dateDisplayFormatter">{{ trans('general.accepted_date') }}</th>
-                                    <th data-field="note">{{ trans('general.notes') }}</th>
-                                    <th data-field="url" data-formatter="fileDownloadButtonsFormatter">{{ trans('general.download') }}</th>
+                                    <th scope="col" data-visible="true" data-field="icon" style="width: 40px;" class="hidden-xs" data-formatter="iconFormatter">{{ trans('admin/hardware/table.icon') }}</th>
+                                    <th scope="col" data-visible="true" data-field="item.name">{{ trans('general.item') }}</th>
+                                    <th scope="col" data-visible="true" data-field="created_at" data-sortable="true" data-formatter="dateDisplayFormatter">{{ trans('general.accepted_date') }}</th>
+                                    <th scope="col" data-field="note">{{ trans('general.notes') }}</th>
+                                    <th scope="col" data-field="url" data-formatter="fileDownloadButtonsFormatter">{{ trans('general.download') }}</th>
                                 </tr>
                             </thead>
                         </table>
@@ -611,7 +609,8 @@
                         <x-button.clone :item="$user" :route="route('users.clone.show', $user)"/>
                         <x-button.restore :item="$user" :route="route('users.restore.store',  $user)"/>
 
-                        @if($user->allAssignedCount() != '0')
+
+                    @if($user->allAssignedCount() != '0')
                         <a href="{{ route('users.print', $user->id) }}" class="btn btn-sm btn-theme hidden-print" target="_blank" rel="noopener" data-tooltip="true" data-title="{{ trans('admin/users/general.print_assigned') }}">
                             <x-icon type="print" class="fa-fw"/>
                         </a>
@@ -660,6 +659,19 @@
         </x-page-column>
     </x-container>
 
+    @if (Auth::check() && Auth::user()->mayImpersonate($user))
+        @include('users.impersonate-confirm-modal')
+    @endif
+
+    @if (auth()->user()->isSuperUser() && $user->twoFactorResettable())
+        @include('modals.confirm-action', [
+            'modal_name' => 'confirmTwoFactorResetModal',
+            'route' => route('users.two_factor_reset', $user->id),
+            'title' => trans('admin/settings/general.two_factor_reset'),
+            'body' => trans('admin/settings/general.two_factor_reset_confirm', ['name' => $user->display_name]),
+        ])
+    @endif
+
 @endsection
 
 
@@ -671,37 +683,6 @@
     @include ('partials.bootstrap-table', ['simple_view' => true])
 <script nonce="{{ csrf_token() }}">
 $(function () {
-
-  $("#two_factor_reset").click(function(){
-    $("#two_factor_resetrow").removeClass('success');
-    $("#two_factor_resetrow").removeClass('danger');
-    $("#two_factor_resetstatus").html('');
-    $("#two_factor_reseticon").html('<x-icon type="spinner" />');
-    $.ajax({
-      url: '{{ route('api.users.two_factor_reset', ['id'=> $user->id]) }}',
-      type: 'POST',
-      data: {},
-      headers: {
-        "X-Requested-With": 'XMLHttpRequest',
-        "X-CSRF-TOKEN": $('meta[name="csrf-token"]').attr('content')
-      },
-      dataType: 'json',
-
-      success: function (data) {
-        $("#two_factor_reset_toggle").html('').html('<span class="text-danger"><x-icon type="x" /> {{ trans('general.no') }}</span>');
-        $("#two_factor_reseticon").html('');
-          $("#two_factor_resetstatus").html('<span class="text-success"><x-icon type="checkmark" /> ' + data.message + '</span>');
-
-      },
-
-      error: function (data) {
-        $("#two_factor_reseticon").html('');
-        $("#two_factor_reseticon").html('<x-icon type="warning" class="text-danger" />');
-        $('#two_factor_resetstatus').text(data.message);
-      }
-
-    });
-  });
 
     $("#optional_info").on("click",function(){
         $('#optional_details').fadeToggle(100);

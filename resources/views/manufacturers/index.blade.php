@@ -15,14 +15,12 @@
 
                     <form action="{{ route('manufacturers.seed') }}" method="POST">
                       {{ csrf_field() }}
-                    <div class="callout callout-info">
-                      <p>
-                          {{ trans('general.seeding.manufacturers.prompt') }}
+                    <x-callout type="info" role="status">
+                        {{ trans('general.seeding.manufacturers.prompt') }}
                         <button class="btn btn-sm btn-theme hidden-print" rel="noopener">
                           {{ trans('general.seeding.manufacturers.button') }}
                         </button>
-                      </p>
-                    </div>
+                    </x-callout>
                     </form>
 
               @else

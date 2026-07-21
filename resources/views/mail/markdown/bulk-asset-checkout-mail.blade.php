@@ -24,7 +24,7 @@
 @endif
 
 @if ((isset($expected_checkin)) && ($expected_checkin!=''))
-**{{ trans('mail.expecting_checkin_date') }}**: {{ Helper::getFormattedDateObject($expected_checkin, 'date', false) }}
+**{{ trans('mail.expecting_checkin_date') }}**: {{ Helper::getFormattedDateObject($expected_checkin, 'datetime', false) }}
 @endif
 
 @if ($note)

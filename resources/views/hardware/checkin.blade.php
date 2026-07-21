@@ -95,7 +95,7 @@
                                             <div class="col-md-8">
                                                 <input class="form-control" type="text" name="name" aria-label="name"
                                                        id="name" value="{{ old('name', $asset->name) }}"/>
-                                                {!! $errors->first('name', '<span class="alert-msg" aria-hidden="true"><i class="fas fa-times" aria-hidden="true"></i> :message</span>') !!}
+                                                <x-form.error name="name" />
                                             </div>
                                         </div>
 
@@ -113,23 +113,23 @@
                                                     style="width: 100%"
                                                     aria-label="status_id"
                                                 />
-                                                {!! $errors->first('status_id', '<span class="alert-msg" aria-hidden="true"><i class="fas fa-times" aria-hidden="true"></i> :message</span>') !!}
+                                                <x-form.error name="status_id" />
                                             </div>
                                         </div>
 
                                         <div
                                             class="form-group"
-                                            id="set-requestable-wrapper"
+                                            id="requestable-wrapper"
                                             @if (! $show_requestable_toggle) style="display: none;" @endif
                                         >
                                             <div class="col-md-9 col-md-offset-3">
-                                                <label class="form-control" for="set_requestable">
+                                                <label class="form-control" for="requestable">
                                                     <input
                                                         type="checkbox"
                                                         value="1"
-                                                        name="set_requestable"
-                                                        id="set_requestable"
-                                                        @checked((bool) old('set_requestable', false))
+                                                        name="requestable"
+                                                        id="requestable"
+                                                        @checked((bool) old('requestable', $asset->requestable))
                                                     />
                                                     {{ trans('admin/hardware/general.requestable') }}
                                                 </label>
@@ -145,18 +145,14 @@
                                         />
 
                                         <!-- Update actual location  -->
-                                        <div class="form-group">
-                                            <div class="col-md-9 col-md-offset-3">
-                                                <label class="form-control">
-                                                    <input name="update_default_location" type="radio" value="1" checked="checked" aria-label="update_default_location" />
-                                                    {{ trans('admin/hardware/form.asset_location') }}
-                                                </label>
-                                                <label class="form-control">
-                                                    <input name="update_default_location" type="radio" value="0" aria-label="update_default_location" />
-                                                    {{ trans('admin/hardware/form.asset_location_update_default_current') }}
-                                                </label>
-                                            </div>
-                                        </div> <!--/form-group-->
+                                        <x-form.radio-row
+                                            name="update_default_location"
+                                            selected="1"
+                                            :options="[
+                                                '1' => trans('admin/hardware/form.asset_location'),
+                                                '0' => trans('admin/hardware/form.asset_location_update_default_current'),
+                                            ]"
+                                        /> <!--/form-group-->
 
                                         <!-- Checkout/Checkin Date -->
                                         <div class="form-group{{ $errors->has('checkin_at') ? ' has-error' : '' }}">
@@ -166,17 +162,12 @@
 
                                             <div class="col-md-8 col-xs-12 col-sm-12">
                                                 <div class="input-group col-xl-5 col-lg-5 col-md-7 col-sm-9 col-xs-12 required">
-                                                    <div class="input-group date" data-provide="datepicker"
-                                                         data-date-format="yyyy-mm-dd" data-autoclose="true">
-                                                        <input type="text" class="form-control"
-                                                               placeholder="{{ trans('general.select_date') }}"
-                                                               name="checkin_at" id="checkin_at"
-                                                               value="{{ old('checkin_at', date('Y-m-d')) }}">
-                                                        <span class="input-group-addon">
-                                                            <x-icon type="calendar" />
-                                                        </span>
-                                                    </div>
-                                                    {!! $errors->first('checkin_at', '<span class="alert-msg" aria-hidden="true"><i class="fas fa-times" aria-hidden="true"></i> :message</span>') !!}
+                                                    <x-input.datetimepicker
+                                                        id="checkin_at"
+                                                        name="checkin_at"
+                                                        :value="old('checkin_at', date('Y-m-d H:i:s'))"
+                                                    />
+                                                    <x-form.error name="checkin_at" />
                                                 </div>
                                             </div>
                                         </div>
@@ -189,7 +180,7 @@
                                             <div class="col-md-8">
                                                 <textarea class="col-md-6 form-control" id="note" @required($snipeSettings->require_checkinout_notes)
                                                 name="note">{{ old('note', $asset->note) }}</textarea>
-                                                {!! $errors->first('note', '<span class="alert-msg" aria-hidden="true"><i class="fas fa-times" aria-hidden="true"></i> :message</span>') !!}
+                                                <x-form.error name="note" />
                                             </div>
                                         </div>
 
@@ -228,13 +219,18 @@
             const deployableStatusIds = @json($deployable_status_ids);
             const statusSelect = document.getElementById('modal-statuslabel_types')
                 ?? document.querySelector('select[name="status_id"]');
-            const requestableWrapper = document.getElementById('set-requestable-wrapper');
-            const requestableCheckbox = document.getElementById('set_requestable');
+            const requestableWrapper = document.getElementById('requestable-wrapper');
 
             if (!statusSelect || !requestableWrapper) {
                 return;
             }
 
+            // Preserve the checkbox state when hiding: the server only applies the
+            // checkbox value when the selected status is deployable, so a hidden
+            // wrapper never lets us accidentally clear the asset's requestable
+            // flag. Users who bounce the status between deployable and non-
+            // deployable keep their original tick when they land back on a
+            // deployable status.
             const toggleRequestable = function () {
                 const selectedStatusValue = statusSelect.value;
                 const selectedStatusId = Number.parseInt(selectedStatusValue, 10);
@@ -243,10 +239,6 @@
                     && deployableStatusIds.includes(selectedStatusId);
 
                 requestableWrapper.style.display = isDeployable ? '' : 'none';
-
-                if (!isDeployable && requestableCheckbox) {
-                    requestableCheckbox.checked = false;
-                }
             };
 
             statusSelect.addEventListener('change', toggleRequestable);
@@ -258,10 +250,49 @@
             toggleRequestable();
         };
 
+        // Per-user localStorage preference for the requestable default on
+        // checkin. Namespaced by user id so a shared browser session doesn't
+        // leak one user's habit into another user's default. Only takes over
+        // when the field wasn't repopulated from a validation-error redirect
+        // (old() beats the stored preference). On submit we save whatever the
+        // user actually chose, so the preference tracks their real habit.
+        const initializeRequestablePreference = function () {
+            const storageKey = 'snipeit.checkin.requestable_default.' + @json(auth()->id() ?? 'guest');
+            const hadOldInput = @json((bool) old('requestable', false)) || @json(session()->has('_old_input.requestable'));
+            const checkbox = document.getElementById('requestable');
+            const form = checkbox ? checkbox.closest('form') : null;
+
+            if (!checkbox || !form) {
+                return;
+            }
+
+            if (!hadOldInput) {
+                let stored = null;
+                try {
+                    stored = window.localStorage.getItem(storageKey);
+                } catch (e) {
+                    // localStorage may be unavailable (private mode, disabled).
+                }
+                if (stored === '1' || stored === '0') {
+                    checkbox.checked = stored === '1';
+                }
+            }
+
+            form.addEventListener('submit', function () {
+                try {
+                    window.localStorage.setItem(storageKey, checkbox.checked ? '1' : '0');
+                } catch (e) {
+                    // Non-fatal: preference just won't persist this time.
+                }
+            });
+        };
+
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', initializeRequestableToggle);
+            document.addEventListener('DOMContentLoaded', initializeRequestablePreference);
         } else {
             initializeRequestableToggle();
+            initializeRequestablePreference();
         }
     </script>
 @stop

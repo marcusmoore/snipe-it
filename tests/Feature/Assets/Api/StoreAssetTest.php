@@ -188,8 +188,8 @@ class StoreAssetTest extends TestCase
         $this->assertNull($asset->assigned_to, 'assigned_to must not be set via the raw pair');
         $this->assertHasTheseActionLogs($asset, ['create']);
         $this->assertDatabaseMissing('action_logs', [
-            'item_type'   => Asset::class,
-            'item_id'     => $asset->id,
+            'item_type' => Asset::class,
+            'item_id' => $asset->id,
             'action_type' => 'checkout',
         ]);
     }
@@ -596,8 +596,8 @@ class StoreAssetTest extends TestCase
 
         [$companyA, $companyB] = Company::factory()->count(2)->create();
 
-        $actorInCompanyA = User::factory()->createAssets()->for($companyA)->create();
-        $targetUserInCompanyB = User::factory()->for($companyB)->create();
+        $actorInCompanyA = User::factory()->createAssets()->forCompany($companyA)->create();
+        $targetUserInCompanyB = User::factory()->forCompany($companyB)->create();
 
         $model = AssetModel::factory()->create();
         $status = Statuslabel::factory()->readyToDeploy()->create();

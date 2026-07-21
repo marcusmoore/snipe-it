@@ -118,7 +118,7 @@ class AssetsTransformer
             'age' => $asset->purchase_date ? $asset->purchase_date->locale(app()->getLocale())->diffForHumans() : '',
             'last_checkout' => Helper::getFormattedDateObject($asset->last_checkout, 'datetime'),
             'last_checkin' => Helper::getFormattedDateObject($asset->last_checkin, 'datetime'),
-            'expected_checkin' => Helper::getFormattedDateObject($asset->expected_checkin, 'date'),
+            'expected_checkin' => Helper::getFormattedDateObject($asset->expected_checkin, 'datetime'),
             'purchase_cost' => Helper::formatCurrencyOutput($asset->purchase_cost),
             'checkin_counter' => (int) $asset->checkin_counter,
             'checkout_counter' => (int) $asset->checkout_counter,
@@ -135,9 +135,9 @@ class AssetsTransformer
                     $decrypted = Helper::gracefulDecrypt($field, $asset->{$field->db_column});
                     $value = (Gate::allows('assets.view.encrypted_custom_fields')) ? $decrypted : strtoupper(trans('admin/custom_fields/general.encrypted'));
 
-                    if ($field->format == 'DATE') {
+                    if ($field->format == 'DATE' || $field->format == 'DATETIME') {
                         if (Gate::allows('assets.view.encrypted_custom_fields')) {
-                            $value = Helper::getFormattedDateObject($value, 'date', false);
+                            $value = Helper::getFormattedDateObject($value, $field->format == 'DATETIME' ? 'datetime' : 'date', false);
                         } else {
                             $value = strtoupper(trans('admin/custom_fields/general.encrypted'));
                         }
@@ -153,8 +153,8 @@ class AssetsTransformer
                 } else {
                     $value = $asset->{$field->db_column};
 
-                    if (($field->format == 'DATE') && (! is_null($value)) && ($value != '')) {
-                        $value = Helper::getFormattedDateObject($value, 'date', false);
+                    if ((in_array($field->format, ['DATE', 'DATETIME'])) && (! is_null($value)) && ($value != '')) {
+                        $value = Helper::getFormattedDateObject($value, $field->format == 'DATETIME' ? 'datetime' : 'date', false);
                     }
 
                     $fields_array[$field->name] = [
@@ -256,7 +256,7 @@ class AssetsTransformer
             'image' => ($asset->getImageUrl()) ? $asset->getImageUrl() : null,
             'model' => ($asset->model) ? e($asset->model->name) : null,
             'model_number' => (($asset->model) && ($asset->model->model_number)) ? e($asset->model->model_number) : null,
-            'expected_checkin' => Helper::getFormattedDateObject($asset->expected_checkin, 'date'),
+            'expected_checkin' => Helper::getFormattedDateObject($asset->expected_checkin, 'datetime'),
             'location' => ($asset->location) ? e($asset->location->name) : null,
             'status' => ($asset->status) ? $asset->present()->statusMeta : null,
             'assigned_to_self' => ($asset->assigned_to == auth()->id()),
@@ -271,8 +271,8 @@ class AssetsTransformer
                 if (($field->field_encrypted == '0') && ($field->show_in_requestable_list == '1')) {
 
                     $value = $asset->{$field->db_column};
-                    if (($field->format == 'DATE') && (! is_null($value)) && ($value != '')) {
-                        $value = Helper::getFormattedDateObject($value, 'date', false);
+                    if ((in_array($field->format, ['DATE', 'DATETIME'])) && (! is_null($value)) && ($value != '')) {
+                        $value = Helper::getFormattedDateObject($value, $field->format == 'DATETIME' ? 'datetime' : 'date', false);
                     }
 
                     $fields_array[$field->db_column] = ($field->element == 'markdown-textarea') ? Helper::renderMarkdown($value) : e($value);

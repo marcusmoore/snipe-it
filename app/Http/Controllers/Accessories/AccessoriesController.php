@@ -77,6 +77,7 @@ class AccessoriesController extends Controller
         $accessory->created_by = auth()->id();
         $accessory->supplier_id = request('supplier_id');
         $accessory->notes = request('notes');
+        $accessory->requestable = request('requestable', 0);
 
         if ($request->has('use_cloned_image')) {
             $cloned_model_img = Accessory::select('image')->find($request->input('clone_image_from_id'));
@@ -183,6 +184,7 @@ class AccessoriesController extends Controller
             $accessory->qty = request('qty');
             $accessory->supplier_id = request('supplier_id');
             $accessory->notes = request('notes');
+            $accessory->requestable = request('requestable', 0);
 
             $accessory = $request->handleImages($accessory);
 

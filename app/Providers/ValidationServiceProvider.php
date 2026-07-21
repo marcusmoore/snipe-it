@@ -84,6 +84,34 @@ class ValidationServiceProvider extends ServiceProvider
         });
 
         /**
+         * Exists if undeleted
+         *
+         * Validates that a value points at a row that exists AND is not
+         * soft-deleted. Companion to unique_undeleted, used to gate places
+         * where an ID from user input is looked up (checkout targets, etc.).
+         *
+         * Laravel's built-in `exists` rule runs on the raw DB table and does
+         * not filter soft-deleted rows unless the caller adds a `whereNull`
+         * chain by hand. This custom rule bakes that in.
+         *
+         * $parameters[0] is the TABLE NAME to query
+         * $parameters[1] is the COLUMN to match against (defaults to id)
+         *
+         * Usage: `exists_undeleted:users,id`
+         */
+        Validator::extend('exists_undeleted', function ($attribute, $value, $parameters, $validator) {
+            if (count($parameters) < 1) {
+                return false;
+            }
+            $column = $parameters[1] ?? 'id';
+
+            return DB::table($parameters[0])
+                ->where($column, '=', $value)
+                ->whereNull('deleted_at')
+                ->exists();
+        });
+
+        /**
          * Unique if undeleted for two columns
          *
          * Same as unique_undeleted but taking the combination of two columns as unique constrain.
@@ -179,6 +207,67 @@ class ValidationServiceProvider extends ServiceProvider
             }
 
             return true;
+        });
+
+        // Together, these two validators enforce a one-level-deep self-
+        // referential hierarchy. They're split (rather than combined into one
+        // rule) so each failure produces a message that actually describes
+        // the cause — "the parent you picked isn't top-level" reads very
+        // differently from "this row already has children of its own."
+        //
+        // Example usage on a parent_id column self-referencing the same table:
+        //   'parent_id' => 'nullable|integer|exists:companies,id|parent_must_be_top_level:companies,id|must_have_no_children:companies,id'
+
+        // The chosen parent_id (1) must not be the row itself (no self-parent),
+        // and (2) must itself be a top-level row (its own parent_id IS NULL).
+        // Either failure means saving would create depth > 1.
+        Validator::extend('parent_must_be_top_level', function ($attribute, $value, $parameters, $validator) {
+            if (is_null($value) || $value === '') {
+                return true;
+            }
+
+            if (count($parameters) < 2) {
+                throw new \Exception('Required validator parameters: <table>,<primary key>');
+            }
+
+            $table = $parameters[0];
+            $pk = $parameters[1];
+
+            $data = $validator->getData();
+            $modelId = $data[$pk] ?? null;
+
+            if ($modelId && (int) $modelId === (int) $value) {
+                return false;
+            }
+
+            $chosenParentParentId = DB::table($table)->where($pk, $value)->value('parent_id');
+
+            return is_null($chosenParentParentId);
+        });
+
+        // If the row being saved already has children of its own, it can't be
+        // assigned a parent — doing so would push those children to depth 2.
+        // Only checked on update (a brand-new row has no children yet).
+        Validator::extend('must_have_no_children', function ($attribute, $value, $parameters, $validator) {
+            if (is_null($value) || $value === '') {
+                return true;
+            }
+
+            if (count($parameters) < 2) {
+                throw new \Exception('Required validator parameters: <table>,<primary key>');
+            }
+
+            $table = $parameters[0];
+            $pk = $parameters[1];
+
+            $data = $validator->getData();
+            $modelId = $data[$pk] ?? null;
+
+            if (! $modelId) {
+                return true;
+            }
+
+            return ! DB::table($table)->where('parent_id', $modelId)->exists();
         });
 
         // Yo dawg. I heard you like validators.

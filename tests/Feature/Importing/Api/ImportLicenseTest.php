@@ -406,7 +406,7 @@ class ImportLicenseTest extends ImportDataTestCase implements TestsPermissionsRe
     public function import_license_checkout_is_blocked_when_fmcs_companies_differ(): void
     {
         [$companyA, $companyB] = Company::factory()->count(2)->create();
-        $user = User::factory()->for($companyB)->create();
+        $user = User::factory()->forCompany($companyB)->create();
         $this->settings->enableMultipleFullCompanySupport();
 
         $importFileBuilder = ImportFileBuilder::new([
@@ -429,7 +429,7 @@ class ImportLicenseTest extends ImportDataTestCase implements TestsPermissionsRe
     public function import_license_checkout_is_allowed_when_fmcs_companies_match(): void
     {
         $company = Company::factory()->create();
-        $user = User::factory()->for($company)->create();
+        $user = User::factory()->forCompany($company)->create();
         $this->settings->enableMultipleFullCompanySupport();
 
         $importFileBuilder = ImportFileBuilder::new([
@@ -452,7 +452,7 @@ class ImportLicenseTest extends ImportDataTestCase implements TestsPermissionsRe
     public function import_license_checkout_is_blocked_when_floater_disabled_and_user_has_no_company(): void
     {
         $company = Company::factory()->create();
-        $user = User::factory()->create(['company_id' => null]);
+        $user = User::factory()->withoutCompany()->create();
         $this->settings->enableMultipleFullCompanySupport()->disableFloaterMode();
 
         $importFileBuilder = ImportFileBuilder::new([
@@ -475,7 +475,7 @@ class ImportLicenseTest extends ImportDataTestCase implements TestsPermissionsRe
     public function import_license_checkout_is_allowed_when_floater_enabled_and_user_has_no_company(): void
     {
         $company = Company::factory()->create();
-        $user = User::factory()->create(['company_id' => null]);
+        $user = User::factory()->withoutCompany()->create();
         $this->settings->enableFloaterMode();
 
         $importFileBuilder = ImportFileBuilder::new([

@@ -24,8 +24,8 @@
             <h2 class="modal-title">{{ trans('admin/users/table.createuser') }}</h2>
         </div>
         <div class="modal-body">
-            <form action="{{ route('api.users.store') }}" onsubmit="return false">
-                <div class="alert alert-danger" id="modal_error_msg" style="display:none"></div>
+            <form class="form-horizontal" action="{{ route('api.users.store') }}" onsubmit="return false">
+                <x-alert type="danger" id="modal_error_msg" style="display:none"></x-alert>
 
                 @if ($user->companies->isNotEmpty())
                     <input type="hidden" name="company_id" value="{{ $user->companies->first()->id }}">
@@ -57,7 +57,7 @@
                 </div>
 
                 <div class="dynamic-form-row">
-                    <div class="col-md-3 col-xs-12"><label for="modal-last_name">{{ trans('general.last_name') }}:</label></div>
+                    <label for="modal-last_name" class="col-md-3 col-xs-12 control-label">{{ trans('general.last_name') }}:</label>
                     <div class="col-md-9 col-xs-12"><input type="text" name="last_name" id="modal-last_name" class="form-control" maxlength="191" required></div>
                 </div>
 
@@ -71,7 +71,7 @@
                 </div>
 
                 <div class="dynamic-form-row">
-                    <div class="col-md-3 col-xs-12"><label for="modal-username">{{ trans('admin/users/table.username') }}:</label></div>
+                    <label for="modal-username" class="col-md-3 col-xs-12 control-label">{{ trans('admin/users/table.username') }}:</label>
                     <div class="col-md-9 col-xs-12"><input type="text" name="username" id="modal-username" class="form-control" maxlength="191" required></div>
                 </div>
 

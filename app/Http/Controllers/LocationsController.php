@@ -423,11 +423,16 @@ class LocationsController extends Controller
                 }
             }
 
+            if ($valid_count === 0) {
+                return redirect()->route('locations.index')
+                    ->with('error', trans('general.bulk.delete.nothing_deletable', ['object_type' => trans_choice('general.location_plural', 2)]));
+            }
+
             return view('locations/bulk-delete', compact('locations'))->with('valid_count', $valid_count);
         }
 
-        return redirect()->route('models.index')
-            ->with('error', 'You must select at least one model to edit.');
+        return redirect()->route('locations.index')
+            ->with('error', trans('general.bulk.delete.nothing_selected', ['object_type' => trans_choice('general.location_plural', 2)]));
     }
 
     /**

@@ -167,13 +167,27 @@ class AssetModel extends SnipeModel
         // as N+1 queries per model in the transformer loop. Read straight off
         // getAttributes() rather than via __get so we don't accidentally
         // trigger a relation load when the attribute isn't there.
+        // Cast to int at read time: PDO with MySQL default emulated prepares
+        // returns COUNT() values as string, and Eloquent doesn't auto-cast
+        // withCount aliases (no $casts entry for `remaining` / `assets_count`).
+        // A string "0" then slips past a strict === 0 guard AND — because PHP
+        // 8's arithmetic operators auto-convert numeric strings — still hits
+        // DivisionByZeroError at the ratio below.
         $raw = $this->getAttributes();
-        $available = $raw['remaining'] ?? $this->availableAssets()->count();
+        $available = (int) ($raw['remaining'] ?? $this->availableAssets()->count());
         if ($available === 0) {
             return 0;
         }
 
-        $total = $raw['assets_count'] ?? $this->assets()->count();
+        // Also guard the divisor. In principle available > 0 implies
+        // total > 0 (available is a subset of total via the RTD scope), but
+        // a data anomaly — an asset counted by availableAssets but not by
+        // assets, or a race between the two correlated withCount subqueries
+        // — has been observed in production. Return 0 rather than throw.
+        $total = (int) ($raw['assets_count'] ?? $this->assets()->count());
+        if ($total === 0) {
+            return 0;
+        }
 
         return $available / $total * 100;
     }
@@ -285,7 +299,7 @@ class AssetModel extends SnipeModel
     public function isDeletable()
     {
         return Gate::allows('delete', $this)
-            && (($this->assets_count ?? $this->assets()->count()) === 0)
+            && ((int) ($this->assets_count ?? $this->assets()->count()) === 0)
             && ($this->deleted_at == '');
     }
 

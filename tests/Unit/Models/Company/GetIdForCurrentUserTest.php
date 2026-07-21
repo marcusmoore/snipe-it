@@ -29,7 +29,8 @@ class GetIdForCurrentUserTest extends TestCase
     {
         $this->settings->enableMultipleFullCompanySupport();
 
-        $this->actingAs(User::factory()->forCompany(['id' => 2000])->create());
+        $company = Company::factory()->create(['id' => 2000]);
+        $this->actingAs(User::factory()->forCompany($company)->create());
         $this->expectException(ValidationException::class);
         Company::getIdForCurrentUser(1000);
     }
@@ -38,7 +39,7 @@ class GetIdForCurrentUserTest extends TestCase
     {
         $this->settings->enableMultipleFullCompanySupport();
 
-        $this->actingAs(User::factory()->create(['company_id' => null]));
+        $this->actingAs(User::factory()->withoutCompany()->create());
         $this->assertNull(Company::getIdForCurrentUser(1000));
     }
 }

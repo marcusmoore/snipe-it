@@ -91,14 +91,51 @@ Route::group(['prefix' => 'users', 'middleware' => ['auth']], function () {
     )->name('users.acceptance_reminder')->withTrashed();
 
     Route::post(
+        '{user}/impersonate',
+        [
+            Users\ImpersonateController::class,
+            'start',
+        ]
+    )->name('users.impersonate.start');
+
+    Route::post(
+        'impersonate/stop',
+        [
+            Users\ImpersonateController::class,
+            'stop',
+        ]
+    )->name('users.impersonate.stop');
+
+    Route::post(
+        '{user}/two-factor-reset',
+        [
+            Users\UsersController::class,
+            'twoFactorReset',
+        ]
+    )->name('users.two_factor_reset');
+
+    Route::post(
         'bulkedit',
         [
             Users\BulkUsersController::class,
             'edit',
         ]
     )->name('users/bulkedit')
-        ->breadcrumbs(fn (Trail $trail) => $trail->parent('users.index')
-            ->push(trans('general.bulk_checkin_delete'), route('users.index')));
+        ->breadcrumbs(function (Trail $trail) {
+            // Single POST endpoint fans out to several bulk-action confirmation
+            // views (edit, delete, merge, print). Pick the breadcrumb label to
+            // match the action the caller submitted so the user sees the same
+            // wording on the confirmation page and in the crumb.
+            $label = match (request()->input('bulk_actions')) {
+                'edit' => trans('general.bulk_edit'),
+                'delete' => trans('general.bulk_checkin_delete'),
+                'merge' => trans('general.merge_users'),
+                'print' => trans('admin/users/general.print_assigned'),
+                default => trans('general.bulk_actions'),
+            };
+
+            return $trail->parent('users.index')->push($label, route('users.index'));
+        });
 
     Route::post(
         'merge',

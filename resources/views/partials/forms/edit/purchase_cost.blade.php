@@ -13,7 +13,7 @@
             </span>
         </div>
         <div class="col-md-9" style="padding-left: 0px;">
-            {!! $errors->first('purchase_cost', '<span class="alert-msg" aria-hidden="true"><i class="fas fa-times" aria-hidden="true"></i> :message</span>') !!}
+            <x-form.error name="purchase_cost" />
             <p class="help-block">{{ trans('general.purchase_cost_format_help', ['format' => $snipeSettings->digit_separator]) }}</p>
         </div>
     </div>

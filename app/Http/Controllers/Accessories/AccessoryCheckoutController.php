@@ -65,7 +65,6 @@ class AccessoryCheckoutController extends Controller
         $this->authorize('checkout', $accessory);
 
         $target = $this->determineCheckoutTarget();
-        session()->put(['checkout_to_type' => $target]);
 
         if (! $accessory->canCheckoutTo($target)) {
             $targetType = match (class_basename($target)) {

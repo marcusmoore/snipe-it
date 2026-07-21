@@ -81,6 +81,17 @@ class ActionlogsTransformer
                         continue;
                     }
 
+                    // Some log_meta entries carry a scalar value rather than the
+                    // {old, new} field-diff shape (e.g. the "reason" attached to
+                    // an impersonation start). Copy scalars through untouched so
+                    // the transformer doesn't blow up trying to read ->old on a
+                    // string.
+                    if (! is_object($fieldata)) {
+                        $clean_meta[$fieldname] = $fieldata;
+
+                        continue;
+                    }
+
                     $clean_meta[$fieldname]['old'] = $this->clean_field($fieldata->old);
                     $clean_meta[$fieldname]['new'] = $this->clean_field($fieldata->new);
 

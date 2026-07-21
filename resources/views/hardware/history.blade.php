@@ -17,11 +17,10 @@
             <div class="row">
                 <div class="col-md-8 col-md-offset-2">
                     <div class="box box-default">
-                        <div class="alert alert-danger">
-                            <i class="fas fa-exclamation-triangle faa-pulse animated"></i>
-                            <strong>{{ count($status['error']) }} {{ trans('admin/hardware/general.error_messages') }}</strong> </strong>
+                        <x-alert type="danger" icon="warning">
+                            <strong>{{ count($status['error']) }} {{ trans('admin/hardware/general.error_messages') }}</strong>
                             {{ trans('admin/hardware/general.alert_details') }}
-                        </div>
+                        </x-alert>
                     </div>
                 </div>
             </div>
@@ -30,11 +29,10 @@
         <div class="row">
             <div class="col-md-8 col-md-offset-2">
                 <div class="box box-default">
-                    <div class="alert alert-success">
-                        <i class="fas fa-check faa-pulse animated"></i>
+                    <x-alert type="success" icon="checkmark">
                         <strong>{{ count($status['success']) }} {{ trans('admin/hardware/general.success_messages') }} </strong>
                         {{ trans('admin/hardware/general.alert_details') }}
-                    </div>
+                    </x-alert>
                 </div>
             </div>
         </div>
@@ -150,9 +148,9 @@
                         <div class="box-footer text-right">
                             @if (config('app.lock_passwords')===true)
                                 <div class="col-md-12">
-                                    <div class="callout callout-info">
+                                    <x-callout type="info" role="status">
                                         {{ trans('general.feature_disabled') }}
-                                    </div>
+                                    </x-callout>
                                 </div>
 
                             @else

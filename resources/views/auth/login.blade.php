@@ -40,14 +40,14 @@
 
                                 @if ($snipeSettings->login_note)
                                     <div class="col-md-12">
-                                        <div class="alert alert-info">
+                                        <x-alert type="info">
                                             {!!  Helper::parseEscapedMarkedown($snipeSettings->login_note)  !!}
-                                        </div>
+                                        </x-alert>
                                     </div>
                                 @endif
 
                                 <!-- Notifications -->
-                                @include('notifications')
+                                <x-notifications />
 
                                 @if (!config('app.require_saml'))
                                 <div class="col-md-12">
@@ -62,7 +62,10 @@
                                                 {{ trans('admin/users/table.username')  }}
                                             </label>
                                             <input class="form-control" placeholder="{{ trans('admin/users/table.username')  }}" name="username" type="text" id="username" autocomplete="{{ (config('auth.login_autocomplete') === true) ? 'on' : 'off'  }}" autocapitalize="off" spellcheck="false" autofocus>
-                                            {!! $errors->first('username', '<span class="alert-msg" aria-hidden="true"><i class="fas fa-times" aria-hidden="true"></i> :message</span>') !!}
+                                            <x-form.error name="username" />
+                                            <x-form.help name="username">
+                                                <x-icon type="tip"/>
+                                                {{ trans('auth/general.logn_help') }}</x-form.help>
                                         </div>
 
 
@@ -80,7 +83,7 @@
                                                 </span>
                                             </div>
 
-                                            {!! $errors->first('password', '<span class="alert-msg" aria-hidden="true"><i class="fas fa-times" aria-hidden="true"></i> :message</span>') !!}
+                                            <x-form.error name="password" />
                                         </div>
 
                                         <div class="form-group">

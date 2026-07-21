@@ -6,6 +6,7 @@ use App\Actions\CheckoutRequests\CancelCheckoutRequestAction;
 use App\Actions\CheckoutRequests\CreateCheckoutRequestAction;
 use App\Enums\ActionType;
 use App\Exceptions\AssetNotRequestable;
+use App\Models\Accessory;
 use App\Models\Actionlog;
 use App\Models\Asset;
 use App\Models\AssetModel;
@@ -160,11 +161,17 @@ class ViewAssetsController extends Controller
             },
         ])->RequestableModels()->get();
 
-        return view('account/requestable-assets', compact('assets', 'models'));
+        $accessories = Accessory::with('category', 'location', 'requests')
+            ->withCount('checkouts as checkouts_count')
+            ->RequestableAccessories()
+            ->get();
+
+        return view('account/requestable-assets', compact('assets', 'models', 'accessories'));
     }
 
     public function getRequestItem(Request $request, $itemType, $itemId = null, $cancel_by_admin = false, $requestingUser = null): RedirectResponse
     {
+        $data = [];
         $item = null;
         $fullItemType = 'App\\Models\\'.studly_case($itemType);
 
@@ -193,11 +200,12 @@ class ViewAssetsController extends Controller
         $data['item_type'] = $itemType;
         $data['target'] = auth()->user();
 
-        if ($fullItemType == Asset::class) {
-            $data['item_url'] = route('hardware.show', $item->id);
-        } else {
-            $data['item_url'] = route("view/{$itemType}", $item->id);
-        }
+        $data['item_url'] = match ($fullItemType) {
+            Asset::class => route('hardware.show', $item->id),
+            AssetModel::class => route('view/model', $item->id),
+            Accessory::class => route('accessories.show', $item->id),
+            default => route("view/{$itemType}", $item->id),
+        };
 
         $settings = Setting::getSettings();
 
@@ -209,7 +217,7 @@ class ViewAssetsController extends Controller
 
         if (($item_request = $item->isRequestedBy($user)) || ($is_admin && $cancel_by_admin)) {
             $item->cancelRequest($is_admin && $cancel_by_admin ? $requestingUser : null);
-            $data['item_quantity'] = ($item_request) ? $item_request->qty : 1;
+            $data['item_quantity'] = ($item_request) ? $item_request->quantity : 1;
             $logaction->logaction(ActionType::RequestCanceled);
 
             if (($settings->alert_email != '') && ($settings->alerts_enabled == '1') && (! config('app.lock_passwords'))) {
@@ -222,11 +230,12 @@ class ViewAssetsController extends Controller
 
             return redirect()->back()->with('success')->with('success', trans('admin/hardware/message.requests.canceled'));
         } else {
-            if ($fullItemType === Asset::class && is_null(Asset::RequestableAssets()->find($item->id))) {
+            if (($fullItemType === Asset::class && is_null(Asset::RequestableAssets()->find($item->id)))
+                || ($fullItemType === Accessory::class && is_null(Accessory::RequestableAccessories()->find($item->id)))) {
                 return redirect()->back()->with('error', trans('admin/hardware/message.requests.error'));
             }
 
-            $item->request();
+            $item->request($data['item_quantity']);
             if (($settings->alert_email != '') && ($settings->alerts_enabled == '1') && (! config('app.lock_passwords'))) {
                 $logaction->logaction('requested');
                 try {

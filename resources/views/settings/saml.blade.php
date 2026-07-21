@@ -49,7 +49,7 @@
                                     {{ trans('admin/settings/general.saml_enabled') }}
                                 </label>
 
-                                {!! $errors->first('saml_integration', '<span class="alert-msg" aria-hidden="true">:message</span>') !!}
+                                <x-form.error name="saml_integration" />
                                 @if (config('app.lock_passwords') === true)
                                     <p class="text-warning"><i class="fas fa-lock"></i> {{ trans('general.feature_disabled') }}</p>
                                 @endif
@@ -141,7 +141,7 @@
 
                                 </div>
                                 @endif
-                                {!! $errors->first('saml_enabled', '<span class="alert-msg" aria-hidden="true">:message</span>') !!}
+                                <x-form.error name="saml_enabled" />
 
                         </div>
 
@@ -160,7 +160,7 @@
                                     placeholder="https://example.com/idp/metadata"
                                     wrap="off"
                                 />
-                                {!! $errors->first('saml_idp_metadata', '<span class="alert-msg" aria-hidden="true">:message</span>') !!}<br>
+                                <x-form.error name="saml_idp_metadata" /><br>
                                 <button type="button" class="btn btn-theme" id="saml_idp_metadata_upload_btn" {{ $setting->demoMode }}>{{ trans('button.select_file') }}</button>
                                 <input type="file" class="js-uploadFile" id="saml_idp_metadata_upload" @disabled(config('app.lock_passwords'))
                                     data-maxsize="{{ Helper::file_upload_max_size() }}"
@@ -183,7 +183,7 @@
                             <div class="col-md-8">
                                 <input class="form-control" name="saml_attr_mapping_username" type="text" id="saml_attr_mapping_username" value="{{ old('saml_attr_mapping_username', $setting->saml_attr_mapping_username) }}" @disabled(config('app.lock_passwords'))>
                                 <p class="help-block">{{ trans('admin/settings/general.saml_attr_mapping_username_help') }}</p>
-                                {!! $errors->first('saml_attr_mapping_username', '<span class="alert-msg" aria-hidden="true">:message</span>') !!}
+                                <x-form.error name="saml_attr_mapping_username" />
 
                                 @if (config('app.lock_passwords') === true)
                                     <p class="text-warning"><i class="fas fa-lock"></i> {{ trans('general.feature_disabled') }}</p>
@@ -203,7 +203,7 @@
                                     {{ trans('admin/settings/general.saml_forcelogin') }}
                                 </label>
                                 <p class="help-block">{{ trans('admin/settings/general.saml_forcelogin_help') }}</p>
-                                {!! $errors->first('saml_forcelogin', '<span class="alert-msg" aria-hidden="true">:message</span>') !!}
+                                <x-form.error name="saml_forcelogin" />
 
                                 @if (config('app.lock_passwords') === true)
                                     <p class="text-warning"><i class="fas fa-lock"></i> {{ trans('general.feature_disabled') }}</p>
@@ -223,7 +223,7 @@
                                     {{ trans('admin/settings/general.saml_slo') }}
                                 </label>
                                 <p class="help-block">{{ trans('admin/settings/general.saml_slo_help') }}</p>
-                                {!! $errors->first('saml_slo', '<span class="alert-msg" aria-hidden="true">:message</span>') !!}
+                                <x-form.error name="saml_slo" />
 
                                 @if (config('app.lock_passwords') === true)
                                     <p class="text-warning"><i class="fas fa-lock"></i> {{ trans('general.feature_disabled') }}</p>
@@ -244,7 +244,7 @@
                                 wrap="off"
                             />
                             <p class="help-block">{{ trans('admin/settings/general.saml_custom_settings_help') }}</p>
-                            {!! $errors->first('saml_custom_settings', '<span class="alert-msg" aria-hidden="true">:message</span>') !!}
+                            <x-form.error name="saml_custom_settings" />
 
                             @if (config('app.lock_passwords') === true)
                                 <p class="text-warning"><i class="fas fa-lock"></i> {{ trans('general.feature_disabled') }}</p>

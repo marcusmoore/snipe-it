@@ -77,7 +77,7 @@
                                     value="{{ old('google_client_id', $setting->google_client_id) }}"
                                     @disabled(config('app.lock_passwords')===true)
                                 >
-                                {!! $errors->first('google_client_id', '<span class="alert-msg" aria-hidden="true">:message</span>') !!}
+                                <x-form.error name="google_client_id" />
                                 @if (config('app.lock_passwords')===true)
                                     <p class="text-warning"><i class="fas fa-lock" aria-hidden="true"></i> {{ trans('general.feature_disabled') }}</p>
                                 @endif
@@ -97,7 +97,7 @@
                                     <input class="form-control" placeholder="{{ trans('general.example') .'XXXXXXXXXXXX' }}" name="google_client_secret" type="text" id="google_client_secret" value="{{ old('google_client_secret', $setting->google_client_secret) }}">
                                 @endif
 
-                                {!! $errors->first('google_client_secret', '<span class="alert-msg" aria-hidden="true">:message</span>') !!}
+                                <x-form.error name="google_client_secret" />
                                 @if (config('app.lock_passwords')===true)
                                     <p class="text-warning"><i class="fas fa-lock" aria-hidden="true"></i> {{ trans('general.feature_disabled') }}</p>
                                 @endif

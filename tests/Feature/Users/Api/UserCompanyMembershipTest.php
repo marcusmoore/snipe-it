@@ -37,7 +37,7 @@ class UserCompanyMembershipTest extends TestCase
     {
         [$companyA, $companyB, $companyC] = Company::factory()->count(3)->create();
 
-        $user = User::factory()->create(['company_id' => $companyA->id]);
+        $user = User::factory()->forCompany($companyA->id)->create();
         $user->companies()->sync([$companyA->id]);
 
         $actor = User::factory()->superuser()->create();
@@ -63,7 +63,7 @@ class UserCompanyMembershipTest extends TestCase
     {
         [$companyA, $companyB] = Company::factory()->count(2)->create();
 
-        $user = User::factory()->create(['company_id' => $companyA->id]);
+        $user = User::factory()->forCompany($companyA->id)->create();
         $user->companies()->sync([$companyA->id, $companyB->id]);
 
         $actor = User::factory()->superuser()->create();
@@ -85,7 +85,7 @@ class UserCompanyMembershipTest extends TestCase
     public function test_api_response_company_entries_include_tag_color()
     {
         $company = Company::factory()->create(['tag_color' => '#ff0000']);
-        $user = User::factory()->create(['company_id' => $company->id]);
+        $user = User::factory()->forCompany($company->id)->create();
         $user->companies()->sync([$company->id]);
 
         $actor = User::factory()->superuser()->create();
@@ -105,17 +105,12 @@ class UserCompanyMembershipTest extends TestCase
 
         [$companyA, $companyB, $companyC] = Company::factory()->count(3)->create();
 
-        $userInA = User::factory()->create(['first_name' => 'Alice', 'last_name' => 'Alpha', 'company_id' => $companyA->id]);
-        $companyA->users()->syncWithoutDetaching([$userInA->id]);
-
-        $userInB = User::factory()->create(['first_name' => 'Bob', 'last_name' => 'Beta', 'company_id' => $companyB->id]);
-        $companyB->users()->syncWithoutDetaching([$userInB->id]);
-
-        $userInC = User::factory()->create(['first_name' => 'Carol', 'last_name' => 'Gamma', 'company_id' => $companyC->id]);
-        $companyC->users()->syncWithoutDetaching([$userInC->id]);
+        $userInA = User::factory()->forCompany($companyA)->create(['first_name' => 'Alice', 'last_name' => 'Alpha']);
+        $userInB = User::factory()->forCompany($companyB)->create(['first_name' => 'Bob', 'last_name' => 'Beta']);
+        $userInC = User::factory()->forCompany($companyC)->create(['first_name' => 'Carol', 'last_name' => 'Gamma']);
 
         // Acting user belongs to both A and B.
-        $actor = User::factory()->viewUsers()->create(['company_id' => null]);
+        $actor = User::factory()->viewUsers()->withoutCompany()->create();
         $actor->companies()->sync([$companyA->id, $companyB->id]);
 
         $response = $this->actingAsForApi($actor)
@@ -135,13 +130,13 @@ class UserCompanyMembershipTest extends TestCase
 
         $company = Company::factory()->create();
 
-        $assignedUser = User::factory()->create(['company_id' => $company->id]);
+        $assignedUser = User::factory()->forCompany($company->id)->create();
         $company->users()->syncWithoutDetaching([$assignedUser->id]);
 
-        $unassignedUser = User::factory()->create(['company_id' => null]);
+        $unassignedUser = User::factory()->withoutCompany()->create();
 
         // Actor belongs to no companies.
-        $actor = User::factory()->viewUsers()->create(['company_id' => null]);
+        $actor = User::factory()->viewUsers()->withoutCompany()->create();
 
         $response = $this->actingAsForApi($actor)
             ->getJson(route('api.users.index'))
@@ -157,7 +152,7 @@ class UserCompanyMembershipTest extends TestCase
     public function test_patch_with_invalid_company_id_returns_error()
     {
         $company = Company::factory()->create();
-        $user = User::factory()->create(['company_id' => $company->id]);
+        $user = User::factory()->forCompany($company->id)->create();
         $user->companies()->sync([$company->id]);
 
         $actor = User::factory()->superuser()->create();
@@ -170,13 +165,13 @@ class UserCompanyMembershipTest extends TestCase
             ->assertStatusMessageIs('error');
 
         $user->refresh();
-        $this->assertEquals($company->id, $user->company_id, 'company_id should not be changed on invalid input');
+        $this->assertEquals($company->id, $user->legacy_company_id, 'legacy_company_id mirror should not be changed on invalid input');
     }
 
     public function test_put_with_invalid_company_id_returns_error()
     {
         $company = Company::factory()->create();
-        $user = User::factory()->create(['company_id' => $company->id]);
+        $user = User::factory()->forCompany($company->id)->create();
 
         $actor = User::factory()->superuser()->create();
 
@@ -191,13 +186,13 @@ class UserCompanyMembershipTest extends TestCase
             ->assertStatusMessageIs('error');
 
         $user->refresh();
-        $this->assertEquals($company->id, $user->company_id, 'company_id should not be changed on invalid input');
+        $this->assertEquals($company->id, $user->legacy_company_id, 'legacy_company_id mirror should not be changed on invalid input');
     }
 
     public function test_patch_with_invalid_company_ids_returns_error()
     {
         $company = Company::factory()->create();
-        $user = User::factory()->create(['company_id' => $company->id]);
+        $user = User::factory()->forCompany($company->id)->create();
         $user->companies()->sync([$company->id]);
 
         $actor = User::factory()->superuser()->create();

@@ -27,7 +27,7 @@ class ExportUsersTest extends TestCase
         $deptManager = User::factory()->create(['first_name' => 'Mace', 'last_name' => 'Windu']);
 
         $luke = User::factory()
-            ->forCompany(['name' => 'Jedi'])
+            ->forCompany(Company::factory()->create(['name' => 'Jedi']))
             ->forManager(['first_name' => 'Ben', 'last_name' => 'Kenobi'])
             ->forLocation(['name' => 'Space'])
             ->forDepartment(['name' => 'Lightsaber Fighting Dept', 'manager_id' => $deptManager->id])
@@ -139,7 +139,7 @@ class ExportUsersTest extends TestCase
             ['name' => 'Galactic Senate'],
         )->count(2)->create();
 
-        $user = User::factory()->create(['company_id' => $companyA->id]);
+        $user = User::factory()->forCompany($companyA->id)->create();
         $user->companies()->sync([$companyA->id, $companyB->id]);
 
         $this->actingAs(User::factory()->viewUsers()->create())
@@ -159,7 +159,7 @@ class ExportUsersTest extends TestCase
         [$companyA, $companyB] = Company::factory()->count(2)->create();
 
         $actorCompany = $companyA;
-        $inScope  = User::factory()->create();
+        $inScope = User::factory()->create();
         $inScope->companies()->sync([$actorCompany->id]);
 
         $outScope = User::factory()->create();
@@ -182,10 +182,10 @@ class ExportUsersTest extends TestCase
 
         $company = Company::factory()->create();
 
-        $inScope    = User::factory()->create();
+        $inScope = User::factory()->create();
         $inScope->companies()->sync([$company->id]);
 
-        $nullCompany = User::factory()->create(['company_id' => null]);
+        $nullCompany = User::factory()->withoutCompany()->create();
 
         $actor = User::factory()->viewUsers()->create();
         $actor->companies()->sync([$company->id]);
@@ -204,10 +204,10 @@ class ExportUsersTest extends TestCase
 
         $company = Company::factory()->create();
 
-        $inScope    = User::factory()->create();
+        $inScope = User::factory()->create();
         $inScope->companies()->sync([$company->id]);
 
-        $nullCompany = User::factory()->create(['company_id' => null]);
+        $nullCompany = User::factory()->withoutCompany()->create();
 
         $actor = User::factory()->viewUsers()->create();
         $actor->companies()->sync([$company->id]);

@@ -58,7 +58,8 @@ class LicenseImporter extends ItemImporter
 
         $this->item['expiration_date'] = null;
         if ($this->findCsvMatch($row, 'expiration_date') != '') {
-            $this->item['expiration_date'] = date('Y-m-d 00:00:01', strtotime(trim($this->findCsvMatch($row, 'expiration_date'))));
+            $this->item['expiration_date'] = $this->findCsvMatch($row, 'expiration_date');
+            $this->item['expiration_date'] = $this->parseOrNullDate('expiration_date');
         }
         $this->item['license_email'] = trim($this->findCsvMatch($row, 'license_email'));
         $this->item['license_name'] = trim($this->findCsvMatch($row, 'license_name'));
@@ -76,7 +77,8 @@ class LicenseImporter extends ItemImporter
 
         $this->item['termination_date'] = null;
         if ($this->findCsvMatch($row, 'termination_date') != '') {
-            $this->item['termination_date'] = date('Y-m-d 00:00:01', strtotime($this->findCsvMatch($row, 'termination_date')));
+            $this->item['termination_date'] = $this->findCsvMatch($row, 'termination_date');
+            $this->item['termination_date'] = $this->parseOrNullDate('termination_date');
         }
 
         if ($editingLicense) {

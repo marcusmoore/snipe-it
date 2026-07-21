@@ -85,10 +85,12 @@
                         <option value="365">{{ trans('general.last_n_days', ['days' => 365]) }}</option>
                         <option value="custom">{{ trans('general.custom_range') }}…</option>
                     </select>
-                    <div id="customRangePicker" class="input-daterange input-group" style="display:none; width:auto;">
-                        <input type="text" id="chartStartDate" class="form-control input-sm" placeholder="{{ trans('general.select_date') }}" style="width:110px;" autocomplete="off">
-                        <span class="input-group-addon">–</span>
-                        <input type="text" id="chartEndDate" class="form-control input-sm" placeholder="{{ trans('general.select_date') }}" style="width:110px;" autocomplete="off">
+                    <div id="customRangePicker" style="display:none;">
+                        <x-input.date-range
+                            name_start="chartStartDate"
+                            name_end="chartEndDate"
+                            max_date="today"
+                        />
                     </div>
                 </form>
 
@@ -655,17 +657,14 @@ $('#chartTimeRange').on('change', function() {
     }
 });
 
-$('#customRangePicker').datepicker({
-    clearBtn: true,
-    todayHighlight: true,
-    endDate: '0d',
-    format: 'yyyy-mm-dd',
-    keepEmptyValues: true,
-});
-
-$('#customRangePicker').on('changeDate', function() {
-    var start = $('#chartStartDate').val();
-    var end   = $('#chartEndDate').val();
+// dp.change is eonasdan datetimepicker's equivalent of bootstrap-datepicker's
+// changeDate event. Init is handled automatically by data-provide on the
+// component; we only need the read-both-values-and-reload handler here.
+// The inputs use name attributes to satisfy the component prop; JS still
+// reads by id since chartStartDate / chartEndDate are the id values too.
+$('#customRangePicker').on('dp.change', 'input', function() {
+    var start = $('[name="chartStartDate"]').val();
+    var end   = $('[name="chartEndDate"]').val();
     if (start && end && start <= end) {
         loadCharts({ start_date: start, end_date: end });
     }

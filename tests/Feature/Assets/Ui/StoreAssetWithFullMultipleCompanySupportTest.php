@@ -50,7 +50,7 @@ class StoreAssetWithFullMultipleCompanySupportTest extends TestCase
 
         // Create a user with NULL scalar company_id but a pivot membership in $company.
         // This mirrors users created/updated via the web UI, which writes only to the pivot.
-        $user = User::factory()->createAssets()->create(['company_id' => null]);
+        $user = User::factory()->createAssets()->withoutCompany()->create();
         $user->companies()->sync([$company->id]);
 
         $this->actingAs($user)
@@ -80,7 +80,7 @@ class StoreAssetWithFullMultipleCompanySupportTest extends TestCase
         $company = Company::factory()->create();
         $location = Location::factory()->for($company)->create();
 
-        $admin = User::factory()->admin()->for($company)->create();
+        $admin = User::factory()->admin()->forCompany($company)->create();
 
         $this->actingAs($admin)
             ->post(route('hardware.store'), [

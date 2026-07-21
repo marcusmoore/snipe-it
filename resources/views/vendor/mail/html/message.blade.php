@@ -34,14 +34,14 @@
         {{-- $snipeSettings->brand = 3 = Logo + Text  --}}
         @if ($snipeSettings->brand == '3')
 
-            <img style="max-height: 100px; vertical-align:middle;" src="{{ \Storage::disk('public')->url(e($snipeSettings->email_logo)) }}">
+            <img style="max-height: 100px; vertical-align:middle;" src="{{ \Storage::disk('public')->url(e($snipeSettings->email_logo)) }}" alt="">
             <br><br>
             {{ $snipeSettings->site_name }}
             <br><br>
 
         {{-- else if branding type is just logo --}}
         @elseif ($snipeSettings->brand == '2')
-           <img style="max-height: 100px; vertical-align:middle;" src="{{ \Storage::disk('public')->url(e($snipeSettings->email_logo)) }}">
+           <img style="max-height: 100px; vertical-align:middle;" src="{{ \Storage::disk('public')->url(e($snipeSettings->email_logo)) }}" alt="">
         @endif
 
     @else

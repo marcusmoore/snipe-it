@@ -208,10 +208,6 @@ class BulkUsersController extends Controller
             $this->update_array['manager_id'] = null;
         }
 
-        if ($request->input('null_company_ids') == '1') {
-            $this->update_array['company_id'] = null;
-        }
-
         if ($request->input('null_start_date') == '1') {
             $this->update_array['start_date'] = null;
         }
@@ -271,15 +267,19 @@ class BulkUsersController extends Controller
         if (! $manager_conflict) {
             $this->conditionallyAddItem('manager_id');
         }
-        // Prepare company pivot changes upfront so we can include company_id in the per-user save.
         $bulkCompanyIds = array_filter(array_map('intval', (array) $request->input('company_ids', [])));
         $clearCompanies = $request->input('null_company_ids') == '1';
         $allowedIds = [];
 
         if ($bulkCompanyIds || $clearCompanies) {
             $allowedIds = Company::getIdsForCurrentUser($bulkCompanyIds);
-            // Include scalar company_id in the update array for display/backward compat.
-            $this->update_array['company_id'] = $allowedIds[0] ?? null;
+        }
+
+        // Floater-mode self-elevation guard (#19200). See User::canGrantFloaterStatus.
+        $wouldClear = $clearCompanies || ($bulkCompanyIds && empty($allowedIds));
+        if ($wouldClear && ! auth()->user()->canGrantFloaterStatus()) {
+            return redirect()->route('users.index')
+                ->with('error', trans('admin/users/general.cannot_make_floater'));
         }
 
         // Save per-user so UserObserver::updating() fires and all field changes are written
@@ -319,6 +319,7 @@ class BulkUsersController extends Controller
                     $user->companies()->detach(Company::getIdsForCurrentUser(
                         $user->companies()->pluck('companies.id')->toArray()
                     ));
+                    $user->syncLegacyCompanyIdMirror();
                 } else {
                     $user->syncCompaniesWithLogging($allowedIds);
                 }
@@ -585,6 +586,7 @@ class BulkUsersController extends Controller
             $mergedCompanyIds = $user_to_merge->companies()->pluck('companies.id')->toArray();
             if (! empty($mergedCompanyIds)) {
                 $merge_into_user->companies()->syncWithoutDetaching($mergedCompanyIds);
+                $merge_into_user->syncLegacyCompanyIdMirror();
             }
 
             $user_to_merge->delete();

@@ -24,16 +24,16 @@ class LocationParentCompanyTest extends TestCase
     {
         $this->settings->enableMultipleFullCompanySupport();
 
-        $acme   = Company::factory()->create(['name' => 'Acme']);
+        $acme = Company::factory()->create(['name' => 'Acme']);
         $globex = Company::factory()->create(['name' => 'Globex']);
 
         $parentLocation = Location::factory()->create(['company_id' => $acme->id]);
 
         $this->actingAsForApi(User::factory()->superuser()->create())
             ->postJson(route('api.locations.store'), [
-                'name'       => 'Location B',
+                'name' => 'Location B',
                 'company_id' => $globex->id,
-                'parent_id'  => $parentLocation->id,
+                'parent_id' => $parentLocation->id,
             ])
             ->assertOk()
             ->assertStatusMessageIs('error');
@@ -51,9 +51,9 @@ class LocationParentCompanyTest extends TestCase
 
         $this->actingAsForApi(User::factory()->superuser()->create())
             ->postJson(route('api.locations.store'), [
-                'name'       => 'Location B',
+                'name' => 'Location B',
                 'company_id' => $acme->id,
-                'parent_id'  => $parentLocation->id,
+                'parent_id' => $parentLocation->id,
             ])
             ->assertOk()
             ->assertStatusMessageIs('success');
@@ -65,16 +65,16 @@ class LocationParentCompanyTest extends TestCase
     {
         $this->settings->disableMultipleFullCompanySupport();
 
-        $acme   = Company::factory()->create(['name' => 'Acme']);
+        $acme = Company::factory()->create(['name' => 'Acme']);
         $globex = Company::factory()->create(['name' => 'Globex']);
 
         $parentLocation = Location::factory()->create(['company_id' => $acme->id]);
 
         $this->actingAsForApi(User::factory()->superuser()->create())
             ->postJson(route('api.locations.store'), [
-                'name'       => 'Location B',
+                'name' => 'Location B',
                 'company_id' => $globex->id,
-                'parent_id'  => $parentLocation->id,
+                'parent_id' => $parentLocation->id,
             ])
             ->assertOk()
             ->assertStatusMessageIs('success');
@@ -90,17 +90,17 @@ class LocationParentCompanyTest extends TestCase
     {
         $this->settings->enableMultipleFullCompanySupport();
 
-        $acme   = Company::factory()->create(['name' => 'Acme']);
+        $acme = Company::factory()->create(['name' => 'Acme']);
         $globex = Company::factory()->create(['name' => 'Globex']);
 
         $parentLocation = Location::factory()->create(['company_id' => $acme->id]);
-        $location       = Location::factory()->create(['name' => 'Location B', 'company_id' => $globex->id]);
+        $location = Location::factory()->create(['name' => 'Location B', 'company_id' => $globex->id]);
 
         $this->actingAsForApi(User::factory()->superuser()->create())
             ->patchJson(route('api.locations.update', $location), [
-                'name'       => 'Location B',
+                'name' => 'Location B',
                 'company_id' => $globex->id,
-                'parent_id'  => $parentLocation->id,
+                'parent_id' => $parentLocation->id,
             ])
             ->assertOk()
             ->assertStatusMessageIs('error');
@@ -113,11 +113,11 @@ class LocationParentCompanyTest extends TestCase
         // Ensures the check fires even when company_id is not included in the request.
         $this->settings->enableMultipleFullCompanySupport();
 
-        $acme   = Company::factory()->create(['name' => 'Acme']);
+        $acme = Company::factory()->create(['name' => 'Acme']);
         $globex = Company::factory()->create(['name' => 'Globex']);
 
         $parentLocation = Location::factory()->create(['company_id' => $acme->id]);
-        $location       = Location::factory()->create(['name' => 'Location B', 'company_id' => $globex->id]);
+        $location = Location::factory()->create(['name' => 'Location B', 'company_id' => $globex->id]);
 
         $this->actingAsForApi(User::factory()->superuser()->create())
             ->patchJson(route('api.locations.update', $location), [
@@ -136,13 +136,13 @@ class LocationParentCompanyTest extends TestCase
         $acme = Company::factory()->create(['name' => 'Acme']);
 
         $parentLocation = Location::factory()->create(['company_id' => $acme->id]);
-        $location       = Location::factory()->create(['name' => 'Location B', 'company_id' => $acme->id]);
+        $location = Location::factory()->create(['name' => 'Location B', 'company_id' => $acme->id]);
 
         $this->actingAsForApi(User::factory()->superuser()->create())
             ->patchJson(route('api.locations.update', $location), [
-                'name'       => 'Location B',
+                'name' => 'Location B',
                 'company_id' => $acme->id,
-                'parent_id'  => $parentLocation->id,
+                'parent_id' => $parentLocation->id,
             ])
             ->assertOk()
             ->assertStatusMessageIs('success');
@@ -154,17 +154,17 @@ class LocationParentCompanyTest extends TestCase
     {
         $this->settings->disableMultipleFullCompanySupport();
 
-        $acme   = Company::factory()->create(['name' => 'Acme']);
+        $acme = Company::factory()->create(['name' => 'Acme']);
         $globex = Company::factory()->create(['name' => 'Globex']);
 
         $parentLocation = Location::factory()->create(['company_id' => $acme->id]);
-        $location       = Location::factory()->create(['name' => 'Location B', 'company_id' => $globex->id]);
+        $location = Location::factory()->create(['name' => 'Location B', 'company_id' => $globex->id]);
 
         $this->actingAsForApi(User::factory()->superuser()->create())
             ->patchJson(route('api.locations.update', $location), [
-                'name'       => 'Location B',
+                'name' => 'Location B',
                 'company_id' => $globex->id,
-                'parent_id'  => $parentLocation->id,
+                'parent_id' => $parentLocation->id,
             ])
             ->assertOk()
             ->assertStatusMessageIs('success');

@@ -94,7 +94,7 @@ class Asset extends Depreciable
         'eol_explicit' => 'boolean',
         'last_checkout' => 'datetime',
         'last_checkin' => 'datetime',
-        'expected_checkin' => 'datetime:m-d-Y',
+        'expected_checkin' => 'datetime',
         'last_audit_date' => 'datetime',
         'next_audit_date' => 'datetime:m-d-Y',
         'model_id' => 'integer',
@@ -241,11 +241,18 @@ class Asset extends Depreciable
         });
     }
 
-    // To properly set the expected checkin as Y-m-d
     public function setExpectedCheckinAttribute($value)
     {
         if ($value == '') {
             $value = null;
+        }
+        // Normalise to Y-m-d H:i:s so date-only strings ("2026-07-17") end
+        // up as valid datetime values in the DB. On MariaDB the DATETIME
+        // column would widen automatically, but SQLite (used in tests) is
+        // dynamically typed and stores the raw string, which then fails
+        // datetime BETWEEN comparisons in the DueForCheckin scope.
+        if ($value !== null && $value !== '') {
+            $value = Carbon::parse($value)->format('Y-m-d H:i:s');
         }
         $this->attributes['expected_checkin'] = $value;
     }
@@ -419,7 +426,7 @@ class Asset extends Depreciable
     protected function expectedCheckinFormattedDate(): Attribute
     {
         return Attribute::make(
-            get: fn (mixed $value, array $attributes) => array_key_exists('expected_checkin', $attributes) ? Helper::getFormattedDateObject($attributes['expected_checkin'], 'date', false) : null,
+            get: fn (mixed $value, array $attributes) => array_key_exists('expected_checkin', $attributes) ? Helper::getFormattedDateObject($attributes['expected_checkin'], 'datetime', false) : null,
         );
     }
 
@@ -1666,11 +1673,15 @@ class Asset extends Depreciable
     public function scopeDueForCheckin($query, $settings)
     {
         $interval = (int) $settings->due_checkin_days ?? 0;
-        $today = Carbon::now();
-        $interval_date = $today->copy()->addDays($interval)->format('Y-m-d');
+        // expected_checkin is a DATETIME. Use startOfDay/endOfDay explicitly so
+        // an asset due back on the last day of the interval at (say) 2:30 PM
+        // still falls inside the range. Formatting only Y-m-d silently widens
+        // to midnight and would exclude anything later that day.
+        $windowStart = Carbon::now()->startOfDay();
+        $windowEnd = Carbon::now()->addDays($interval)->endOfDay();
 
         return $query->whereNotNull('assets.expected_checkin')
-            ->whereBetween('assets.expected_checkin', [$today->format('Y-m-d'), $interval_date])
+            ->whereBetween('assets.expected_checkin', [$windowStart, $windowEnd])
             ->where('assets.archived', '=', 0)
             ->whereNotNull('assets.assigned_to')
             ->NotArchived();
@@ -1687,8 +1698,12 @@ class Asset extends Depreciable
      */
     public function scopeOverdueForCheckin($query)
     {
+        // expected_checkin is a DATETIME, so "overdue" is time-aware: an
+        // asset due back this morning at 09:00 is overdue by 09:01. Compare
+        // against Carbon::now() instead of today's midnight so mid-day
+        // dashboard views reflect what's actually late right now.
         return $query->whereNotNull('assets.expected_checkin')
-            ->where('assets.expected_checkin', '<', Carbon::now()->format('Y-m-d'))
+            ->where('assets.expected_checkin', '<', Carbon::now())
             ->where('assets.archived', '=', 0)
             ->whereNotNull('assets.assigned_to')
             ->NotArchived();

@@ -129,7 +129,7 @@ class ComponentCheckoutTest extends TestCase implements TestsFullMultipleCompani
 
         [$companyA, $companyB] = Company::factory()->count(2)->create();
 
-        $userForCompanyA = User::factory()->for($companyA)->create();
+        $userForCompanyA = User::factory()->forCompany($companyA)->create();
         $assetForCompanyB = Asset::factory()->for($companyB)->create();
         $componentForCompanyB = Component::factory()->for($companyB)->create();
 
@@ -147,7 +147,7 @@ class ComponentCheckoutTest extends TestCase implements TestsFullMultipleCompani
 
         [$companyA, $companyB] = Company::factory()->count(2)->create();
 
-        $userInCompanyA = User::factory()->checkoutComponents()->for($companyA)->create();
+        $userInCompanyA = User::factory()->checkoutComponents()->forCompany($companyA)->create();
         $componentInCompanyA = Component::factory()->for($companyA)->create(['qty' => 1]);
         $assetInCompanyB = Asset::factory()->for($companyB)->create();
 
@@ -183,7 +183,7 @@ class ComponentCheckoutTest extends TestCase implements TestsFullMultipleCompani
 
         [$companyA, $companyB] = Company::factory()->count(2)->create();
 
-        $superuser = User::factory()->superuser()->create(['company_id' => null]);
+        $superuser = User::factory()->superuser()->withoutCompany()->create();
         $componentInCompanyA = Component::factory()->for($companyA)->create(['qty' => 1]);
         $assetInCompanyB = Asset::factory()->for($companyB)->create();
 

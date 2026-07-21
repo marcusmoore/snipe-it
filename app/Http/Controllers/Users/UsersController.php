@@ -834,4 +834,40 @@ class UsersController extends Controller
 
         return redirect()->back()->with('error', trans('general.pwd_reset_not_sent'));
     }
+
+    public function twoFactorReset(User $user): RedirectResponse
+    {
+        $this->authorize('update', $user);
+
+        if (! $user->twoFactorResettable()) {
+            return redirect()->back()->with('error', trans('general.unauthorized'));
+        }
+
+        if (! auth()->user()->can('canEditAuthFields', $user) || ! auth()->user()->can('editableOnDemo')) {
+            return redirect()->back()->with('error', trans('general.unauthorized'));
+        }
+
+        try {
+            $user->two_factor_secret = null;
+            $user->two_factor_enrolled = 0;
+            $user->saveQuietly();
+
+            $log = new Actionlog;
+            $log->target_type = User::class;
+            $log->target_id = $user->id;
+            $log->item_type = User::class;
+            $log->item_id = $user->id;
+            $log->created_at = date('Y-m-d H:i:s');
+            $log->created_by = auth()->id();
+            $log->logaction('2FA reset');
+
+            return redirect()->route('users.show', $user)
+                ->with('success', trans('admin/settings/general.two_factor_reset_success'));
+        } catch (\Exception $e) {
+            Log::error($e);
+
+            return redirect()->route('users.show', $user)
+                ->with('error', trans('admin/settings/general.two_factor_reset_error'));
+        }
+    }
 }

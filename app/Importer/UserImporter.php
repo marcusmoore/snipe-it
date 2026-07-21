@@ -90,7 +90,9 @@ class UserImporter extends ItemImporter
         $this->item['state'] = trim($this->findCsvMatch($row, 'state'));
         $this->item['country'] = trim($this->findCsvMatch($row, 'country'));
         $this->item['start_date'] = trim($this->findCsvMatch($row, 'start_date'));
+        $this->item['start_date'] = $this->parseOrNullDate('start_date');
         $this->item['end_date'] = trim($this->findCsvMatch($row, 'end_date'));
+        $this->item['end_date'] = $this->parseOrNullDate('end_date');
         $this->item['zip'] = trim($this->findCsvMatch($row, 'zip'));
         $this->item['activated'] = ($this->fetchHumanBoolean(trim($this->findCsvMatch($row, 'activated'))) == 1) ? '1' : 0;
         $this->item['employee_num'] = trim($this->findCsvMatch($row, 'employee_num'));
@@ -99,8 +101,6 @@ class UserImporter extends ItemImporter
         $this->item['remote'] = ($this->fetchHumanBoolean(trim($this->findCsvMatch($row, 'remote'))) == 1) ? '1' : 0;
         $this->item['vip'] = ($this->fetchHumanBoolean(trim($this->findCsvMatch($row, 'vip'))) == 1) ? '1' : 0;
         $this->item['autoassign_licenses'] = ($this->fetchHumanBoolean(trim($this->findCsvMatch($row, 'autoassign_licenses'))) == 1) ? '1' : 0;
-
-        $this->handleEmptyStringsForDates();
 
         $user_department = trim($this->findCsvMatch($row, 'department'));
         if ($this->shouldUpdateField($user_department)) {
@@ -167,6 +167,7 @@ class UserImporter extends ItemImporter
             // Sync company pivot when companies were specified in this row.
             if (! empty($companyIds)) {
                 $user->companies()->sync($companyIds);
+                $user->syncLegacyCompanyIdMirror();
             }
 
             // Update the location of any assets checked out to this user
@@ -195,6 +196,15 @@ class UserImporter extends ItemImporter
 
         $this->log('No matching user, creating one');
 
+        // Floater-mode escalation guard (#19200). See User::canGrantFloaterStatus.
+        if (Auth::check() && empty($companyIds) && ! auth()->user()->canGrantFloaterStatus()) {
+            $msg = trans('admin/users/general.cannot_make_floater');
+            $this->log('Skipping '.$this->item['username'].': '.$msg);
+            $this->addErrorToBag(new User, 'company_id', $msg);
+
+            return;
+        }
+
         if (! $this->validateFmcsLocation($this->item['location_id'] ?? null, $companyIds)) {
             $msg = trans('validation.fmcs_location', [
                 'location' => Location::find($this->item['location_id'])?->name ?? $this->item['location_id'],
@@ -221,6 +231,7 @@ class UserImporter extends ItemImporter
             // for that case and adds any additional companies for multi-company rows.
             if (! empty($companyIds)) {
                 $user->companies()->sync($companyIds);
+                $user->syncLegacyCompanyIdMirror();
             }
 
             if (($user->email) && ($user->activated == '1')) {
@@ -322,16 +333,5 @@ class UserImporter extends ItemImporter
         }
 
         return in_array($location->company_id, $companyIds);
-    }
-
-    private function handleEmptyStringsForDates(): void
-    {
-        if ($this->item['start_date'] === '') {
-            $this->item['start_date'] = null;
-        }
-
-        if ($this->item['end_date'] === '') {
-            $this->item['end_date'] = null;
-        }
     }
 }

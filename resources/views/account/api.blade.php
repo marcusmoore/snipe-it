@@ -16,9 +16,9 @@
                 @endif
             </div>
             <div class="col-md-4">
-                <div class="alert alert-warning"><i class="fas fa-exclamation-triangle faa-pulse animated"></i>
+                <x-alert type="warning" icon="warning">
                     {{ trans('account/general.api_key_warning') }}
-                </div>
+                </x-alert>
 
                 <p>{{ trans('account/general.api_base_url') }}<br>
                     <code>{{ url('/api/v1') }}{!! trans('account/general.api_base_url_endpoint') !!}</code></p>

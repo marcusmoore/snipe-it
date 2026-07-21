@@ -18,6 +18,8 @@ use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -98,6 +100,29 @@ class Helper
         if ($str) {
             return $Parsedown->text(strip_tags($str));
         }
+    }
+
+    /**
+     * Slice an in-memory Collection into a LengthAwarePaginator using the
+     * page + perPage values normalized by SetPaginationDefaults middleware.
+     *
+     * Selectlist endpoints that fetch the full set up-front (so they can
+     * post-process — e.g. hierarchy indenting in Companies / Locations) need
+     * to wrap the result in a paginator before handing it to SelectlistTransformer.
+     * This helper avoids re-deriving the page math at every call site, and
+     * inherits the middleware's bounds check against config('app.max_results').
+     */
+    public static function paginateCollection(Collection $items): LengthAwarePaginator
+    {
+        $page = app('api_current_page');
+        $perPage = app('api_limit_value');
+
+        return new LengthAwarePaginator(
+            $items->forPage($page, $perPage)->values(),
+            $items->count(),
+            $perPage,
+            $page,
+        );
     }
 
     public static function parseEscapedMarkedownInline($str = null)
@@ -727,6 +752,14 @@ class Helper
         $keys = array_keys(CustomField::PREDEFINED_FORMATS);
         $stuff = array_combine($keys, $keys);
 
+        // Display-only label swap. 'ANY' as a label reads like the format
+        // requires something; 'ANY/NONE' makes it clear that no validation
+        // is applied. The KEY stays 'ANY' so submitted form values,
+        // JS lookups, and stored/compared values all keep working.
+        if (isset($stuff['ANY'])) {
+            $stuff['ANY'] = 'ANY/NONE';
+        }
+
         return $stuff;
     }
 
@@ -825,7 +858,7 @@ class Helper
 
         foreach ($consumables as $consumable) {
             $avail = $consumable->numRemaining();
-            if ($avail <= ($consumable->min_amt) + $alert_threshold) {
+            if ($avail < ($consumable->min_amt) + $alert_threshold) {
                 if ($consumable->qty > 0) {
                     $percent = number_format((($avail / $consumable->qty) * 100), 0);
                 } else {
@@ -844,7 +877,7 @@ class Helper
 
         foreach ($accessories as $accessory) {
             $avail = $accessory->qty - $accessory->checkouts_count;
-            if ($avail <= ($accessory->min_amt) + $alert_threshold) {
+            if ($avail < ($accessory->min_amt) + $alert_threshold) {
                 if ($accessory->qty > 0) {
                     $percent = number_format((($avail / $accessory->qty) * 100), 0);
                 } else {
@@ -863,7 +896,7 @@ class Helper
 
         foreach ($components as $component) {
             $avail = $component->numRemaining();
-            if ($avail <= ($component->min_amt) + $alert_threshold) {
+            if ($avail < ($component->min_amt) + $alert_threshold) {
                 if ($component->qty > 0) {
                     $percent = number_format((($avail / $component->qty) * 100), 0);
                 } else {
@@ -886,7 +919,7 @@ class Helper
             $total_owned = $asset_model->assets_count; // requires the withCount() clause in the initial query!
             $avail = $asset_model->available_assets_count; // requires the withCount() clause in the initial query!
 
-            if ($avail <= ($asset_model->min_amt) + $alert_threshold) {
+            if ($avail < ($asset_model->min_amt) + $alert_threshold) {
                 if ($avail > 0) {
                     $percent = number_format((($avail / $total_owned) * 100), 0);
                 } else {
@@ -904,7 +937,7 @@ class Helper
 
         foreach ($licenses as $license) {
             $avail = $license->remaincount();
-            if ($avail <= ($license->min_amt) + $alert_threshold) {
+            if ($avail < ($license->min_amt) + $alert_threshold) {
                 if ($avail > 0) {
                     $percent = number_format((($avail / $license->min_amt) * 100), 0);
                 } else {
@@ -1064,6 +1097,14 @@ class Helper
      */
     public static function checkIfRequired($class, $field)
     {
+        // Transient forms with no bound model (e.g. bulk-checkout) can't be
+        // introspected for required-ness; treat the field as not required
+        // rather than crashing on `null::rules()`. Callers that need the
+        // real required flag will pass an $item.
+        if (! $class) {
+            return false;
+        }
+
         $rules = $class::rules();
         foreach ($rules as $rule_name => $rule) {
             if ($rule_name == $field) {
@@ -1084,6 +1125,33 @@ class Helper
         }
 
         return false;
+    }
+
+    /**
+     * Return the numeric max length declared for a field in the model's
+     * validation rules (looks for `max:N`). Returns null when the model, field,
+     * or `max:` rule can't be found — callers should fall back to whatever
+     * default they want. Used by `<x-form.row>` to auto-cap text inputs to
+     * the DB column width without every callsite having to pass maxlength.
+     */
+    public static function fieldMaxLength($class, string $field): ?int
+    {
+        if (! $class) {
+            return null;
+        }
+
+        $rules = $class::rules();
+        $rule = $rules[$field] ?? null;
+        if ($rule === null) {
+            return null;
+        }
+
+        $rule_string = is_array($rule) ? implode('|', $rule) : $rule;
+        if (preg_match('/(?:^|\|)max:(\d+)/', $rule_string, $matches)) {
+            return (int) $matches[1];
+        }
+
+        return null;
     }
 
     /**
@@ -1755,9 +1823,11 @@ class Helper
                         // Users belong to companies via the many-to-many pivot (company_user).
                         // canReceiveFromCompany() returns true only when the user's pivot
                         // contains the location's company, so !canReceiveFromCompany() is
-                        // the correct mismatch signal.
+                        // the correct mismatch signal. Pass $location_company through as
+                        // ?int — casting null to (int) would coerce it to 0 and miss the
+                        // null-company branch inside the method.
                         if ($item instanceof User) {
-                            $isMismatch = ! $item->canReceiveFromCompany((int) $location_company);
+                            $isMismatch = ! $item->canReceiveFromCompany($location_company === null ? null : (int) $location_company);
                         } elseif ($item->company_id == $location_company) {
                             $isMismatch = false;
                         } elseif (is_null($item->company_id) || is_null($location_company)) {

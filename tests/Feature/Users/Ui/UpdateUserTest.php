@@ -25,6 +25,55 @@ class UpdateUserTest extends TestCase
             ->assertOk();
     }
 
+    public function test_edit_form_does_not_leak_company_id_into_location_select()
+    {
+        // Regression: the company_ids <select> looped with `@foreach (... as $company_id)`,
+        // and PHP's foreach doesn't scope the loop variable, so $company_id persisted into
+        // the outer view. The @include of location-select then inherited it and emitted
+        // data-company-id on the location dropdown, which restricted the AJAX call to
+        // only that one company's locations.
+        $companyA = Company::factory()->create();
+        $target = User::factory()->create();
+        $target->companies()->sync([$companyA->id]);
+
+        $this->actingAs(User::factory()->superuser()->create());
+
+        $html = $this->get(route('users.edit', $target))->assertOk()->getContent();
+
+        $this->assertStringNotContainsString(
+            'data-company-id',
+            $this->extractLocationSelect($html),
+            'Location select must not emit data-company-id from a leaked foreach variable.'
+        );
+    }
+
+    private function extractLocationSelect(string $html): string
+    {
+        if (! preg_match('/<select[^>]*id="location_id_location_select"[^>]*>/', $html, $matches)) {
+            $this->fail('Location select element not found in user edit HTML.');
+        }
+
+        return $matches[0];
+    }
+
+    public function test_uncompanied_user_can_edit_their_own_record_with_fmcs_on_and_floater_off()
+    {
+        // Regression: with FMCS on + floater off, the CompanyableScope lets an
+        // uncompanied non-superuser see themselves in the users list, but the
+        // policy used to 403 the edit because the bypass required the legacy
+        // scalar users.company_id column to also be null. Actors are always
+        // allowed to access their own record.
+        $this->settings->enableMultipleFullCompanySupport();
+        $this->settings->disableFloaterMode();
+
+        $self = User::factory()->editUsers()->withoutCompany()->create();
+        $self->companies()->sync([]);
+
+        $this->actingAs($self)
+            ->get(route('users.edit', $self))
+            ->assertOk();
+    }
+
     public function test_can_view_edit_page_for_soft_deleted_user()
     {
         $user = User::factory()->trashed()->create();
@@ -185,9 +234,7 @@ class UpdateUserTest extends TestCase
         $companyA = Company::factory()->create();
         $companyB = Company::factory()->create();
 
-        $user = User::factory()->create([
-            'company_id' => $companyA->id,
-        ]);
+        $user = User::factory()->forCompany($companyA)->create();
         $superUser = User::factory()->superuser()->create();
 
         $asset = Asset::factory()->create([
@@ -221,9 +268,7 @@ class UpdateUserTest extends TestCase
 
         $companyA = Company::factory()->create();
 
-        $user = User::factory()->create([
-            'company_id' => $companyA->id,
-        ]);
+        $user = User::factory()->forCompany($companyA)->create();
         $superUser = User::factory()->superuser()->create();
 
         $asset = Asset::factory()->create([
@@ -313,7 +358,7 @@ class UpdateUserTest extends TestCase
     public function test_attempting_to_update_deleted_user_is_handled_gracefully()
     {
         [$companyA, $companyB] = Company::factory()->count(2)->create();
-        $user = User::factory()->for($companyA)->create();
+        $user = User::factory()->forCompany($companyA)->create();
         Asset::factory()->assignedToUser($user)->create();
 
         $id = $user->id;

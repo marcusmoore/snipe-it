@@ -42,13 +42,18 @@ class Maintenance extends SnipeModel implements ICompanyableChild
         'maintenance_type_id' => 'required|integer|exists:maintenance_types,id',
         'name' => 'required|max:100',
         'is_warranty' => 'boolean',
-        'start_date' => 'required|date_format:Y-m-d',
-        'completion_date' => 'date_format:Y-m-d|nullable|after_or_equal:start_date',
+        'start_date' => 'required|date',
+        'completion_date' => 'date|nullable|after_or_equal:start_date',
         'notes' => 'string|nullable',
         'cost' => 'numeric|nullable|gte:0|max:99999999999999999.99',
         'url' => 'nullable|url|max:255',
         'responsible_party_id' => 'nullable|integer|exists:users,id',
         'completed_by' => 'nullable|integer|exists:users,id',
+    ];
+
+    protected $casts = [
+        'start_date' => 'datetime',
+        'completion_date' => 'datetime',
     ];
 
     /**
@@ -167,7 +172,7 @@ class Maintenance extends SnipeModel implements ICompanyableChild
 
     public function setCompletionDateAttribute($value)
     {
-        if ($value == '' || $value == '0000-00-00') {
+        if ($value == '' || $value == '0000-00-00' || $value == '0000-00-00 00:00:00') {
             $value = null;
         }
         $this->attributes['completion_date'] = $value;

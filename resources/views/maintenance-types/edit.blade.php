@@ -20,12 +20,16 @@
 @section('content')
     <x-container class="col-md-6 col-md-offset-3">
         <x-form :$item route="{{ $item->id ? route('maintenance-types.update', $item->id) : route('maintenance-types.store') }}">
-            <x-box>
+            <x-box top_submit>
+                @if ($item->id)
+                    <x-slot:header>{{ $item->name }}</x-slot:header>
+                @endif
+
                 <x-form.row
-                        :label="trans('general.name')"
-                        :$item
-                        name="name"
-                        required="true"
+                    :label="trans('general.name')"
+                    :$item
+                    name="name"
+                    required
                 />
             </x-box>
         </x-form>

@@ -2,6 +2,7 @@
 
 namespace App\Models\Traits;
 
+use App\Models\Company;
 use App\Models\CompanyableScope;
 use App\Models\Location;
 use App\Models\Setting;
@@ -38,10 +39,13 @@ trait CompanyableTrait
      * Returns true when:
      *  - FMCS is disabled, OR
      *  - this item has no company (uncompanied items are unrestricted), OR
-     *  - target is a User whose company pivot includes this item's company, OR
+     *  - target is a User whose company pivot includes this item's company
+     *    (or its parent — see User::canReceiveFromCompany), OR
      *  - target is a Location and scope_locations_fmcs is disabled, OR
      *  - target has no effective company and null_company_is_floater is enabled, OR
-     *  - target's effective company_id exactly matches this item's company_id.
+     *  - target's effective company_id exactly matches this item's company_id, OR
+     *  - target is a Location and its effective company is in the same one-level
+     *    company hierarchy as this item's company (parent ↔ child either way).
      */
     public function canCheckoutTo(Model $target): bool
     {
@@ -52,7 +56,11 @@ trait CompanyableTrait
         }
 
         if (! $this->company_id) {
-            if (is_null($target->company_id)) {
+            $targetHasNoCompany = $target instanceof User
+                ? $target->companies()->count() === 0
+                : is_null($target->company_id);
+
+            if ($targetHasNoCompany) {
                 return true;
             }
 
@@ -75,6 +83,21 @@ trait CompanyableTrait
             return (bool) $settings->null_company_is_floater;
         }
 
-        return $targetCompanyId === (int) $this->company_id;
+        $itemCompanyId = (int) $this->company_id;
+
+        if ($targetCompanyId === $itemCompanyId) {
+            return true;
+        }
+
+        // Hierarchy expansion mirrors User::canReceiveFromCompany — a Location
+        // whose effective company is a parent or direct child of the item's
+        // company is an allowed destination. Without this, a parent-company
+        // user can SEE child-company assets and locations but can't actually
+        // check the assets out to those locations.
+        if ($target instanceof Location) {
+            return in_array($targetCompanyId, Company::reachableCompanyIds($itemCompanyId), true);
+        }
+
+        return false;
     }
 }

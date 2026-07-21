@@ -35,9 +35,12 @@ class UploadedFilesController extends Controller
     public function store(UploadFileRequest $request, $object_type, $id): RedirectResponse
     {
 
-        // Check the permissions to make sure the user can view the object
+        // Check the permissions to make sure the user is allowed to upload
+        // to the object. `manageFiles` is stricter than `files` (used by
+        // show/download) so a read-only cascade like the one on
+        // AssetModelPolicy does not accidentally grant write access.
         $object = self::$map_object_type[$object_type]::withTrashed()->find($id);
-        $this->authorize('files', $object);
+        $this->authorize('manageFiles', $object);
 
         if (! $object) {
             return redirect()->back()->withFragment('files')->with('error', trans('general.file_upload_status.invalid_object'));
@@ -129,9 +132,10 @@ class UploadedFilesController extends Controller
     public function destroy($object_type, $id, $file_id): RedirectResponse
     {
 
-        // Check the permissions to make sure the user can view the object
+        // See store(): `manageFiles` is the strict write ability so a
+        // read-only cascade in files() does not authorize deletion.
         $object = self::$map_object_type[$object_type]::withTrashed()->find($id);
-        $this->authorize('files', $object);
+        $this->authorize('manageFiles', $object);
 
         if (! $object) {
             return redirect()->back()->withFragment('files')->with('error', trans('general.file_upload_status.invalid_object'));

@@ -15,7 +15,7 @@ class CheckoutAccessoryTest extends TestCase
     {
         [$companyA] = Company::factory()->count(1)->create();
         $accessory = Accessory::factory()->for($companyA)->create(['qty' => 5]);
-        $user = User::factory()->for($companyA)->create();
+        $user = User::factory()->forCompany($companyA)->create();
         $user->companies()->sync([$companyA->id]);
 
         $this->settings->enableMultipleFullCompanySupport();
@@ -41,7 +41,7 @@ class CheckoutAccessoryTest extends TestCase
     {
         [$companyA, $companyB] = Company::factory()->count(2)->create();
         $accessory = Accessory::factory()->for($companyA)->create(['qty' => 5]);
-        $user = User::factory()->for($companyB)->create();
+        $user = User::factory()->forCompany($companyB)->create();
         $user->companies()->sync([$companyB->id]);
 
         $this->settings->enableMultipleFullCompanySupport();
@@ -67,7 +67,7 @@ class CheckoutAccessoryTest extends TestCase
     {
         $accessory = Accessory::factory()->create(['qty' => 5, 'company_id' => null]);
         [$companyA] = Company::factory()->count(1)->create();
-        $user = User::factory()->for($companyA)->create();
+        $user = User::factory()->forCompany($companyA)->create();
         $user->companies()->sync([$companyA->id]);
 
         $this->settings->enableMultipleFullCompanySupport();
@@ -94,7 +94,7 @@ class CheckoutAccessoryTest extends TestCase
     {
         $accessory = Accessory::factory()->create(['qty' => 5, 'company_id' => null]);
         [$companyA] = Company::factory()->count(1)->create();
-        $user = User::factory()->for($companyA)->create();
+        $user = User::factory()->forCompany($companyA)->create();
         $user->companies()->sync([$companyA->id]);
 
         $this->settings->enableFloaterMode();
@@ -145,7 +145,7 @@ class CheckoutAccessoryTest extends TestCase
     {
         [$companyA] = Company::factory()->count(1)->create();
         $accessory = Accessory::factory()->for($companyA)->create(['qty' => 5]);
-        $nullCompanyUser = User::factory()->create(['company_id' => null]);
+        $nullCompanyUser = User::factory()->withoutCompany()->create();
 
         $this->settings->enableMultipleFullCompanySupport();
 
@@ -170,7 +170,7 @@ class CheckoutAccessoryTest extends TestCase
     {
         [$companyA] = Company::factory()->count(1)->create();
         $accessory = Accessory::factory()->for($companyA)->create(['qty' => 5]);
-        $nullCompanyUser = User::factory()->create(['company_id' => null]);
+        $nullCompanyUser = User::factory()->withoutCompany()->create();
 
         $this->settings->enableFloaterMode();
 

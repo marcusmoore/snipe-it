@@ -100,9 +100,9 @@ class AssetCheckoutTest extends TestCase
 
         [$companyA, $companyB] = Company::factory()->count(2)->create();
 
-        $actorInCompanyA = User::factory()->checkoutAssets()->for($companyA)->create();
+        $actorInCompanyA = User::factory()->checkoutAssets()->forCompany($companyA)->create();
         $assetInCompanyA = Asset::factory()->for($companyA)->create();
-        $userInCompanyB = User::factory()->for($companyB)->create();
+        $userInCompanyB = User::factory()->forCompany($companyB)->create();
 
         $this->actingAsForApi($actorInCompanyA)
             ->postJson(route('api.asset.checkout', $assetInCompanyA), [
@@ -135,9 +135,9 @@ class AssetCheckoutTest extends TestCase
 
         [$companyA, $companyB] = Company::factory()->count(2)->create();
 
-        $actorInCompanyA = User::factory()->checkoutAssets()->for($companyA)->create();
+        $actorInCompanyA = User::factory()->checkoutAssets()->forCompany($companyA)->create();
         $assetInCompanyA = Asset::factory()->for($companyA)->create();
-        $userInCompanyB = User::factory()->for($companyB)->create();
+        $userInCompanyB = User::factory()->forCompany($companyB)->create();
 
         $this->actingAsForApi($actorInCompanyA)
             ->postJson(route('api.assets.checkout.bytag', $assetInCompanyA->asset_tag), [
@@ -287,11 +287,11 @@ class AssetCheckoutTest extends TestCase
         [$companyA, $companyB, $companyC] = Company::factory()->count(3)->create();
 
         // Actor is in companyC (same as the asset) so FMCS scoping lets them see and checkout it.
-        $actor = User::factory()->checkoutAssets()->for($companyC)->create();
+        $actor = User::factory()->checkoutAssets()->forCompany($companyC)->create();
         $assetInCompanyC = Asset::factory()->for($companyC)->create();
 
         // Target user's primary company is A, but they also belong to C via pivot.
-        $target = User::factory()->for($companyA)->create();
+        $target = User::factory()->forCompany($companyA)->create();
         $target->companies()->sync([$companyA->id, $companyB->id, $companyC->id]);
 
         $this->actingAsForApi($actor)
@@ -313,11 +313,11 @@ class AssetCheckoutTest extends TestCase
         [$companyA, $companyB, $companyC] = Company::factory()->count(3)->create();
 
         // Actor is in companyC (same as the asset).
-        $actor = User::factory()->checkoutAssets()->for($companyC)->create();
+        $actor = User::factory()->checkoutAssets()->forCompany($companyC)->create();
         $assetInCompanyC = Asset::factory()->for($companyC)->create();
 
         // Target belongs to A and B — not C. Checkout to them should be blocked.
-        $target = User::factory()->for($companyA)->create();
+        $target = User::factory()->forCompany($companyA)->create();
         $target->companies()->sync([$companyA->id, $companyB->id]);
 
         $this->actingAsForApi($actor)
@@ -340,10 +340,10 @@ class AssetCheckoutTest extends TestCase
 
         $company = Company::factory()->create();
         // Actor is in the same company as the asset.
-        $actor = User::factory()->checkoutAssets()->for($company)->create();
+        $actor = User::factory()->checkoutAssets()->forCompany($company)->create();
         $assetInCompany = Asset::factory()->for($company)->create();
 
-        $target = User::factory()->create(['company_id' => null]);
+        $target = User::factory()->withoutCompany()->create();
         $target->companies()->sync([]);
 
         $this->actingAsForApi($actor)
@@ -417,7 +417,7 @@ class AssetCheckoutTest extends TestCase
         $company = Company::factory()->create();
         $actor = User::factory()->superuser()->create();
         $nullCompanyAsset = Asset::factory()->create(['company_id' => null]);
-        $companiedUser = User::factory()->for($company)->create();
+        $companiedUser = User::factory()->forCompany($company)->create();
 
         $this->actingAsForApi($actor)
             ->postJson(route('api.asset.checkout', $nullCompanyAsset), [
@@ -438,7 +438,7 @@ class AssetCheckoutTest extends TestCase
         $company = Company::factory()->create();
         $actor = User::factory()->superuser()->create();
         $nullCompanyAsset = Asset::factory()->create(['company_id' => null]);
-        $companiedUser = User::factory()->for($company)->create();
+        $companiedUser = User::factory()->forCompany($company)->create();
 
         $this->actingAsForApi($actor)
             ->postJson(route('api.asset.checkout', $nullCompanyAsset), [

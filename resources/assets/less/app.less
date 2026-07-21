@@ -158,6 +158,16 @@ a.accordion-header {
   display: block;
 }
 
+// This sets the "x" icon in front of error messages via CSS (instead of HTML)
+// so that regardless of whether it's being invoked via server side or JS,
+// it renders consistently 
+.alert-msg::before {
+  content: "\f00d";
+  font-family: "Font Awesome 5 Free";
+  font-weight: 900;
+  margin-right: 0.35em;
+}
+
 .input-group[class*="col-"] {
   padding-right: 15px;
   padding-left: 15px;

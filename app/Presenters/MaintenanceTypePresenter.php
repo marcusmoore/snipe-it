@@ -9,6 +9,7 @@ class MaintenanceTypePresenter extends Presenter
         $layout = [
             [
                 'field' => 'id',
+                'scope' => 'col',
                 'searchable' => false,
                 'sortable' => true,
                 'switchable' => true,
@@ -16,6 +17,7 @@ class MaintenanceTypePresenter extends Presenter
                 'visible' => false,
             ], [
                 'field' => 'name',
+                'scope' => 'col',
                 'searchable' => true,
                 'sortable' => true,
                 'switchable' => false,
@@ -23,6 +25,7 @@ class MaintenanceTypePresenter extends Presenter
                 'visible' => true,
             ], [
                 'field' => 'created_at',
+                'scope' => 'col',
                 'searchable' => false,
                 'sortable' => true,
                 'switchable' => true,
@@ -31,6 +34,7 @@ class MaintenanceTypePresenter extends Presenter
                 'formatter' => 'dateDisplayFormatter',
             ], [
                 'field' => 'updated_at',
+                'scope' => 'col',
                 'searchable' => false,
                 'sortable' => true,
                 'switchable' => true,
@@ -39,6 +43,7 @@ class MaintenanceTypePresenter extends Presenter
                 'formatter' => 'dateDisplayFormatter',
             ], [
                 'field' => 'actions',
+                'scope' => 'col',
                 'searchable' => false,
                 'sortable' => false,
                 'switchable' => false,
