@@ -458,7 +458,12 @@
 
 
                               <!-- Manager -->
-                              @include ('partials.forms.edit.user-select', ['translated_name' => trans('admin/users/table.manager'), 'fieldname' => 'manager_id', 'exclude_id' => $user->id ?? null])
+                              <x-input.user-select
+                                  :label="trans('admin/users/table.manager')"
+                                  name="manager_id"
+                                  :selected="old('manager_id', $user->manager_id)"
+                                  :excludeId="$user->id ?? null"
+                              />
 
                               <!--  Department -->
                               @include ('partials.forms.edit.department-select', ['translated_name' => trans('general.department'), 'fieldname' => 'department_id'])

@@ -78,7 +78,11 @@
                         @endif
 
                         <!-- Manager -->
-                    @include ('partials.forms.edit.user-select', ['translated_name' => trans('admin/users/table.manager'), 'fieldname' => 'manager_id'])
+                    <x-input.user-select
+                        :label="trans('admin/users/table.manager')"
+                        name="manager_id"
+                        :selected="old('manager_id')"
+                    />
 
                         <div class="form-group">
                             <div class=" col-md-9 col-md-offset-3">

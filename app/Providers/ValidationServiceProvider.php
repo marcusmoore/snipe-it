@@ -452,6 +452,60 @@ class ValidationServiceProvider extends ServiceProvider
             );
         });
 
+        // Enforces "Company must be picked" when FMCS is on AND
+        // null_company_is_floater is disabled (strict mode). Without this
+        // rule a companied non-superuser can save a form with an unset
+        // company dropdown, land a row with company_id=NULL, and then
+        // have that row instantly filtered out of their own view by the
+        // strict-mode scope. See #19192. Passes when:
+        //  - FMCS is off (nothing to enforce)
+        //  - null_company_is_floater is on (nulls are legal floaters)
+        //  - value is present (form was filled in)
+        //  - no auth context (CLI, seeders, or importers bypass, matching
+        //    the SaveUserRequest cannot_make_floater gate posture)
+        //  - acting user is a superuser (they see everything, so a null
+        //    is an explicit choice, not an accident)
+        //  - acting user has NO company memberships. In strict mode
+        //    such users legitimately operate in the null "pseudo-company"
+        //    namespace, where Company::scopeCompanyablesDirectly scopes
+        //    them to whereNull($company_id) and null IS a valid company
+        //    id for them. Forcing them to pick a non-null company would
+        //    both lock them out of their normal workflow and produce a
+        //    row they wouldn't be able to see afterward.
+        // extendImplicit (not extend) because Laravel skips "explicit"
+        // rules when the field is null or absent. Since the whole point
+        // of fmcs_company is to fire ON blank submissions, it must run
+        // implicitly. Same reason built-in rules like `required`,
+        // `filled`, `present`, `accepted` are all registered implicit.
+        Validator::extendImplicit('fmcs_company', function ($attribute, $value, $parameters, $validator) {
+            $settings = Setting::getSettings();
+            if (! $settings->full_multiple_companies_support) {
+                return true;
+            }
+            if ((bool) $settings->null_company_is_floater) {
+                return true;
+            }
+            if (! empty($value)) {
+                return true;
+            }
+            if (! auth()->check()) {
+                return true;
+            }
+            $actor = auth()->user();
+            if ($actor->isSuperUser()) {
+                return true;
+            }
+            if (! $actor->companies()->exists()) {
+                return true;
+            }
+
+            return false;
+        });
+
+        Validator::replacer('fmcs_company', function ($message) {
+            return str_replace(':attribute', trans('general.company'), $message);
+        });
+
         // Validates that the company of the validated object matches the company of the location in case of scoped locations
         Validator::extend('fmcs_location', function ($attribute, $value, $parameters, $validator) {
             $settings = Setting::getSettings();

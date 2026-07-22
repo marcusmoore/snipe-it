@@ -275,8 +275,25 @@ class BulkUsersController extends Controller
             $allowedIds = Company::getIdsForCurrentUser($bulkCompanyIds);
         }
 
-        // Floater-mode self-elevation guard (#19200). See User::canGrantFloaterStatus.
         $wouldClear = $clearCompanies || ($bulkCompanyIds && empty($allowedIds));
+
+        // Strict-FMCS #19192 gate — mirrors the branch in SaveUserRequest
+        // so bulk-editing a batch to clear all company memberships in
+        // strict mode is blocked for companied non-superusers. Fires
+        // before the older floater-mode gate so its more specific error
+        // wins when both apply. Skips uncompanied actors because they
+        // legitimately operate in the null pseudo-company namespace in
+        // strict mode; nulling pivots there is their normal workflow,
+        // not a self-escalation attempt.
+        $settings = Setting::getSettings();
+        $strictFmcs = $settings->full_multiple_companies_support && ! $settings->null_company_is_floater;
+        $actor = auth()->user();
+        if ($wouldClear && $strictFmcs && ! $actor->isSuperUser() && $actor->companies()->exists()) {
+            return redirect()->route('users.index')
+                ->with('error', trans('validation.fmcs_company', ['attribute' => trans('general.company')]));
+        }
+
+        // Floater-mode self-elevation guard (#19200). See User::canGrantFloaterStatus.
         if ($wouldClear && ! auth()->user()->canGrantFloaterStatus()) {
             return redirect()->route('users.index')
                 ->with('error', trans('admin/users/general.cannot_make_floater'));

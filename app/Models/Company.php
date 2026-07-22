@@ -98,6 +98,7 @@ final class Company extends SnipeModel
      * @var array
      */
     protected $searchableRelations = [
+        'parent' => ['name'],
         'adminuser' => ['first_name', 'last_name', 'display_name'],
     ];
 

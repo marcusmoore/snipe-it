@@ -243,13 +243,11 @@ class LocationsController extends Controller
 
         if ($location->isDeletable()) {
 
-            if ($location->image) {
-                try {
-                    Storage::disk('public')->delete('locations/'.$location->image);
-                } catch (\Exception $e) {
-                    Log::error($e);
-                }
-            }
+            // Note: the image file is deliberately preserved across this
+            // soft-delete. Snipe-IT's `snipeit:purge` command permanently
+            // removes it later when the row is force-deleted. Keeping
+            // the file here means a restored soft-deleted row still has
+            // its image.
             $location->delete();
 
             return redirect()->to(route('locations.index'))->with('success', trans('admin/locations/message.delete.success'));

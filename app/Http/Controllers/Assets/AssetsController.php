@@ -564,14 +564,11 @@ class AssetsController extends Controller
                 ->update(['assigned_to' => null, 'assigned_type' => null]);
         }
 
-        if ($asset->image) {
-            try {
-                Storage::disk('public')->delete('assets/'.basename($asset->image));
-            } catch (\Exception $e) {
-                Log::debug($e);
-            }
-        }
-
+        // Note: the image file is deliberately preserved across this
+        // soft-delete. Snipe-IT's `snipeit:purge` command permanently
+        // removes it later when the row is force-deleted. Keeping the
+        // file here means a restored soft-deleted row still has its
+        // image.
         $asset->delete();
 
         return redirect()->route('hardware.index')->with('success', trans('admin/hardware/message.delete.success'));

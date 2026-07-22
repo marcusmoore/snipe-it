@@ -43,7 +43,7 @@ class Location extends SnipeModel
         'zip' => 'max:10|nullable',
         'manager_id' => 'exists:users,id|nullable',
         'parent_id' => 'nullable|exists:locations,id|non_circular:locations,id',
-        'company_id' => 'integer|nullable|exists:companies,id',
+        'company_id' => 'integer|nullable|exists:companies,id|fmcs_company',
     ];
 
     protected $casts = [
@@ -115,6 +115,7 @@ class Location extends SnipeModel
     protected $searchableRelations = [
         'parent' => ['name'],
         'company' => ['name'],
+        'manager' => ['first_name', 'last_name', 'display_name'],
         'adminuser' => ['first_name', 'last_name', 'display_name'],
     ];
 

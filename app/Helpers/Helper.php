@@ -1111,20 +1111,55 @@ class Helper
                 if (is_array($rule)) {
                     if (in_array('required', $rule)) {
                         return true;
-                    } else {
-                        return false;
                     }
-                } else {
-                    if (strpos($rule, 'required') === false) {
-                        return false;
-                    } else {
+                    if (in_array('fmcs_company', $rule) && self::fmcsCompanyIsCurrentlyRequired()) {
                         return true;
                     }
+
+                    return false;
+                } else {
+                    if (strpos($rule, 'required') !== false) {
+                        return true;
+                    }
+                    if (strpos($rule, 'fmcs_company') !== false && self::fmcsCompanyIsCurrentlyRequired()) {
+                        return true;
+                    }
+
+                    return false;
                 }
             }
         }
 
         return false;
+    }
+
+    /**
+     * Mirror of the fmcs_company validator's runtime condition, used by
+     * checkIfRequired() so Blade fields render the "required" indicator
+     * (asterisk / aria-required) in the same conditions the backend will
+     * reject a blank submission. See ValidationServiceProvider.
+     */
+    protected static function fmcsCompanyIsCurrentlyRequired(): bool
+    {
+        $settings = \App\Models\Setting::getSettings();
+        if (! $settings->full_multiple_companies_support) {
+            return false;
+        }
+        if ((bool) $settings->null_company_is_floater) {
+            return false;
+        }
+        if (! auth()->check()) {
+            return false;
+        }
+        $actor = auth()->user();
+        if ($actor->isSuperUser()) {
+            return false;
+        }
+
+        // Uncompanied users work in the null pseudo-company namespace
+        // under strict mode; null IS a valid company id for them, so
+        // don't render the field as required.
+        return $actor->companies()->exists();
     }
 
     /**
@@ -1685,14 +1720,27 @@ class Helper
 
         // return to index
         if ($redirect_option == 'index') {
-            return match ($table) {
-                'Assets' => redirect()->route('hardware.index'),
-                'Users' => redirect()->route('users.index'),
-                'Licenses' => redirect()->route('licenses.index'),
-                'Accessories' => redirect()->route('accessories.index'),
-                'Components' => redirect()->route('components.index'),
-                'Consumables' => redirect()->route('consumables.index'),
+            $indexUrl = match ($table) {
+                'Assets' => route('hardware.index'),
+                'Users' => route('users.index'),
+                'Licenses' => route('licenses.index'),
+                'Accessories' => route('accessories.index'),
+                'Components' => route('components.index'),
+                'Consumables' => route('consumables.index'),
             };
+
+            // #15214: preserve query-string filters when the user came
+            // from a filtered view of the same index they're being sent
+            // back to (side-nav status filter, category filter, etc.).
+            // Without this the plain index route drops the caller's
+            // context and the user has to re-select their side-nav
+            // filter after every edit. $backUrl was already vetted for
+            // off-site hosts above.
+            if ($backUrl && parse_url($backUrl, PHP_URL_PATH) === parse_url($indexUrl, PHP_URL_PATH)) {
+                return redirect($backUrl);
+            }
+
+            return redirect($indexUrl);
         }
 
         // return to thing being assigned
