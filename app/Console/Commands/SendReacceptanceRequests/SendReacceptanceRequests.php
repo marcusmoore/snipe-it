@@ -168,16 +168,17 @@ class SendReacceptanceRequests extends Command
         $regenerated = collect($result->createdAcceptancesByUser)
             ->sum(fn (array $entry) => $entry['acceptances']->count());
 
-        $notified = $send ? $this->sendEmails($result->createdAcceptancesByUser) : 0;
+        $emailResult = $send ? $this->sendEmails($result->createdAcceptancesByUser) : new EmailResult(0, collect());
 
-        $this->printFinalResults($regenerated, $notified, $noEmailUsers, $result->failedUsers);
+        $this->printFinalResults($regenerated, $emailResult->notified, $noEmailUsers, $result->failedUsers, $emailResult->failedUsers);
 
         Log::info('reacceptance.run.complete', [
             'run_id' => $this->runId,
             'regenerated' => $regenerated,
-            'notified' => $notified,
+            'notified' => $emailResult->notified,
             'skipped_no_email' => $noEmailUsers->count(),
             'failed_users' => $result->failedUsers->count(),
+            'failed_emails' => $emailResult->failedUsers->count(),
         ]);
 
         return self::SUCCESS;
@@ -762,13 +763,18 @@ class SendReacceptanceRequests extends Command
 
     /**
      * Send one email per user with their set of new acceptances, skipping users
-     * without an email address. Returns the number of users notified.
+     * without an email address. Each user's send is isolated: an SMTP throw is
+     * caught, logged, and the user is collected into failedEmailUsers so the run
+     * continues with the rest of the batch. The user's acceptances are already
+     * committed by regenerateAcceptances(), so a failed send does not lose that
+     * state — it is reachable again via `snipeit:acceptance-reminder`.
      *
      * @param  array<int, array{user: User, acceptances: Collection}>  $createdAcceptancesByUser
      */
-    private function sendEmails(array $createdAcceptancesByUser): int
+    private function sendEmails(array $createdAcceptancesByUser): EmailResult
     {
         $notified = 0;
+        $failedEmailUsers = collect();
 
         foreach ($createdAcceptancesByUser as $entry) {
             $user = $entry['user'];
@@ -777,12 +783,25 @@ class SendReacceptanceRequests extends Command
                 continue;
             }
 
-            $mailable = new ReacceptanceRequestMail($user, $entry['acceptances']);
-            $locale = $user->locale;
+            try {
+                $mailable = new ReacceptanceRequestMail($user, $entry['acceptances']);
+                $locale = $user->locale;
 
-            $locale
-                ? Mail::to($user->email)->send($mailable->locale($locale))
-                : Mail::to($user->email)->send($mailable);
+                $locale
+                    ? Mail::to($user->email)->send($mailable->locale($locale))
+                    : Mail::to($user->email)->send($mailable);
+            } catch (Throwable $e) {
+                Log::error('reacceptance.email.failed', [
+                    'run_id' => $this->runId,
+                    'user_id' => $user->id,
+                    'email' => $user->email,
+                    'error' => $e->getMessage(),
+                ]);
+
+                $failedEmailUsers->push($user);
+
+                continue;
+            }
 
             Log::debug('reacceptance.email.sent', [
                 'run_id' => $this->runId,
@@ -794,14 +813,15 @@ class SendReacceptanceRequests extends Command
             $notified++;
         }
 
-        return $notified;
+        return new EmailResult($notified, $failedEmailUsers);
     }
 
     /**
      * @param  Collection<int, User>  $noEmailUsers
      * @param  Collection<int, User>  $failedUsers
+     * @param  Collection<int, User>  $failedEmailUsers
      */
-    private function printFinalResults(int $regenerated, int $notified, Collection $noEmailUsers, Collection $failedUsers): void
+    private function printFinalResults(int $regenerated, int $notified, Collection $noEmailUsers, Collection $failedUsers, Collection $failedEmailUsers): void
     {
         $this->info("Regenerated {$regenerated} acceptances. Notified {$notified} users.");
 
@@ -813,6 +833,11 @@ class SendReacceptanceRequests extends Command
         if ($failedUsers->isNotEmpty()) {
             $this->warn("Failed to regenerate {$failedUsers->count()} users:");
             $this->printUsersTable($failedUsers);
+        }
+
+        if ($failedEmailUsers->isNotEmpty()) {
+            $this->warn("Failed to email {$failedEmailUsers->count()} users (their acceptances were created; resend with `snipeit:acceptance-reminder`):");
+            $this->printUsersTable($failedEmailUsers);
         }
     }
 

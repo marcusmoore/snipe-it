@@ -794,6 +794,64 @@ class SendReacceptanceRequestsTest extends TestCase
         $this->assertEquals(0, CheckoutAcceptance::pending()->count());
     }
 
+    public function test_email_failure_mid_batch_is_isolated_and_reported(): void
+    {
+        $userA = User::factory()->create();
+        $userB = User::factory()->create();
+        $acceptanceA = $this->acceptedAssetFor($userA);
+        $acceptanceB = $this->acceptedAssetFor($userB);
+        $assetA = $acceptanceA->checkoutable;
+        $assetB = $acceptanceB->checkoutable;
+
+        $failEmail = $userA->email;
+        $sentTo = [];
+
+        Mail::shouldReceive('to')->andReturnUsing(function ($address) use ($failEmail, &$sentTo) {
+            $pending = \Mockery::mock();
+            $pending->shouldReceive('send')->andReturnUsing(function () use ($address, $failEmail, &$sentTo) {
+                if ($address === $failEmail) {
+                    throw new \RuntimeException('SMTP boom');
+                }
+                $sentTo[] = $address;
+            });
+
+            return $pending;
+        });
+
+        $this->artisan('snipeit:send-reacceptance-requests', [
+            '--no-interaction' => true,
+            '--force' => true,
+            '--send' => true,
+        ])
+            ->assertExitCode(0)
+            ->expectsOutputToContain('Failed to email 1 users')
+            ->expectsOutputToContain($userA->display_name)
+            ->expectsOutputToContain('Notified 1 users.');
+
+        $this->assertContains($userB->email, $sentTo);
+
+        // Both users' acceptances were regenerated regardless of the email outcome:
+        // the old accepted rows are superseded...
+        $acceptanceA->refresh();
+        $acceptanceB->refresh();
+        $this->assertNotNull($acceptanceA->superseded_by_id, "user {$userA->id}'s old acceptance should be superseded");
+        $this->assertNotNull($acceptanceB->superseded_by_id, "user {$userB->id}'s old acceptance should be superseded");
+
+        // ...and a fresh pending acceptance exists for each.
+        $newAcceptanceA = CheckoutAcceptance::where('checkoutable_type', Asset::class)
+            ->where('checkoutable_id', $assetA->id)
+            ->where('assigned_to_id', $userA->id)
+            ->pending()
+            ->first();
+        $newAcceptanceB = CheckoutAcceptance::where('checkoutable_type', Asset::class)
+            ->where('checkoutable_id', $assetB->id)
+            ->where('assigned_to_id', $userB->id)
+            ->pending()
+            ->first();
+        $this->assertNotNull($newAcceptanceA, "user {$userA->id} should have a fresh pending acceptance");
+        $this->assertNotNull($newAcceptanceB, "user {$userB->id} should have a fresh pending acceptance");
+    }
+
     public function test_no_candidates_reports_nothing_to_do(): void
     {
         $this->artisan('snipeit:send-reacceptance-requests', [
