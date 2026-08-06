@@ -476,9 +476,18 @@ class SendReacceptanceRequests extends Command
             );
         }
 
-        return $query->get()
-            ->filter(fn (CheckoutAcceptance $acceptance) => $acceptance->assignedTo
-                && $this->stillAssignedToUser($acceptance->checkoutable, $acceptance->assignedTo))
+        $stillAssigned = collect();
+
+        $query->chunkById(500, function (Collection $chunk) use ($stillAssigned): void {
+            foreach ($chunk as $acceptance) {
+                if ($acceptance->assignedTo
+                    && $this->stillAssignedToUser($acceptance->checkoutable, $acceptance->assignedTo)) {
+                    $stillAssigned->push($acceptance);
+                }
+            }
+        });
+
+        return $stillAssigned
             ->groupBy(fn (CheckoutAcceptance $acceptance) => $acceptance->assigned_to_id.'-'.$acceptance->checkoutable_type.'-'.$acceptance->checkoutable_id)
             ->map(function (Collection $group) {
                 $latest = $group->sortByDesc('accepted_at')->first();
