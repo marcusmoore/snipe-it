@@ -10,8 +10,6 @@ use Illuminate\Support\Collection;
  * One (user, checkoutable) re-acceptance candidate: the still-assigned item, its
  * holder, the quantity to carry forward, and the prior accepted acceptance(s) to
  * supersede.
- *
- * @property-read Collection $acceptances the prior accepted CheckoutAcceptance rows
  */
 final readonly class Candidate
 {
