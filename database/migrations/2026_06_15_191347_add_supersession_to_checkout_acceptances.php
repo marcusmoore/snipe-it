@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('checkout_acceptances', function (Blueprint $table) {
-            $table->integer('superseded_by_id')->unsigned()->nullable()->after('alert_on_response_id');
+            $table->integer('superseded_by_id')->unsigned()->nullable()->index()->after('alert_on_response_id');
             $table->timestamp('superseded_at')->nullable()->after('superseded_by_id');
         });
     }
