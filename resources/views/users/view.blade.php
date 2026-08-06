@@ -358,7 +358,7 @@
                             <thead>
                                 <tr>
                                     @can('checkin', \App\Models\License::class)
-                                    <th scope="col" class="hidden-print"><input type="checkbox" id="userLicenseSelectAll"></th>
+                                        <th scope="col" class="hidden-print">{{ trans('general.id') }}</th>
                                     @endcan
                                     <th scope="col">{{ trans('general.name') }}</th>
                                     <th scope="col">{{ trans('admin/licenses/form.license_key') }}</th>
@@ -615,6 +615,14 @@
                             <x-icon type="print" class="fa-fw"/>
                         </a>
                         @endif
+
+                        @can('checkout', \App\Models\Asset::class)
+                            @if (($user->assets()->whereNull('deleted_at')->count() + $user->accessories()->count() + $user->licenses()->count()) > 0)
+                                <a href="{{ route('users.transfer.show', $user) }}" class="btn btn-sm btn-theme hidden-print" data-tooltip="true" data-title="{{ trans('admin/users/general.transfer.button_tooltip') }}">
+                                    <x-icon type="transfer" class="fa-fw"/>
+                                </a>
+                            @endif
+                        @endcan
 
 
                         @if(!empty($user->email) && ($user->allAssignedCount() != '0'))

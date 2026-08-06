@@ -112,6 +112,59 @@ class ValidationServiceProvider extends ServiceProvider
         });
 
         /**
+         * Unique-if-undeleted, scoped to one or more sibling columns on the same row.
+         *
+         * Where `unique_undeleted` enforces global uniqueness on a column,
+         * `unique_undeleted_in_scope` enforces uniqueness only within a bucket
+         * defined by the values of one or more OTHER columns on the same row.
+         * Used for tree-structured tables where a child name only needs to be
+         * unique among its siblings, and (under FMCS) among its siblings in
+         * the same company.
+         *
+         * NULL is treated as its own bucket per standard SQL semantics: two
+         * top-level locations (parent_id IS NULL) named "HQ" collide with
+         * each other, but "HQ" at the top level does not collide with "HQ"
+         * that has a parent.
+         *
+         * $parameters[0] is the TABLE NAME being queried
+         * $parameters[1] is the ID of the row being edited (0 for creates)
+         * $parameters[2..N] are the sibling COLUMN NAMES that make up the scope
+         *
+         * The UniqueUndeletedTrait's prepareUniqueUndeletedInScopeRule method
+         * prepends the table + id for you, so on the model you just declare:
+         *   'name' => 'unique_undeleted_in_scope:parent_id,company_id'
+         */
+        Validator::extend('unique_undeleted_in_scope', function ($attribute, $value, $parameters, $validator) {
+            if (count($parameters) < 2) {
+                return true;
+            }
+
+            $table = $parameters[0];
+            $ignoreId = (int) $parameters[1];
+            $scopeColumns = array_slice($parameters, 2);
+            $data = $validator->getData();
+
+            $query = DB::table($table)
+                ->whereNull('deleted_at')
+                ->where($attribute, '=', $value);
+
+            if ($ignoreId > 0) {
+                $query->where('id', '!=', $ignoreId);
+            }
+
+            foreach ($scopeColumns as $column) {
+                $scopeValue = $data[$column] ?? null;
+                if ($scopeValue === null || $scopeValue === '') {
+                    $query->whereNull($column);
+                } else {
+                    $query->where($column, '=', $scopeValue);
+                }
+            }
+
+            return $query->count() < 1;
+        });
+
+        /**
          * Unique if undeleted for two columns
          *
          * Same as unique_undeleted but taking the combination of two columns as unique constrain.

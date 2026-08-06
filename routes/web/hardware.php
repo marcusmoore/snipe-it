@@ -4,6 +4,7 @@ use App\Http\Controllers\Assets\AssetCheckinController;
 use App\Http\Controllers\Assets\AssetCheckoutController;
 use App\Http\Controllers\Assets\AssetsController;
 use App\Http\Controllers\Assets\BulkAssetsController;
+use App\Http\Controllers\BulkMaintenancesController;
 use App\Http\Controllers\MaintenancesController;
 use App\Models\Asset;
 use App\Models\Setting;
@@ -29,7 +30,7 @@ Route::group(
         Route::get('bulkaudit', [AssetsController::class, 'quickScan'])
             ->name('assets.bulkaudit')
             ->breadcrumbs(fn (Trail $trail) => $trail->parent('hardware.index')
-                ->push(trans('general.bulkaudit'), route('asset.import-history'))
+                ->push(trans('general.bulkaudit'), route('assets.bulkaudit'))
             );
 
         Route::get('quickscancheckin', [AssetsController::class, 'quickScanCheckin'])
@@ -71,15 +72,12 @@ Route::group(
             [AssetCheckinController::class, 'forceCheckin']
         )->name('asset.checkin.force');
 
-        Route::get('history', [AssetsController::class, 'getImportHistory'])
-            ->name('asset.import-history')
-            ->breadcrumbs(fn (Trail $trail) => $trail->parent('hardware.index')
-                ->push(trans('general.import-history'), route('asset.import-history'))
-            );
-
-        Route::post('history',
-            [AssetsController::class, 'postImportHistory']
-        )->name('asset.process-import-history');
+        // Legacy import-history endpoint. The dedicated `/hardware/history`
+        // controller + form was folded into the main Livewire importer
+        // (import type "assetHistory"). Keep the route name so any external
+        // bookmark or deep-link still lands somewhere sane.
+        Route::get('history', fn () => redirect()->route('imports.index'))
+            ->name('asset.import-history');
 
         Route::get('bytag/{any?}',
             [AssetsController::class, 'getAssetByTag']
@@ -189,6 +187,19 @@ Route::group(
             [BulkAssetsController::class, 'storeCheckin']
         )->name('hardware.bulkcheckin.store');
 
+        // Checked-rows bulk audit. URL uses a dash to stay distinct
+        // from /hardware/bulkaudit (the barcode-scanner quickscan flow
+        // at assets.bulkaudit above).
+        Route::get('bulk-audit', [BulkAssetsController::class, 'showAudit'])
+            ->name('hardware.bulk-audit.show')
+            ->breadcrumbs(fn (Trail $trail) => $trail->parent('hardware.index')
+                ->push(trans('admin/hardware/general.bulk_audit'), route('hardware.index'))
+            );
+
+        Route::post('bulk-audit',
+            [BulkAssetsController::class, 'storeAudit']
+        )->name('hardware.bulk-audit.store');
+
     });
 
 Route::resource('hardware',
@@ -205,6 +216,10 @@ Route::resource('maintenances',
 Route::post('maintenances/{maintenance}/complete',
     [MaintenancesController::class, 'complete']
 )->name('maintenances.complete')->middleware(['auth']);
+
+Route::post('maintenances/bulk',
+    [BulkMaintenancesController::class, 'store']
+)->name('maintenances.bulk')->middleware(['auth']);
 
 Route::get('ht/{any?}',
     [AssetsController::class, 'getAssetByTag'])

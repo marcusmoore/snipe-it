@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use App\Models\Company;
 use App\Models\Setting;
+use App\Models\User;
 use App\Rules\UserCannotSwitchCompaniesIfItemsAssigned;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Validator;
@@ -47,7 +48,14 @@ class SaveUserRequest extends FormRequest
             case 'POST':
                 $rules['first_name'] = 'required|string|min:1';
                 $rules['username'] = 'required_unless:ldap_import,1|string|min:1';
-                if ($this->input('ldap_import') == false) {
+                if ($this->input('ldap_import') == false && $this->boolean('activated')) {
+                    // Password rules only apply when the user will actually be
+                    // able to log in. If "This user can login" is unchecked,
+                    // the password is functionally useless (activation gates
+                    // authentication) so we skip the required + complexity
+                    // rules entirely and the controller inserts an unencrypted
+                    // placeholder via User::noPassword() so no Hash::check can
+                    // ever match it at login time.
                     $rules['password'] = Setting::passwordComplexityRulesSaving('store').'|confirmed';
                 }
                 break;

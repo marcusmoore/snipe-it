@@ -111,7 +111,8 @@ class ConsumablesController extends Controller
         }
 
         // Make sure the offset and limit are actually integers and do not exceed system limits
-        $offset = ($request->input('offset') > $consumables->count()) ? $consumables->count() : app('api_offset_value');
+        $total = $consumables->count();
+        $offset = ($request->input('offset') > $total) ? $total : app('api_offset_value');
         $limit = app('api_limit_value');
         $order = $request->input('order') === 'asc' ? 'asc' : 'desc';
 
@@ -131,6 +132,9 @@ class ConsumablesController extends Controller
             case 'remaining':
                 $consumables = $consumables->OrderRemaining($order);
                 break;
+            case 'percent_remaining':
+                $consumables = $consumables->OrderPercentRemaining($order);
+                break;
             case 'supplier':
                 $consumables = $consumables->OrderSupplier($order);
                 break;
@@ -143,7 +147,6 @@ class ConsumablesController extends Controller
                 break;
         }
 
-        $total = $consumables->count();
         $consumables = $consumables->skip($offset)->take($limit)->get();
 
         return (new ConsumablesTransformer)->transformConsumables($consumables, $total);
@@ -336,8 +339,29 @@ class ConsumablesController extends Controller
         // Update the consumable data
         $consumable->assigned_to = $request->input('assigned_to');
 
-        // Keep pivot writes and checkout log/event atomic to avoid partial checkout state.
-        DB::transaction(function () use ($consumable, $request, $user): void {
+        // Concurrency guard. The unlocked numRemaining() check above is
+        // advisory only — two simultaneous checkout requests can both read
+        // "1 remaining", both pass the check, both attach a pivot row, and
+        // land the register at -1. Re-fetch the parent row under
+        // lockForUpdate INSIDE the transaction, re-check availability
+        // against the locked snapshot, and only then write. Any concurrent
+        // checkout blocks on the row lock until this transaction commits.
+        // Mirrors the pattern already used by License checkout (which locks
+        // LicenseSeat rows).
+        $errorResponse = null;
+
+        DB::transaction(function () use ($consumable, $request, $user, &$errorResponse): void {
+            $locked = Consumable::whereKey($consumable->id)->lockForUpdate()->first();
+
+            if (! $locked || $locked->numRemaining() < $consumable->checkout_qty) {
+                $errorResponse = response()->json(Helper::formatStandardApiResponse('error', null, trans('admin/consumables/message.checkout.unavailable', [
+                    'requested' => $consumable->checkout_qty,
+                    'remaining' => $locked ? $locked->numRemaining() : 0,
+                ])));
+
+                return;
+            }
+
             for ($i = 0; $i < $consumable->checkout_qty; $i++) {
                 $consumable->users()->attach($consumable->id,
                     [
@@ -362,6 +386,10 @@ class ConsumablesController extends Controller
                 $consumable->checkout_qty,
             ));
         });
+
+        if ($errorResponse) {
+            return $errorResponse;
+        }
 
         return response()->json(Helper::formatStandardApiResponse('success', null, trans('admin/consumables/message.checkout.success')));
 
