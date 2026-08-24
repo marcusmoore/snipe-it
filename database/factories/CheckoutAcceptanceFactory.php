@@ -5,6 +5,7 @@ namespace Database\Factories;
 use App\Models\Accessory;
 use App\Models\Asset;
 use App\Models\CheckoutAcceptance;
+use App\Models\LicenseSeat;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -61,6 +62,14 @@ class CheckoutAcceptanceFactory extends Factory
         return $this->state([
             'checkoutable_type' => Accessory::class,
             'checkoutable_id' => Accessory::factory(),
+        ]);
+    }
+
+    public function forLicenseSeat()
+    {
+        return $this->state([
+            'checkoutable_type' => LicenseSeat::class,
+            'checkoutable_id' => LicenseSeat::factory(),
         ]);
     }
 
