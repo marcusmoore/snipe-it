@@ -18,9 +18,9 @@ class TransferUserItemsAcceptanceCleanupTest extends TestCase
     {
         parent::setUp();
 
-        // With every channel off the listener returns before its own
-        // pending-delete, so these tests exercise the controller's inline
-        // cleanup rather than the listener backstop.
+        // Every channel off: clearing the acceptance request is part of
+        // checking the item in, not of notifying anyone, so it must still
+        // happen on an install that notifies nobody. That is the bug pinned here.
         $this->settings->disableSlackWebhook()
             ->disableAdminCC()
             ->disableAdminCCAlways();
@@ -37,7 +37,7 @@ class TransferUserItemsAcceptanceCleanupTest extends TestCase
         ]);
         $seat = LicenseSeat::factory()->assignedToUser($source)->create(['license_id' => $license->id]);
 
-        $this->assertFalse((bool) $license->checkin_email(), 'Checkin email must be off, or the listener backstop deletes the pending and these tests pass without exercising the inline cleanup.');
+        $this->assertFalse((bool) $license->checkin_email(), 'Checkin email must be off, or this stops proving cleanup happens with notifications disabled.');
 
         // A real seat acceptance is keyed to the SEAT — LicenseSeat::class plus
         // the seat's own id — which is what CreateCheckoutAcceptanceAction
@@ -70,7 +70,7 @@ class TransferUserItemsAcceptanceCleanupTest extends TestCase
         $transferredSeat = LicenseSeat::factory()->assignedToUser($source)->create(['license_id' => $license->id]);
         $retainedSeat = LicenseSeat::factory()->assignedToUser($source)->create(['license_id' => $license->id]);
 
-        $this->assertFalse((bool) $license->checkin_email(), 'Checkin email must be off, or the listener backstop deletes the pending and these tests pass without exercising the inline cleanup.');
+        $this->assertFalse((bool) $license->checkin_email(), 'Checkin email must be off, or this stops proving cleanup happens with notifications disabled.');
 
         // The source user holds two seats of the same license and only one of
         // them is transferred. The cleanup has to key on the seat, not on the
@@ -101,7 +101,7 @@ class TransferUserItemsAcceptanceCleanupTest extends TestCase
                 'qty' => 5,
             ]);
 
-        $this->assertFalse((bool) $accessory->checkin_email(), 'Checkin email must be off, or the listener backstop deletes the pending and these tests pass without exercising the inline cleanup.');
+        $this->assertFalse((bool) $accessory->checkin_email(), 'Checkin email must be off, or this stops proving cleanup happens with notifications disabled.');
 
         $sourceCheckout = $accessory->checkouts()->where('assigned_to', $source->id)->firstOrFail();
 
@@ -139,7 +139,7 @@ class TransferUserItemsAcceptanceCleanupTest extends TestCase
             ]),
         ]);
 
-        $this->assertFalse((bool) $asset->fresh()->checkin_email(), 'Checkin email must be off, or the listener backstop deletes the pending and these tests pass without exercising the inline cleanup.');
+        $this->assertFalse((bool) $asset->fresh()->checkin_email(), 'Checkin email must be off, or this stops proving cleanup happens with notifications disabled.');
 
         $acceptance = CheckoutAcceptance::factory()->pending()->create([
             'checkoutable_id' => $asset->id,
