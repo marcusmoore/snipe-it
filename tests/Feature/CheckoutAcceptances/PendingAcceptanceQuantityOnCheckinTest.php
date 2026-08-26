@@ -3,13 +3,16 @@
 namespace Tests\Feature\CheckoutAcceptances;
 
 use App\Models\Accessory;
+use App\Models\AccessoryCheckout;
 use App\Models\Asset;
 use App\Models\AssetModel;
 use App\Models\Category;
 use App\Models\CheckoutAcceptance;
 use App\Models\License;
 use App\Models\LicenseSeat;
+use App\Models\Location;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -132,6 +135,31 @@ class PendingAcceptanceQuantityOnCheckinTest extends TestCase
 
         $this->assertSame(1, $this->unitsHeld($accessory, $user));
         $this->assertPendingQtyMatchesUnacceptedUnitsHeld($accessory, $user);
+    }
+
+    #[Test]
+    public function checking_in_a_location_held_unit_leaves_a_users_acceptance_alone(): void
+    {
+        [$accessory, $user] = $this->accessoryAndUser();
+        $this->checkOut($accessory, $user, qty: 2);
+
+        // Acceptances only ever belong to users, so assigned_to_id holds a user
+        // id. An accessory can be held by a user and a location at once, so a
+        // location id equal to a user id must not match that user's rows.
+        $location = $this->locationWithIdCollidingWith($user);
+
+        $locationCheckout = AccessoryCheckout::create([
+            'accessory_id' => $accessory->id,
+            'assigned_to' => $location->id,
+            'assigned_type' => Location::class,
+            'created_by' => User::factory()->create()->id,
+        ]);
+
+        $this->checkIn($locationCheckout->id);
+
+        $this->assertSame(2, $this->unitsHeld($accessory, $user), 'The user\'s own units were not touched.');
+        $this->assertSame(2, $this->pendingQtySum($accessory, $user),
+            'Checking in a location-held unit cleared the user\'s acceptance by id collision.');
     }
 
     // ─────────────────────────────────────────────────────────────────────
@@ -392,6 +420,18 @@ class PendingAcceptanceQuantityOnCheckinTest extends TestCase
             ->assertRedirect();
 
         return $seat->refresh();
+    }
+
+    /**
+     * Ids are per-table, so a location sharing a user's id is ordinary in
+     * production but has to be forced here.
+     */
+    private function locationWithIdCollidingWith(User $user): Location
+    {
+        $location = Location::factory()->create();
+        DB::table('locations')->where('id', $location->id)->update(['id' => $user->id]);
+
+        return Location::findOrFail($user->id);
     }
 
     private function oneHeldCheckoutOf(Accessory $accessory, User $user): int
