@@ -5,8 +5,10 @@ namespace App\Models;
 use App\Console\Commands\SendExpiringLicenseNotifications;
 use App\Helpers\Helper;
 use App\Models\Traits\CompanyableTrait;
+use App\Models\Traits\HasCalendarEvents;
 use App\Models\Traits\HasUploads;
 use App\Models\Traits\Loggable;
+use App\Models\Traits\Requestable;
 use App\Models\Traits\Searchable;
 use App\Presenters\LicensePresenter;
 use App\Presenters\Presentable;
@@ -28,8 +30,10 @@ class License extends Depreciable
     protected $presenter = LicensePresenter::class;
 
     use CompanyableTrait;
+    use HasCalendarEvents;
     use HasUploads;
     use Loggable, Presentable;
+    use Requestable;
     use SoftDeletes;
 
     protected $injectUniqueIdentifier = true;
@@ -57,6 +61,7 @@ class License extends Depreciable
         'termination_date' => 'date',
         'category_id' => 'integer',
         'company_id' => 'integer',
+        'requestable' => 'boolean',
     ];
 
     protected $rules = [
@@ -72,6 +77,7 @@ class License extends Depreciable
         'expiration_date' => 'date_format:Y-m-d|nullable|max:10',
         'termination_date' => 'date_format:Y-m-d|nullable|max:10',
         'min_amt' => 'numeric|nullable|gte:0',
+        'requestable' => 'nullable|boolean',
     ];
 
     /**
@@ -100,6 +106,7 @@ class License extends Depreciable
         'supplier_id',
         'termination_date',
         'min_amt',
+        'requestable',
     ];
 
     use Searchable;
@@ -180,6 +187,45 @@ class License extends Depreciable
         return Gate::allows('delete', $this)
             && ($this->free_seats_count == $this->seats)
             && ($this->deleted_at == '');
+    }
+
+    public function calendarEventDefinitions(): array
+    {
+        return [
+            [
+                'field' => 'expiration_date',
+                'event_type' => 'license.expiration',
+            ],
+            [
+                'field' => 'termination_date',
+                'event_type' => 'license.termination',
+            ],
+        ];
+    }
+
+    /**
+     * Normalize the requestable form input so an empty string from an
+     * unchecked checkbox lands as false rather than a truthy "0" cast
+     * (matches Accessory / Consumable / Component setRequestableAttribute).
+     */
+    public function setRequestableAttribute($value)
+    {
+        if ($value == '') {
+            $value = null;
+        }
+        $this->attributes['requestable'] = filter_var($value, FILTER_VALIDATE_BOOLEAN);
+    }
+
+    /**
+     * Scope query to only requestable licenses. FMCS + location
+     * scoping falls out of the CompanyableTrait global scope, so the
+     * usual "user only sees rows in their reachable companies" rule
+     * applies without any additional wrapping here (matches the
+     * Accessory / Consumable / Component scope shape).
+     */
+    public function scopeRequestable($query)
+    {
+        return $query->where('licenses.requestable', '1');
     }
 
     /**
