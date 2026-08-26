@@ -15,11 +15,13 @@ use App\Notifications\CheckinLicenseSeatNotification;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Notification;
+use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 class LicenseCheckinTest extends TestCase
 {
-    public function test_checking_in_license_requires_correct_permission()
+    #[Test]
+    public function checking_in_license_requires_correct_permission()
     {
         $this->actingAs(User::factory()->create())
             ->post(route('licenses.checkin.save', [
@@ -28,7 +30,8 @@ class LicenseCheckinTest extends TestCase
             ->assertForbidden();
     }
 
-    public function test_non_reassignable_seat_remains_unreassignable_after_checkin()
+    #[Test]
+    public function non_reassignable_seat_remains_unreassignable_after_checkin()
     {
         $licenseSeat = LicenseSeat::factory()
             ->notReassignable()
@@ -43,7 +46,8 @@ class LicenseCheckinTest extends TestCase
         $this->assertEquals(true, $licenseSeat->unreassignable_seat);
     }
 
-    public function test_cannot_checkin_license_that_is_not_assigned()
+    #[Test]
+    public function cannot_checkin_license_that_is_not_assigned()
     {
         $licenseSeat = LicenseSeat::factory()
             ->reassignable()
@@ -60,7 +64,8 @@ class LicenseCheckinTest extends TestCase
             ->assertSessionHas('error', trans('admin/licenses/message.checkin.error'));
     }
 
-    public function test_can_check_in_license_assigned_to_asset()
+    #[Test]
+    public function can_check_in_license_assigned_to_asset()
     {
         Event::fake([CheckoutableCheckedIn::class]);
 
@@ -93,7 +98,8 @@ class LicenseCheckinTest extends TestCase
         });
     }
 
-    public function test_can_check_in_license_assigned_to_user()
+    #[Test]
+    public function can_check_in_license_assigned_to_user()
     {
         Event::fake([CheckoutableCheckedIn::class]);
 
@@ -127,7 +133,8 @@ class LicenseCheckinTest extends TestCase
 
     }
 
-    public function test_page_renders()
+    #[Test]
+    public function page_renders()
     {
         $this->actingAs(User::factory()->superuser()->create())
             ->get(route('licenses.checkin', LicenseSeat::factory()->assignedToUser()->create()->id))
@@ -135,7 +142,8 @@ class LicenseCheckinTest extends TestCase
 
     }
 
-    public function test_license_seat_checkin_clears_pending_acceptance_when_notifications_are_fully_disabled()
+    #[Test]
+    public function license_seat_checkin_clears_pending_acceptance_when_notifications_are_fully_disabled()
     {
         $this->settings->disableAdminCC()->disableAdminCCAlways()->disableSlackWebhook();
 
@@ -154,7 +162,8 @@ class LicenseCheckinTest extends TestCase
         );
     }
 
-    public function test_license_seat_checkin_clears_pending_acceptance_when_only_a_webhook_is_configured()
+    #[Test]
+    public function license_seat_checkin_clears_pending_acceptance_when_only_a_webhook_is_configured()
     {
         Notification::fake();
 
@@ -175,7 +184,8 @@ class LicenseCheckinTest extends TestCase
         );
     }
 
-    public function test_license_seat_checkin_does_not_clear_a_same_id_pending_acceptance_of_another_type()
+    #[Test]
+    public function license_seat_checkin_does_not_clear_a_same_id_pending_acceptance_of_another_type()
     {
         Mail::fake();
 

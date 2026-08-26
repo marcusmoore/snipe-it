@@ -10,6 +10,7 @@ use App\Models\CheckoutAcceptance;
 use App\Models\License;
 use App\Models\LicenseSeat;
 use App\Models\User;
+use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 class TransferUserItemsAcceptanceCleanupTest extends TestCase
@@ -26,7 +27,8 @@ class TransferUserItemsAcceptanceCleanupTest extends TestCase
             ->disableAdminCCAlways();
     }
 
-    public function test_transferring_license_seat_clears_source_users_pending_acceptance_for_that_seat(): void
+    #[Test]
+    public function transferring_license_seat_clears_source_users_pending_acceptance_for_that_seat(): void
     {
         $source = User::factory()->create();
         $target = User::factory()->create();
@@ -57,7 +59,8 @@ class TransferUserItemsAcceptanceCleanupTest extends TestCase
         $this->assertAcceptanceWasSoftDeleted($acceptance);
     }
 
-    public function test_transferring_license_seat_leaves_pending_acceptance_for_another_seat_of_the_same_license_alone(): void
+    #[Test]
+    public function transferring_license_seat_leaves_pending_acceptance_for_another_seat_of_the_same_license_alone(): void
     {
         $source = User::factory()->create();
         $target = User::factory()->create();
@@ -88,7 +91,8 @@ class TransferUserItemsAcceptanceCleanupTest extends TestCase
         $this->assertAcceptanceSurvived($retainedAcceptance);
     }
 
-    public function test_transferring_accessory_clears_only_the_source_users_pending_acceptance(): void
+    #[Test]
+    public function transferring_accessory_clears_only_the_source_users_pending_acceptance(): void
     {
         $source = User::factory()->create();
         $target = User::factory()->create();
@@ -128,7 +132,8 @@ class TransferUserItemsAcceptanceCleanupTest extends TestCase
         $this->assertAcceptanceSurvived($otherHolderAcceptance);
     }
 
-    public function test_transferring_asset_clears_source_users_pending_acceptance(): void
+    #[Test]
+    public function transferring_asset_clears_source_users_pending_acceptance(): void
     {
         $source = User::factory()->create();
         $target = User::factory()->create();

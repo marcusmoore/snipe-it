@@ -13,11 +13,13 @@ use App\Notifications\CheckinAccessoryNotification;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Notification;
+use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 class AccessoryCheckinTest extends TestCase
 {
-    public function test_checking_in_accessory_requires_correct_permission()
+    #[Test]
+    public function checking_in_accessory_requires_correct_permission()
     {
         $accessory = Accessory::factory()->checkedOutToUser()->create();
 
@@ -26,7 +28,8 @@ class AccessoryCheckinTest extends TestCase
             ->assertForbidden();
     }
 
-    public function test_page_renders()
+    #[Test]
+    public function page_renders()
     {
         $accessory = Accessory::factory()->checkedOutToUser()->create();
 
@@ -35,7 +38,8 @@ class AccessoryCheckinTest extends TestCase
             ->assertOk();
     }
 
-    public function test_accessory_can_be_checked_in()
+    #[Test]
+    public function accessory_can_be_checked_in()
     {
         Event::fake([CheckoutableCheckedIn::class]);
 
@@ -52,7 +56,8 @@ class AccessoryCheckinTest extends TestCase
         Event::assertDispatched(CheckoutableCheckedIn::class, 1);
     }
 
-    public function test_email_sent_to_user_if_setting_enabled()
+    #[Test]
+    public function email_sent_to_user_if_setting_enabled()
     {
         Mail::fake();
 
@@ -73,7 +78,8 @@ class AccessoryCheckinTest extends TestCase
         });
     }
 
-    public function test_email_not_sent_to_user_if_setting_disabled()
+    #[Test]
+    public function email_not_sent_to_user_if_setting_disabled()
     {
         Mail::fake();
 
@@ -98,7 +104,8 @@ class AccessoryCheckinTest extends TestCase
         });
     }
 
-    public function test_accessory_checkin_clears_pending_acceptance_when_notifications_are_fully_disabled()
+    #[Test]
+    public function accessory_checkin_clears_pending_acceptance_when_notifications_are_fully_disabled()
     {
         $this->settings->disableAdminCC()->disableAdminCCAlways()->disableSlackWebhook();
 
@@ -126,7 +133,8 @@ class AccessoryCheckinTest extends TestCase
         );
     }
 
-    public function test_accessory_checkin_clears_pending_acceptance_when_only_a_webhook_is_configured()
+    #[Test]
+    public function accessory_checkin_clears_pending_acceptance_when_only_a_webhook_is_configured()
     {
         Notification::fake();
 
@@ -157,7 +165,8 @@ class AccessoryCheckinTest extends TestCase
         );
     }
 
-    public function test_accessory_checkin_does_not_clear_a_same_id_pending_acceptance_of_another_type()
+    #[Test]
+    public function accessory_checkin_does_not_clear_a_same_id_pending_acceptance_of_another_type()
     {
         Mail::fake();
 
