@@ -415,11 +415,19 @@ class PendingAcceptanceQuantityOnCheckinTest extends TestCase
 
         $this->actingAs(User::factory()->superuser()->create())
             ->post(route('licenses.checkout.save', [$license->id, $seat->id]), [
-                'assigned_to' => $user->id,
+                'assigned_user' => $user->id,
             ])
             ->assertRedirect();
 
-        return $seat->refresh();
+        $seat->refresh();
+
+        $this->assertSame(
+            $user->id,
+            $seat->assigned_to,
+            'The seat was not checked out as expected.'
+        );
+
+        return $seat;
     }
 
     /**
