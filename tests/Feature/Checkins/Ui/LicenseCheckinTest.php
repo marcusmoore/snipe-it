@@ -12,6 +12,7 @@ use App\Models\LicenseSeat;
 use App\Models\Setting;
 use App\Models\User;
 use App\Notifications\CheckinLicenseSeatNotification;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Notification;
@@ -228,9 +229,9 @@ class LicenseCheckinTest extends TestCase
      * Acceptance required, checkin email off — the configuration where a stale
      * pending acceptance can outlive the assignment it belongs to.
      */
-    private function seatAssignedTo(User $user): LicenseSeat
+    private function licenseRequiringAcceptanceWithoutCheckinEmail(): License
     {
-        $license = License::factory()->create([
+        return License::factory()->create([
             'reassignable' => 1,
             'category_id' => Category::factory()->create([
                 'category_type' => 'license',
@@ -238,10 +239,13 @@ class LicenseCheckinTest extends TestCase
                 'checkin_email' => 0,
             ])->id,
         ]);
+    }
 
+    private function seatAssignedTo(User $user): LicenseSeat
+    {
         return LicenseSeat::factory()
             ->assignedToUser($user)
-            ->create(['license_id' => $license->id]);
+            ->create(['license_id' => $this->licenseRequiringAcceptanceWithoutCheckinEmail()->id]);
     }
 
     /**
@@ -276,33 +280,38 @@ class LicenseCheckinTest extends TestCase
         $this->assertNull($seat->refresh()->assigned_to, 'The seat was not checked in, so nothing downstream ran.');
     }
 
-    /**
-     * The missing morph filter only shows up when a seat and an asset share a
-     * primary key, and factories won't hand out a matching pair by accident.
-     * Nudge whichever sequence is behind until the ids line up.
-     *
-     * @return array{0: LicenseSeat, 1: Asset}
-     */
     private function createSeatAndAssetSharingAnId(User $user): array
     {
-        $seat = $this->seatAssignedTo($user);
-        $asset = Asset::factory()->create();
+        // A license spawns its own seats when it saves, so the id is only free
+        // to claim once those exist.
+        $license = $this->licenseRequiringAcceptanceWithoutCheckinEmail();
 
-        for ($attempt = 0; $seat->id !== $asset->id && $attempt < 25; $attempt++) {
-            if ($seat->id < $asset->id) {
-                $seat = $this->seatAssignedTo($user);
-            } else {
-                $asset = Asset::factory()->create();
-            }
-        }
+        $sharedId = $this->firstIdFreeInBoth('license_seats', 'assets');
 
-        $this->assertSame(
-            $seat->id,
-            $asset->id,
-            'Fixture setup failed: could not get a license seat and an asset onto the same id.'
-        );
+        $seat = LicenseSeat::factory()
+            ->assignedToUser($user)
+            ->create(['license_id' => $license->id, 'id' => $sharedId]);
+
+        $asset = Asset::factory()->create(['id' => $sharedId]);
+
+        // Without the collision there is no morph bug to trigger and the test
+        // passes for the wrong reason, so prove the ids really do line up.
+        $this->assertSame($seat->id, $asset->id);
 
         return [$seat, $asset];
+    }
+
+    /**
+     * An id no row in either table holds, so both can be created with it.
+     * Taken above both maxima rather than read from the auto-increment
+     * counters, which are engine-specific to query.
+     */
+    private function firstIdFreeInBoth(string $table, string $otherTable): int
+    {
+        return max(
+            (int) DB::table($table)->max('id'),
+            (int) DB::table($otherTable)->max('id'),
+        ) + 1;
     }
 
     private function assertNoNotificationChannelIsConfigured(LicenseSeat $seat): void

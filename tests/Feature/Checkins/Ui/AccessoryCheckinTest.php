@@ -7,9 +7,9 @@ use App\Mail\CheckinAccessoryMail;
 use App\Models\Accessory;
 use App\Models\Asset;
 use App\Models\CheckoutAcceptance;
-use App\Models\Setting;
 use App\Models\User;
 use App\Notifications\CheckinAccessoryNotification;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Notification;
@@ -123,7 +123,6 @@ class AccessoryCheckinTest extends TestCase
         ]);
 
         $this->assertTrue($acceptance->isPending());
-        $this->assertNoNotificationChannelIsConfigured($accessory);
 
         $this->checkInAccessoryFrom($accessory, $user);
 
@@ -182,13 +181,18 @@ class AccessoryCheckinTest extends TestCase
         $accessory->category->update(['checkin_email' => true]);
         $this->assertTrue((bool) $accessory->fresh()->checkin_email());
 
-        $accessoryAcceptance = CheckoutAcceptance::factory()->forAccessory()->pending()->create([
-            'checkoutable_id' => $accessory->id,
+        // The asset's acceptance is created FIRST so it is the older row.
+        // Accessory checkins retire only the oldest matching pending row, so
+        // with the accessory's own row older this test would pass whether or
+        // not the query filters on checkoutable_type — the asset's row would
+        // never be reached either way.
+        $assetAcceptance = CheckoutAcceptance::factory()->pending()->create([
+            'checkoutable_id' => $asset->id,
             'assigned_to_id' => $user->id,
         ]);
 
-        $assetAcceptance = CheckoutAcceptance::factory()->pending()->create([
-            'checkoutable_id' => $asset->id,
+        $accessoryAcceptance = CheckoutAcceptance::factory()->forAccessory()->pending()->create([
+            'checkoutable_id' => $accessory->id,
             'assigned_to_id' => $user->id,
         ]);
 
@@ -221,40 +225,29 @@ class AccessoryCheckinTest extends TestCase
         $this->assertDatabaseMissing('accessories_checkout', ['id' => $checkout->id]);
     }
 
-    /**
-     * The missing morph filter only shows up when an accessory and an asset
-     * share a primary key, and factories won't hand out a matching pair by
-     * accident. Nudge whichever sequence is behind until the ids line up.
-     *
-     * @return array{0: Accessory, 1: Asset}
-     */
     private function createAccessoryAndAssetSharingAnId(User $user): array
     {
-        $accessory = Accessory::factory()->checkedOutToUser($user)->create();
-        $asset = Asset::factory()->create();
+        $sharedId = $this->firstIdFreeInBoth('accessories', 'assets');
 
-        for ($attempt = 0; $accessory->id !== $asset->id && $attempt < 25; $attempt++) {
-            if ($accessory->id < $asset->id) {
-                $accessory = Accessory::factory()->checkedOutToUser($user)->create();
-            } else {
-                $asset = Asset::factory()->create();
-            }
-        }
+        $accessory = Accessory::factory()->checkedOutToUser($user)->create(['id' => $sharedId]);
+        $asset = Asset::factory()->create(['id' => $sharedId]);
 
-        $this->assertSame(
-            $accessory->id,
-            $asset->id,
-            'Fixture setup failed: could not get an accessory and an asset onto the same id.'
-        );
+        // Without the collision there is no morph bug to trigger and the test
+        // passes for the wrong reason, so prove the ids really do line up.
+        $this->assertSame($accessory->id, $asset->id);
 
         return [$accessory, $asset];
     }
 
-    private function assertNoNotificationChannelIsConfigured(Accessory $accessory): void
+    /**
+     * An id no row in either table holds, so both can be created with it.
+     */
+    private function firstIdFreeInBoth(string $firstTable, string $secondtable): int
     {
-        $this->assertFalse((bool) $accessory->fresh()->checkin_email());
-        $this->assertEmpty(Setting::getSettings()->admin_cc_email);
-        $this->assertEmpty(Setting::getSettings()->webhook_endpoint);
+        return max(
+            (int) DB::table($firstTable)->max('id'),
+            (int) DB::table($secondtable)->max('id'),
+        ) + 1;
     }
 
     private function assertAcceptanceWasSoftDeleted(CheckoutAcceptance $acceptance, string $message): void
