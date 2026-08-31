@@ -170,8 +170,12 @@ class TransferUserItemsAcceptanceCleanupTest extends TestCase
     {
         $actor = User::factory()
             ->viewUsers()
+            ->checkinAccessories()
+            ->checkoutAccessories()
             ->checkinAssets()
             ->checkoutAssets()
+            ->checkinLicenses()
+            ->checkoutLicenses()
             ->create();
 
         $this->actingAs($actor)
