@@ -8,8 +8,6 @@ class TZe_241 extends TZe_18mm
 {
     private const LABEL_SIZE = 5.0;
 
-    private const LABEL_MARGIN = 0.6;
-
     private const FIELD_SIZE = 5.0;
 
     private const FIELD_MARGIN = 0.8;
@@ -53,8 +51,6 @@ class TZe_241 extends TZe_18mm
     {
         return false;
     }
-
-    public function preparePDF($pdf) {}
 
     public function write($pdf, $record)
     {
