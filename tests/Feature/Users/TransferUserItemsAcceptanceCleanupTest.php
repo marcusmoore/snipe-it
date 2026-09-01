@@ -37,13 +37,14 @@ class TransferUserItemsAcceptanceCleanupTest extends TestCase
             'reassignable' => 1,
             'category_id' => Category::factory()->forLicenses()->requiresAcceptance()->doesNotSendCheckinEmail(),
         ]);
+
         $seat = LicenseSeat::factory()->assignedToUser($source)->create(['license_id' => $license->id]);
 
-        $this->assertFalse((bool) $license->checkin_email(), 'Checkin email must be off, or this stops proving cleanup happens with notifications disabled.');
+        $this->assertFalse(
+            (bool) $license->checkin_email(),
+            'Checkin email must be off, or this stops proving cleanup happens with notifications disabled.'
+        );
 
-        // A real seat acceptance is keyed to the SEAT — LicenseSeat::class plus
-        // the seat's own id — which is what CreateCheckoutAcceptanceAction
-        // writes. There is no morph map aliasing License and LicenseSeat.
         $acceptance = CheckoutAcceptance::factory()->forLicenseSeat()->pending()->create([
             'checkoutable_id' => $seat->id,
             'assigned_to_id' => $source->id,
@@ -51,10 +52,11 @@ class TransferUserItemsAcceptanceCleanupTest extends TestCase
 
         $this->transfer($source, $target, ['license_seat_ids' => [$seat->id]]);
 
-        // A seat that gets skipped never reaches the cleanup at all, so prove
-        // the seat actually moved before drawing any conclusion from the
-        // acceptance row.
-        $this->assertSame($target->id, $seat->refresh()->assigned_to, 'The seat was skipped, so the cleanup never ran.');
+        $this->assertSame(
+            $target->id,
+            $seat->refresh()->assigned_to,
+            'The seat was skipped, so the cleanup never ran.'
+        );
 
         $this->assertAcceptanceWasSoftDeleted($acceptance);
     }
@@ -73,11 +75,11 @@ class TransferUserItemsAcceptanceCleanupTest extends TestCase
         $transferredSeat = LicenseSeat::factory()->assignedToUser($source)->create(['license_id' => $license->id]);
         $retainedSeat = LicenseSeat::factory()->assignedToUser($source)->create(['license_id' => $license->id]);
 
-        $this->assertFalse((bool) $license->checkin_email(), 'Checkin email must be off, or this stops proving cleanup happens with notifications disabled.');
+        $this->assertFalse(
+            (bool) $license->checkin_email(),
+            'Checkin email must be off, or this stops proving cleanup happens with notifications disabled.'
+        );
 
-        // The source user holds two seats of the same license and only one of
-        // them is transferred. The cleanup has to key on the seat, not on the
-        // license, or the retained seat's acceptance goes with it.
         $retainedAcceptance = CheckoutAcceptance::factory()->forLicenseSeat()->pending()->create([
             'checkoutable_id' => $retainedSeat->id,
             'assigned_to_id' => $source->id,
@@ -105,7 +107,10 @@ class TransferUserItemsAcceptanceCleanupTest extends TestCase
                 'qty' => 5,
             ]);
 
-        $this->assertFalse((bool) $accessory->checkin_email(), 'Checkin email must be off, or this stops proving cleanup happens with notifications disabled.');
+        $this->assertFalse(
+            (bool) $accessory->checkin_email(),
+            'Checkin email must be off, or this stops proving cleanup happens with notifications disabled.'
+        );
 
         $sourceCheckout = $accessory->checkouts()->where('assigned_to', $source->id)->firstOrFail();
 
@@ -144,7 +149,10 @@ class TransferUserItemsAcceptanceCleanupTest extends TestCase
             ]),
         ]);
 
-        $this->assertFalse((bool) $asset->fresh()->checkin_email(), 'Checkin email must be off, or this stops proving cleanup happens with notifications disabled.');
+        $this->assertFalse(
+            (bool) $asset->fresh()->checkin_email(),
+            'Checkin email must be off, or this stops proving cleanup happens with notifications disabled.'
+        );
 
         $acceptance = CheckoutAcceptance::factory()->pending()->create([
             'checkoutable_id' => $asset->id,
@@ -159,11 +167,6 @@ class TransferUserItemsAcceptanceCleanupTest extends TestCase
         $this->assertSame(User::class, $asset->assigned_type);
 
         $this->assertAcceptanceWasSoftDeleted($acceptance);
-
-        // Deliberately not asserting anything about pendings belonging to other
-        // users for this same asset. The asset cleanup is over-broad today (no
-        // assigned_to_id filter) and may be narrowed later; pinning that here
-        // would make the narrowing look like a regression.
     }
 
     private function transfer(User $source, User $target, array $items): void
