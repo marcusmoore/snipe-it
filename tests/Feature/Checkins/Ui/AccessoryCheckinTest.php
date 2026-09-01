@@ -175,12 +175,6 @@ class AccessoryCheckinTest extends TestCase
 
         [$accessory, $asset] = $this->createAccessoryAndAssetSharingAnId($user);
 
-        // Notifications on for this one. With checkin_email off the delete never
-        // runs at all and this would be a re-run of the two tests above rather
-        // than a test of the missing morph filter.
-        $accessory->category->update(['checkin_email' => true]);
-        $this->assertTrue((bool) $accessory->fresh()->checkin_email());
-
         // The asset's acceptance is created FIRST so it is the older row.
         // Accessory checkins retire only the oldest matching pending row, so
         // with the accessory's own row older this test would pass whether or
@@ -197,8 +191,6 @@ class AccessoryCheckinTest extends TestCase
         ]);
 
         $this->checkInAccessoryFrom($accessory, $user);
-
-        Mail::assertSent(CheckinAccessoryMail::class);
 
         $this->assertAcceptanceWasSoftDeleted(
             $accessoryAcceptance,

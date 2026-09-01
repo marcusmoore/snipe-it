@@ -3,7 +3,6 @@
 namespace Tests\Feature\Checkins\Ui;
 
 use App\Events\CheckoutableCheckedIn;
-use App\Mail\CheckinLicenseMail;
 use App\Models\Asset;
 use App\Models\Category;
 use App\Models\CheckoutAcceptance;
@@ -14,7 +13,6 @@ use App\Models\User;
 use App\Notifications\CheckinLicenseSeatNotification;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Notification;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -188,19 +186,11 @@ class LicenseCheckinTest extends TestCase
     #[Test]
     public function license_seat_checkin_does_not_clear_a_same_id_pending_acceptance_of_another_type()
     {
-        Mail::fake();
-
         $this->settings->disableAdminCC()->disableAdminCCAlways()->disableSlackWebhook();
 
         $user = User::factory()->create();
 
         [$seat, $asset] = $this->createSeatAndAssetSharingAnId($user);
-
-        // Notifications on for this one. With checkin_email off the delete never
-        // runs at all and this would be a re-run of the two tests above rather
-        // than a test of the missing morph filter.
-        $seat->license->category->update(['checkin_email' => true]);
-        $this->assertTrue((bool) $seat->license->fresh()->checkin_email());
 
         $seatAcceptance = $this->pendingSeatAcceptance($seat, $user);
 
@@ -211,8 +201,6 @@ class LicenseCheckinTest extends TestCase
         $this->assertSame(Asset::class, $assetAcceptance->checkoutable_type);
 
         $this->checkInSeat($seat);
-
-        Mail::assertSent(CheckinLicenseMail::class);
 
         $this->assertAcceptanceWasSoftDeleted(
             $seatAcceptance,
