@@ -8,6 +8,10 @@
      values derived from the name prop, so a manager picker with
      name="manager_id" gets id="manager_id_select" and
      wrapperId="manager_id" automatically.  --}}
+{{-- Auto-hides the "New" button when rendered inside an AJAX modal.
+     See x-input.company-select for the pattern. --}}
+@aware(['submitToSelect2' => false])
+
 @props([
     'label',
     'name',
@@ -24,6 +28,7 @@
 @php
     $wrapperId = $wrapperId ?? $name;
     $id = $id ?? ($name.'_select');
+    $hideNewButton = $hideNewButton || $submitToSelect2;
 @endphp
 
 <div

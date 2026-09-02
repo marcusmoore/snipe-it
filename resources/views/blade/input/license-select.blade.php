@@ -1,4 +1,4 @@
-@use('App\Models\AssetModel', 'AssetModel')
+@use('App\Models\License', 'License')
 @use('Illuminate\Support\Arr', 'Arr')
 
 {{-- Auto-hides the "New" button when rendered inside an AJAX modal.
@@ -30,8 +30,8 @@
     <div class="col-md-7">
         <select
             class="js-data-ajax"
-            data-endpoint="models"
-            data-placeholder="{{ trans('general.select_model') }}"
+            data-endpoint="licenses"
+            data-placeholder="{{ trans('general.select_license') }}"
             name="{{ $name }}{{ $multiple ? '[]' : '' }}"
             id="{{ $selectId }}"
             style="width: 100%"
@@ -43,7 +43,7 @@
             @if ($selected)
                 @foreach(Arr::wrap($selected) as $value)
                     <option value="{{ $value }}" selected="selected" role="option" aria-selected="true">
-                        {{ AssetModel::find($value)?->name }}
+                        {{ License::find($value)?->name }}
                     </option>
                 @endforeach
             @endif
@@ -52,11 +52,8 @@
 
     @unless($hideNewButton)
         <div class="col-md-1 col-sm-1 text-left">
-            @can('create', AssetModel::class)
-                <a href="{{ route('modal.show', 'model') }}" data-toggle="modal" data-target="#createModal" data-select="{{ $selectId }}" class="btn btn-sm btn-theme">{{ trans('button.new') }}</a>
-                <span class="mac_spinner" style="padding-left: 10px; color: green; display:none; width: 30px;">
-                    <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-                </span>
+            @can('create', License::class)
+                <a href="{{ route('modal.show', 'license') }}" data-toggle="modal" data-target="#createModal" data-select="{{ $selectId }}" class="btn btn-sm btn-theme">{{ trans('button.new') }}</a>
             @endcan
         </div>
     @endunless

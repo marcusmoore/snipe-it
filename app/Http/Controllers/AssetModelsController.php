@@ -128,7 +128,7 @@ class AssetModelsController extends Controller
      *
      * @since [v1.0]
      *
-     * @param  int  $modelId
+     * @param  AssetModel  $model
      */
     public function edit(AssetModel $model): View|RedirectResponse
     {
@@ -147,7 +147,7 @@ class AssetModelsController extends Controller
      * @since [v1.0]
      *
      * @param  ImageUploadRequest  $request
-     * @param  int  $modelId
+     * @param  AssetModel  $model
      *
      * @throws AuthorizationException
      */
@@ -202,7 +202,7 @@ class AssetModelsController extends Controller
      *
      * @since [v1.0]
      *
-     * @param  int  $modelId
+     * @param  AssetModel  $model
      */
     public function destroy(AssetModel $model): RedirectResponse
     {
@@ -273,7 +273,7 @@ class AssetModelsController extends Controller
      *
      * @since [v1.0]
      *
-     * @param  int  $modelId
+     * @param  AssetModel  $model
      */
     public function show(AssetModel $model): View|RedirectResponse
     {
@@ -289,7 +289,7 @@ class AssetModelsController extends Controller
      *
      * @since [v1.0]
      *
-     * @param  int  $modelId
+     * @param  AssetModel  $model
      */
     public function getClone(AssetModel $model): View|RedirectResponse
     {
@@ -436,7 +436,7 @@ class AssetModelsController extends Controller
      *
      * @since [v1.0]
      *
-     * @param  int  $modelId
+     * @param  Request  $request
      */
     public function postBulkDelete(Request $request): RedirectResponse
     {

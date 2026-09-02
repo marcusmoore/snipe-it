@@ -52,6 +52,46 @@ class ShowModalsTest extends TestCase
             ->assertOk();
     }
 
+    public function test_kit_model_modal_renders()
+    {
+        $kit = \App\Models\PredefinedKit::factory()->create();
+
+        $this->actingAs(User::factory()->superuser()->create())
+            ->get(route('modal.show', ['type' => 'kit-model', 'itemId' => $kit->id]))
+            ->assertOk()
+            ->assertSee(route('api.kits.models.store', $kit->id));
+    }
+
+    public function test_kit_license_modal_renders()
+    {
+        $kit = \App\Models\PredefinedKit::factory()->create();
+
+        $this->actingAs(User::factory()->superuser()->create())
+            ->get(route('modal.show', ['type' => 'kit-license', 'itemId' => $kit->id]))
+            ->assertOk()
+            ->assertSee(route('api.kits.licenses.store', $kit->id));
+    }
+
+    public function test_kit_accessory_modal_renders()
+    {
+        $kit = \App\Models\PredefinedKit::factory()->create();
+
+        $this->actingAs(User::factory()->superuser()->create())
+            ->get(route('modal.show', ['type' => 'kit-accessory', 'itemId' => $kit->id]))
+            ->assertOk()
+            ->assertSee(route('api.kits.accessories.store', $kit->id));
+    }
+
+    public function test_kit_consumable_modal_renders()
+    {
+        $kit = \App\Models\PredefinedKit::factory()->create();
+
+        $this->actingAs(User::factory()->superuser()->create())
+            ->get(route('modal.show', ['type' => 'kit-consumable', 'itemId' => $kit->id]))
+            ->assertOk()
+            ->assertSee(route('api.kits.consumables.store', $kit->id));
+    }
+
     public function test_category_modal_renders()
     {
         $this->actingAs(User::factory()->superuser()->create())
