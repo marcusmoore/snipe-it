@@ -208,12 +208,6 @@ class UserItemTransferController extends Controller
             $seat->update(['assigned_to' => null]);
         });
 
-        CheckoutAcceptance::pending()
-            ->where('checkoutable_type', Asset::class)
-            ->where('checkoutable_id', $asset->id)
-            ->get()
-            ->each(fn ($a) => $a->delete());
-
         $asset->save();
 
         event(new CheckoutableCheckedIn($asset, $source, auth()->user(), $note, $checkinAt, $originalValues));
