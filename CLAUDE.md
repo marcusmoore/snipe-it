@@ -95,13 +95,10 @@ After checkout, `Helper::getRedirectOption()` reads `$request->redirect_option`.
 ## Commands
 
 ```bash
-
 # Clear caches after config/route changes
-
 php artisan optimize:clear
 
 # Coverage reports (served by Laravel Herd)
-
 herd coverage
 ```
 
