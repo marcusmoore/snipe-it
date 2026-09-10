@@ -306,43 +306,171 @@ class RegenerateAcceptancesTest extends TestCase
             ->assertExitCode(0);
     }
 
-    public function test_category_filter_limits_the_candidate_set(): void
+    /**
+     * Each builder names its own category path — `model.category` for assets,
+     * `license.category` for seats, `category` for the other three — and its own
+     * company column, so both filters are pinned per type rather than once.
+     */
+    public function test_assets_can_be_filtered_by_category(): void
     {
         $holder = User::factory()->create();
         $wanted = $this->acceptanceCategory('asset');
-        $unwanted = $this->acceptanceCategory('asset');
 
-        $this->assetIn($wanted, ['assigned_to' => $holder->id, 'assigned_type' => User::class]);
-        $this->assetIn($unwanted, ['assigned_to' => $holder->id, 'assigned_type' => User::class]);
+        $this->heldAsset($holder, $wanted, Company::factory()->create(), 'In scope asset');
+        $this->heldAsset($holder, $this->acceptanceCategory('asset'), Company::factory()->create(), 'Out of scope asset');
 
         $this->artisan('snipeit:regenerate-acceptances', ['--category' => [$wanted->id]])
-            ->expectsOutputToContain('To re-request: 1.')
+            ->expectsOutputToContain('In scope asset')
+            ->expectsOutput('To re-request: 1.')
             ->assertExitCode(0);
     }
 
-    public function test_company_filter_reaches_license_seats_through_the_license(): void
+    public function test_assets_can_be_filtered_by_company(): void
     {
         $holder = User::factory()->create();
+        $category = $this->acceptanceCategory('asset');
         $wanted = Company::factory()->create();
-        $unwanted = Company::factory()->create();
 
-        $category = $this->acceptanceCategory('license');
-
-        foreach ([$wanted, $unwanted] as $company) {
-            $license = License::factory()->create([
-                'category_id' => $category->id,
-                'company_id' => $company->id,
-            ]);
-            LicenseSeat::factory()->create([
-                'license_id' => $license->id,
-                'asset_id' => null,
-                'assigned_to' => $holder->id,
-            ]);
-        }
+        $this->heldAsset($holder, $category, $wanted, 'In scope asset');
+        $this->heldAsset($holder, $category, Company::factory()->create(), 'Out of scope asset');
 
         $this->artisan('snipeit:regenerate-acceptances', ['--company' => [$wanted->id]])
-            ->expectsOutputToContain('To re-request: 1.')
+            ->expectsOutputToContain('In scope asset')
+            ->expectsOutput('To re-request: 1.')
             ->assertExitCode(0);
+    }
+
+    public function test_license_seats_can_be_filtered_by_category(): void
+    {
+        $holder = User::factory()->create();
+        $wanted = $this->acceptanceCategory('license');
+
+        $this->heldLicenseSeat($holder, $wanted, Company::factory()->create(), 'In scope licence');
+        $this->heldLicenseSeat($holder, $this->acceptanceCategory('license'), Company::factory()->create(), 'Out of scope licence');
+
+        $this->artisan('snipeit:regenerate-acceptances', ['--category' => [$wanted->id]])
+            ->expectsOutputToContain('In scope licence')
+            ->expectsOutput('To re-request: 1.')
+            ->assertExitCode(0);
+    }
+
+    /**
+     * `license_seats` has no `company_id` column, so this one hops through the license.
+     */
+    public function test_license_seats_can_be_filtered_by_company(): void
+    {
+        $holder = User::factory()->create();
+        $category = $this->acceptanceCategory('license');
+        $wanted = Company::factory()->create();
+
+        $this->heldLicenseSeat($holder, $category, $wanted, 'In scope licence');
+        $this->heldLicenseSeat($holder, $category, Company::factory()->create(), 'Out of scope licence');
+
+        $this->artisan('snipeit:regenerate-acceptances', ['--company' => [$wanted->id]])
+            ->expectsOutputToContain('In scope licence')
+            ->expectsOutput('To re-request: 1.')
+            ->assertExitCode(0);
+    }
+
+    public function test_accessories_can_be_filtered_by_category(): void
+    {
+        $holder = User::factory()->create();
+        $wanted = $this->acceptanceCategory('accessory');
+
+        $this->heldAccessory($holder, $wanted, Company::factory()->create(), 'In scope accessory');
+        $this->heldAccessory($holder, $this->acceptanceCategory('accessory'), Company::factory()->create(), 'Out of scope accessory');
+
+        $this->artisan('snipeit:regenerate-acceptances', ['--category' => [$wanted->id]])
+            ->expectsOutputToContain('In scope accessory')
+            ->expectsOutput('To re-request: 1.')
+            ->assertExitCode(0);
+    }
+
+    public function test_accessories_can_be_filtered_by_company(): void
+    {
+        $holder = User::factory()->create();
+        $category = $this->acceptanceCategory('accessory');
+        $wanted = Company::factory()->create();
+
+        $this->heldAccessory($holder, $category, $wanted, 'In scope accessory');
+        $this->heldAccessory($holder, $category, Company::factory()->create(), 'Out of scope accessory');
+
+        $this->artisan('snipeit:regenerate-acceptances', ['--company' => [$wanted->id]])
+            ->expectsOutputToContain('In scope accessory')
+            ->expectsOutput('To re-request: 1.')
+            ->assertExitCode(0);
+    }
+
+    public function test_consumables_can_be_filtered_by_category(): void
+    {
+        $holder = User::factory()->create();
+        $wanted = $this->acceptanceCategory('consumable');
+
+        $this->heldConsumable($holder, $wanted, Company::factory()->create(), 'In scope consumable');
+        $this->heldConsumable($holder, $this->acceptanceCategory('consumable'), Company::factory()->create(), 'Out of scope consumable');
+
+        $this->artisan('snipeit:regenerate-acceptances', ['--category' => [$wanted->id]])
+            ->expectsOutputToContain('In scope consumable')
+            ->expectsOutput('To re-request: 1.')
+            ->assertExitCode(0);
+    }
+
+    public function test_consumables_can_be_filtered_by_company(): void
+    {
+        $holder = User::factory()->create();
+        $category = $this->acceptanceCategory('consumable');
+        $wanted = Company::factory()->create();
+
+        $this->heldConsumable($holder, $category, $wanted, 'In scope consumable');
+        $this->heldConsumable($holder, $category, Company::factory()->create(), 'Out of scope consumable');
+
+        $this->artisan('snipeit:regenerate-acceptances', ['--company' => [$wanted->id]])
+            ->expectsOutputToContain('In scope consumable')
+            ->expectsOutput('To re-request: 1.')
+            ->assertExitCode(0);
+    }
+
+    public function test_components_can_be_filtered_by_category(): void
+    {
+        $holder = User::factory()->create();
+        $wanted = $this->acceptanceCategory('component');
+
+        $this->heldComponent($holder, $wanted, Company::factory()->create(), 'In scope component');
+        $this->heldComponent($holder, $this->acceptanceCategory('component'), Company::factory()->create(), 'Out of scope component');
+
+        $this->artisan('snipeit:regenerate-acceptances', ['--category' => [$wanted->id]])
+            ->expectsOutputToContain('In scope component')
+            ->expectsOutput('To re-request: 1.')
+            ->assertExitCode(0);
+    }
+
+    public function test_components_can_be_filtered_by_company(): void
+    {
+        $holder = User::factory()->create();
+        $category = $this->acceptanceCategory('component');
+        $wanted = Company::factory()->create();
+
+        $this->heldComponent($holder, $category, $wanted, 'In scope component');
+        $this->heldComponent($holder, $category, Company::factory()->create(), 'Out of scope component');
+
+        $this->artisan('snipeit:regenerate-acceptances', ['--company' => [$wanted->id]])
+            ->expectsOutputToContain('In scope component')
+            ->expectsOutput('To re-request: 1.')
+            ->assertExitCode(0);
+    }
+
+    /**
+     * A CheckoutAcceptance factory already keyed to one (item, user) pair. The action
+     * log the factory would otherwise write is irrelevant to classification, so it is
+     * turned off rather than left to stamp the asset's assignment a second time.
+     */
+    private function acceptanceFor(Model $item, User $user): CheckoutAcceptanceFactory
+    {
+        return CheckoutAcceptance::factory()->withoutActionLog()->state([
+            'checkoutable_type' => $item->getMorphClass(),
+            'checkoutable_id' => $item->getKey(),
+            'assigned_to_id' => $user->id,
+        ]);
     }
 
     public function test_pending_acceptance_covering_the_units_held_is_skipped(): void
@@ -504,18 +632,70 @@ class RegenerateAcceptancesTest extends TestCase
             ->assertExitCode(0);
     }
 
-    /**
-     * A CheckoutAcceptance factory already keyed to one (item, user) pair. The action
-     * log the factory would otherwise write is irrelevant to classification, so it is
-     * turned off rather than left to stamp the asset's assignment a second time.
-     */
-    private function acceptanceFor(Model $item, User $user): CheckoutAcceptanceFactory
+    private function heldAsset(User $holder, Category $category, Company $company, string $name): void
     {
-        return CheckoutAcceptance::factory()->withoutActionLog()->state([
-            'checkoutable_type' => $item->getMorphClass(),
-            'checkoutable_id' => $item->getKey(),
-            'assigned_to_id' => $user->id,
+        Asset::factory()->create([
+            'name' => $name,
+            'model_id' => AssetModel::factory()->create(['category_id' => $category->id]),
+            'company_id' => $company->id,
+            'assigned_to' => $holder->id,
+            'assigned_type' => User::class,
         ]);
+    }
+
+    private function heldLicenseSeat(User $holder, Category $category, Company $company, string $name): void
+    {
+        $license = License::factory()->create([
+            'name' => $name,
+            'category_id' => $category->id,
+            'company_id' => $company->id,
+        ]);
+
+        LicenseSeat::factory()->create([
+            'license_id' => $license->id,
+            'asset_id' => null,
+            'assigned_to' => $holder->id,
+        ]);
+    }
+
+    private function heldAccessory(User $holder, Category $category, Company $company, string $name): void
+    {
+        Accessory::factory()->create([
+            'name' => $name,
+            'category_id' => $category->id,
+            'company_id' => $company->id,
+        ])->checkouts()->create([
+            'assigned_to' => $holder->id,
+            'assigned_type' => User::class,
+        ]);
+    }
+
+    private function heldConsumable(User $holder, Category $category, Company $company, string $name): void
+    {
+        Consumable::factory()->create([
+            'name' => $name,
+            'category_id' => $category->id,
+            'company_id' => $company->id,
+        ])->users()->attach($holder->id, ['created_by' => $holder->id]);
+    }
+
+    /**
+     * A component's holder is always reached through an asset, so the carrier asset goes
+     * in a category that does not require acceptance — otherwise it becomes a candidate
+     * in its own right and the assertions count it.
+     */
+    private function heldComponent(User $holder, Category $category, Company $company, string $name): void
+    {
+        $carrier = $this->assetIn(
+            Category::factory()->create(['category_type' => 'asset', 'require_acceptance' => false]),
+            ['assigned_to' => $holder->id, 'assigned_type' => User::class],
+        );
+
+        Component::factory()->create([
+            'name' => $name,
+            'category_id' => $category->id,
+            'company_id' => $company->id,
+        ])->assets()->attach($carrier->id, ['assigned_qty' => 1, 'created_by' => $holder->id]);
     }
 
     private function acceptanceCategory(string $type): Category
