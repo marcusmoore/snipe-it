@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Actions\Acceptances\CreateCheckoutAcceptanceAction;
 use App\Models\Accessory;
 use App\Models\AccessoryCheckout;
 use App\Models\Asset;
@@ -28,6 +29,7 @@ class RegenerateAcceptances extends Command
     protected $signature = 'snipeit:regenerate-acceptances
         {--category=* : Limit to these category ids (default: all categories requiring acceptance)}
         {--company=* : Limit to these company ids (default: all companies)}
+        {--dry-run : Print the report; create nothing}
         {--exclude-declined : Skip users whose latest response was a decline (default: re-ask them)}';
 
     protected $description = 'Re-request EULA acceptance from users who currently hold items';
@@ -60,15 +62,18 @@ class RegenerateAcceptances extends Command
 
     private bool $excludeDeclined = false;
 
+    private bool $dryRun = false;
+
     /**
-     * The would-be rows of the preview table, in the order the builders found them.
+     * The rows this run re-requested, in the order the builders found them. Under
+     * --dry-run they are the rows it would have created.
      *
      * @var array<int, array{0: string, 1: string, 2: string, 3: int, 4: int}>
      */
-    private array $previewRows = [];
+    private array $reportRows = [];
 
     /**
-     * How many pairs each checkoutable type contributed to the preview.
+     * How many pairs each checkoutable type contributed to the report.
      *
      * @var array<string, int>
      */
@@ -82,11 +87,14 @@ class RegenerateAcceptances extends Command
 
     private int $declinedAndExcluded = 0;
 
+    private int $created = 0;
+
     public function handle(): int
     {
         $this->categoryIds = $this->option('category');
         $this->companyIds = $this->option('company');
         $this->excludeDeclined = (bool) $this->option('exclude-declined');
+        $this->dryRun = (bool) $this->option('dry-run');
 
         $this->findAssetCandidates();
         $this->findLicenseSeatCandidates();
@@ -94,7 +102,7 @@ class RegenerateAcceptances extends Command
         $this->findConsumableCandidates();
         $this->findComponentCandidates();
 
-        return $this->printPreview();
+        return $this->printReport();
     }
 
     /**
@@ -116,7 +124,6 @@ class RegenerateAcceptances extends Command
         Asset::query()
             ->whereHas('model.category', fn (Builder $q) => $this->scopeToRequestedCategories($q))
             ->when($this->companyIds, fn (Builder $q) => $q->whereIn('assets.company_id', $this->companyIds))
-            // ->whereNotNull('assets.assigned_to')
             ->whereIn('assets.assigned_type', [User::class, Asset::class])
             ->with('assignedTo')
             ->chunkById(self::CHUNK_SIZE, function (EloquentCollection $assets): void {
@@ -274,7 +281,13 @@ class RegenerateAcceptances extends Command
     }
 
     /**
-     * Classifies one builder's chunk of candidates and folds them into the preview.
+     * Classifies one builder's chunk of candidates, tallies each outcome, and creates
+     * the rows for the ones to re-request unless this is a --dry-run.
+     *
+     * Creating inside the chunk keeps the run's memory bounded by the chunk rather than
+     * by the size of the send set. It is safe against the chunking itself: a new
+     * acceptance row cannot change which items a later chunk of items returns, and a
+     * pair is only ever classified once, by exactly one builder.
      *
      * @param  array<int, Candidate>  $candidates
      */
@@ -289,7 +302,13 @@ class RegenerateAcceptances extends Command
         foreach ($candidates as $candidate) {
             $key = $this->pairKey($candidate['item']->getKey(), $candidate['user']->getKey());
 
-            $this->recordOutcome($this->classify($candidate, $history[$key] ?? new EloquentCollection));
+            $pair = $this->classify($candidate, $history[$key] ?? new EloquentCollection);
+
+            $this->recordOutcome($pair);
+
+            if ($pair['outcome'] === self::OUTCOME_SEND && ! $this->dryRun) {
+                $this->createAcceptance($pair);
+            }
         }
     }
 
@@ -331,7 +350,7 @@ class RegenerateAcceptances extends Command
     }
 
     /**
-     * Tallies one classified pair, adding a preview row when it is one to re-request.
+     * Tallies one classified pair, adding a report row when it is one to re-request.
      *
      * @param  ClassifiedCandidate  $pair
      */
@@ -358,13 +377,55 @@ class RegenerateAcceptances extends Command
         $type = class_basename($pair['item']);
         $this->sendCountsByType[$type] = ($this->sendCountsByType[$type] ?? 0) + 1;
 
-        $this->previewRows[] = [
+        $this->reportRows[] = [
             $pair['user']->present()->fullName,
             $pair['item']->present()->name,
             $type,
             $pair['units'],
             $pair['qty'],
         ];
+    }
+
+    /**
+     * Creates the pending row that re-requests acceptance from one holder.
+     *
+     * The row deliberately carries no `alert_on_response_id`, so nobody is emailed when
+     * the holder answers. That id names whoever *performed a checkout*, which is why the
+     * listener reads it from `auth()->id()` — and a console run has no actor to read.
+     * Carrying the last checkout's admin forward would invent an answer: the column holds
+     * a single id, so aggregating a pair's several prior rows into one re-request has to
+     * drop every admin but one, silently. Leaving it null keeps that decision unmade
+     * rather than making it wrong, and adding a recipient later is additive.
+     *
+     * @param  ClassifiedCandidate  $pair
+     */
+    private function createAcceptance(array $pair): void
+    {
+        CreateCheckoutAcceptanceAction::run(
+            $pair['item'],
+            $pair['user'],
+            $this->creationQty($pair['item'], $pair['qty']),
+        );
+
+        $this->created++;
+    }
+
+    /**
+     * The `qty` to stamp on the new row: the shortfall for the types a holder can hold
+     * several of, and null for an asset or a license seat.
+     *
+     * Null is what today's asset and license-seat checkout paths write — an asset or a
+     * seat is a single thing — and null already means one unit everywhere it is read.
+     * Writing the shortfall there instead would make this command's rows differ from a
+     * live checkout's for no gain.
+     *
+     * @param  Checkoutable  $item
+     */
+    private function creationQty(Model $item, int $shortfall): ?int
+    {
+        return $item instanceof Asset || $item instanceof LicenseSeat
+            ? null
+            : $shortfall;
     }
 
     /**
@@ -428,9 +489,9 @@ class RegenerateAcceptances extends Command
     }
 
     /**
-     * Prints what this run would re-request, and creates nothing.
+     * Prints what this run re-requested, or under --dry-run what it would have.
      */
-    private function printPreview(): int
+    private function printReport(): int
     {
         if ($this->candidateCount === 0) {
             $this->info('No users currently hold items requiring acceptance in that scope.');
@@ -438,11 +499,11 @@ class RegenerateAcceptances extends Command
             return 0;
         }
 
-        if ($this->previewRows !== []) {
-            $this->table(['User', 'Item', 'Type', 'Units held', 'Qty'], $this->previewRows);
+        if ($this->reportRows !== []) {
+            $this->table(['User', 'Item', 'Type', 'Units held', 'Qty'], $this->reportRows);
         }
 
-        $this->info('To re-request: '.count($this->previewRows).'.');
+        $this->info('To re-request: '.count($this->reportRows).'.');
 
         foreach ($this->sendCountsByType as $type => $count) {
             $this->line('  '.$type.': '.$count);
@@ -455,7 +516,7 @@ class RegenerateAcceptances extends Command
             $this->info('Previously declined and excluded: '.$this->declinedAndExcluded.'.');
         }
 
-        $this->info('Nothing was created.');
+        $this->info($this->dryRun ? 'Nothing was created.' : 'Created: '.$this->created.'.');
 
         return 0;
     }

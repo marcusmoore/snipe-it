@@ -542,7 +542,13 @@ class RegenerateAcceptancesTest extends TestCase
             'declined_at' => null,
             'deleted_at' => null,
         ]);
-        $this->assertSame(1, CheckoutAcceptance::count());
+
+        $expected = [
+            'Accessory #'.$accessory->id.' -> user #'.$holder->id.' qty 1',
+            'Accessory #'.$accessory->id.' -> user #'.$holder->id.' qty 2',
+        ];
+
+        $this->assertSame($expected, $this->acceptanceRows());
     }
 
     public function test_pending_acceptance_with_a_null_qty_covers_one_unit(): void
@@ -632,9 +638,222 @@ class RegenerateAcceptancesTest extends TestCase
             ->assertExitCode(0);
     }
 
-    private function heldAsset(User $holder, Category $category, Company $company, string $name): void
+    public function test_dry_run_creates_nothing(): void
     {
-        Asset::factory()->create([
+        $holder = User::factory()->create();
+        $this->assetIn($this->acceptanceCategory('asset'), [
+            'assigned_to' => $holder->id,
+            'assigned_type' => User::class,
+        ]);
+
+        $this->artisan('snipeit:regenerate-acceptances', ['--dry-run' => true])
+            ->expectsOutput('To re-request: 1.')
+            ->expectsOutput('Nothing was created.')
+            ->assertExitCode(0);
+
+        $this->assertDatabaseEmpty('checkout_acceptances');
+    }
+
+    public function test_asset_re_request_is_created_with_a_null_qty(): void
+    {
+        $holder = User::factory()->create();
+        $asset = $this->assetIn($this->acceptanceCategory('asset'), [
+            'assigned_to' => $holder->id,
+            'assigned_type' => User::class,
+        ]);
+
+        $this->artisan('snipeit:regenerate-acceptances')
+            ->expectsOutput('Created: 1.')
+            ->assertExitCode(0);
+
+        $this->assertSame(
+            ['Asset #'.$asset->id.' -> user #'.$holder->id.' qty null'],
+            $this->acceptanceRows(),
+        );
+    }
+
+    public function test_declined_pair_excluded_from_the_run_creates_nothing(): void
+    {
+        $holder = User::factory()->create();
+        $asset = $this->assetIn($this->acceptanceCategory('asset'), [
+            'assigned_to' => $holder->id,
+            'assigned_type' => User::class,
+        ]);
+        $this->acceptanceFor($asset, $holder)->declined()->create();
+
+        $this->artisan('snipeit:regenerate-acceptances', ['--exclude-declined' => true])
+            ->expectsOutput('Created: 0.')
+            ->assertExitCode(0);
+
+        $this->assertSame(
+            ['Asset #'.$asset->id.' -> user #'.$holder->id.' qty null declined'],
+            $this->acceptanceRows(),
+        );
+    }
+
+    public function test_re_requested_row_carries_no_alert_recipient(): void
+    {
+        $admin = User::factory()->create();
+        $holder = User::factory()->create();
+        $asset = $this->assetIn($this->acceptanceCategory('asset', ['alert_on_response' => true]), [
+            'assigned_to' => $holder->id,
+            'assigned_type' => User::class,
+        ]);
+        $this->acceptanceFor($asset, $holder)->accepted()->withAlertingTo($admin)->create();
+
+        $this->artisan('snipeit:regenerate-acceptances')->assertExitCode(0);
+
+        $this->assertNull($this->newestAcceptance()->alert_on_response_id);
+    }
+
+    /**
+     * One realistic install, run for real.
+     *
+     * Every test above proves one rule against one builder. This one proves the five
+     * builders *compose*: that a run over a mixed install creates exactly the rows it
+     * should and no others. It exists because a key-collision bug between the builders
+     * passed every rule test and surfaced only because one fixture happened to hold two
+     * types — rule tests cannot see the seams, so this asserts the created row set.
+     *
+     * Bob is the composition case: one asset he holds is a candidate in its own right
+     * *and* the route to three more (a seat, an accessory and a component).
+     */
+    public function test_a_mixed_install_creates_exactly_the_rows_it_should(): void
+    {
+        $company = Company::factory()->create();
+        $assetCategory = $this->acceptanceCategory('asset');
+        $licenseCategory = $this->acceptanceCategory('license');
+        $accessoryCategory = $this->acceptanceCategory('accessory');
+        $consumableCategory = $this->acceptanceCategory('consumable');
+        $componentCategory = $this->acceptanceCategory('component');
+
+        // Alice holds three types, and one of her three mice is already spoken for.
+        $alice = User::factory()->create();
+        $aliceLaptop = $this->heldAsset($alice, $assetCategory, $company, 'Alice laptop');
+        $mouse = $this->heldAccessory($alice, $accessoryCategory, $company, 'Mouse');
+        $mouse->checkouts()->createMany([
+            ['assigned_to' => $alice->id, 'assigned_type' => User::class],
+            ['assigned_to' => $alice->id, 'assigned_type' => User::class],
+        ]);
+        $toner = $this->heldConsumable($alice, $consumableCategory, $company, 'Toner');
+        $this->acceptanceFor($mouse, $alice)->pending()->create(['qty' => 1]);
+
+        // A fourth mouse sits at a location, which is nobody's to accept.
+        $mouse->checkouts()->create([
+            'assigned_to' => Location::factory()->create()->id,
+            'assigned_type' => Location::class,
+        ]);
+
+        // Bob holds one asset, and it carries a seat, an accessory and a component.
+        $bob = User::factory()->create();
+        $bobLaptop = $this->heldAsset($bob, $assetCategory, $company, 'Bob laptop');
+        $bobSeat = LicenseSeat::factory()->create([
+            'license_id' => License::factory()->create([
+                'name' => 'CAD',
+                'category_id' => $licenseCategory->id,
+                'company_id' => $company->id,
+            ])->id,
+            'asset_id' => $bobLaptop->id,
+            'assigned_to' => null,
+        ]);
+        $keyboard = Accessory::factory()->create([
+            'name' => 'Keyboard',
+            'category_id' => $accessoryCategory->id,
+            'company_id' => $company->id,
+        ]);
+        $keyboard->checkouts()->create([
+            'assigned_to' => $bobLaptop->id,
+            'assigned_type' => Asset::class,
+        ]);
+        $memory = Component::factory()->create([
+            'name' => 'RAM',
+            'category_id' => $componentCategory->id,
+            'company_id' => $company->id,
+        ]);
+        $memory->assets()->attach($bobLaptop->id, ['assigned_qty' => 2, 'created_by' => $bob->id]);
+
+        // Carol declined last time and still holds the asset, so a default run re-asks her.
+        $carol = User::factory()->create();
+        $carolPhone = $this->heldAsset($carol, $assetCategory, $company, 'Carol phone');
+        $this->acceptanceFor($carolPhone, $carol)->declined()->create();
+
+        // Dan is already covered by an in-flight request.
+        $dan = User::factory()->create();
+        $danTablet = $this->heldAsset($dan, $assetCategory, $company, 'Dan tablet');
+        $this->acceptanceFor($danTablet, $dan)->pending()->create();
+
+        // And this one is on the shelf.
+        $this->assetIn($assetCategory);
+
+        $this->artisan('snipeit:regenerate-acceptances')
+            ->expectsOutput('To re-request: 8.')
+            ->expectsOutput('  Asset: 3')
+            ->expectsOutput('  LicenseSeat: 1')
+            ->expectsOutput('  Accessory: 2')
+            ->expectsOutput('  Consumable: 1')
+            ->expectsOutput('  Component: 1')
+            ->expectsOutput('Previously declined: 1.')
+            ->expectsOutput('Already covered by a pending request: 1.')
+            ->expectsOutput('Created: 8.')
+            ->assertExitCode(0);
+
+        $expected = [
+            // the eight rows this run created
+            'Asset #'.$aliceLaptop->id.' -> user #'.$alice->id.' qty null',
+            'Accessory #'.$mouse->id.' -> user #'.$alice->id.' qty 2',
+            'Consumable #'.$toner->id.' -> user #'.$alice->id.' qty 1',
+            'Asset #'.$bobLaptop->id.' -> user #'.$bob->id.' qty null',
+            'LicenseSeat #'.$bobSeat->id.' -> user #'.$bob->id.' qty null',
+            'Accessory #'.$keyboard->id.' -> user #'.$bob->id.' qty 1',
+            'Component #'.$memory->id.' -> user #'.$bob->id.' qty 2',
+            'Asset #'.$carolPhone->id.' -> user #'.$carol->id.' qty null',
+            // and the three it left alone
+            'Accessory #'.$mouse->id.' -> user #'.$alice->id.' qty 1',
+            'Asset #'.$carolPhone->id.' -> user #'.$carol->id.' qty null declined',
+            'Asset #'.$danTablet->id.' -> user #'.$dan->id.' qty null',
+        ];
+        sort($expected);
+
+        $this->assertSame($expected, $this->acceptanceRows());
+    }
+
+    /**
+     * Every acceptance row in the database, one readable line each and sorted, so an
+     * assertion states the whole row set rather than an insertion order.
+     *
+     * @return array<int, string>
+     */
+    private function acceptanceRows(): array
+    {
+        $rows = CheckoutAcceptance::query()
+            ->get()
+            ->map(fn (CheckoutAcceptance $acceptance) => sprintf(
+                '%s #%d -> user #%d qty %s%s',
+                class_basename($acceptance->checkoutable_type),
+                $acceptance->checkoutable_id,
+                $acceptance->assigned_to_id,
+                $acceptance->qty ?? 'null',
+                match (true) {
+                    $acceptance->declined_at !== null => ' declined',
+                    $acceptance->accepted_at !== null => ' accepted',
+                    default => '',
+                },
+            ))
+            ->all();
+
+        sort($rows);
+
+        return $rows;
+    }
+
+    private function newestAcceptance(): CheckoutAcceptance
+    {
+        return CheckoutAcceptance::query()->orderByDesc('id')->firstOrFail();
+    }
+
+    private function heldAsset(User $holder, Category $category, Company $company, string $name): Asset
+    {
+        return Asset::factory()->create([
             'name' => $name,
             'model_id' => AssetModel::factory()->create(['category_id' => $category->id]),
             'company_id' => $company->id,
@@ -643,7 +862,7 @@ class RegenerateAcceptancesTest extends TestCase
         ]);
     }
 
-    private function heldLicenseSeat(User $holder, Category $category, Company $company, string $name): void
+    private function heldLicenseSeat(User $holder, Category $category, Company $company, string $name): LicenseSeat
     {
         $license = License::factory()->create([
             'name' => $name,
@@ -651,32 +870,40 @@ class RegenerateAcceptancesTest extends TestCase
             'company_id' => $company->id,
         ]);
 
-        LicenseSeat::factory()->create([
+        return LicenseSeat::factory()->create([
             'license_id' => $license->id,
             'asset_id' => null,
             'assigned_to' => $holder->id,
         ]);
     }
 
-    private function heldAccessory(User $holder, Category $category, Company $company, string $name): void
+    private function heldAccessory(User $holder, Category $category, Company $company, string $name): Accessory
     {
-        Accessory::factory()->create([
+        $accessory = Accessory::factory()->create([
             'name' => $name,
             'category_id' => $category->id,
             'company_id' => $company->id,
-        ])->checkouts()->create([
+        ]);
+
+        $accessory->checkouts()->create([
             'assigned_to' => $holder->id,
             'assigned_type' => User::class,
         ]);
+
+        return $accessory;
     }
 
-    private function heldConsumable(User $holder, Category $category, Company $company, string $name): void
+    private function heldConsumable(User $holder, Category $category, Company $company, string $name): Consumable
     {
-        Consumable::factory()->create([
+        $consumable = Consumable::factory()->create([
             'name' => $name,
             'category_id' => $category->id,
             'company_id' => $company->id,
-        ])->users()->attach($holder->id, ['created_by' => $holder->id]);
+        ]);
+
+        $consumable->users()->attach($holder->id, ['created_by' => $holder->id]);
+
+        return $consumable;
     }
 
     /**
@@ -684,26 +911,30 @@ class RegenerateAcceptancesTest extends TestCase
      * in a category that does not require acceptance — otherwise it becomes a candidate
      * in its own right and the assertions count it.
      */
-    private function heldComponent(User $holder, Category $category, Company $company, string $name): void
+    private function heldComponent(User $holder, Category $category, Company $company, string $name): Component
     {
         $carrier = $this->assetIn(
             Category::factory()->create(['category_type' => 'asset', 'require_acceptance' => false]),
             ['assigned_to' => $holder->id, 'assigned_type' => User::class],
         );
 
-        Component::factory()->create([
+        $component = Component::factory()->create([
             'name' => $name,
             'category_id' => $category->id,
             'company_id' => $company->id,
-        ])->assets()->attach($carrier->id, ['assigned_qty' => 1, 'created_by' => $holder->id]);
+        ]);
+
+        $component->assets()->attach($carrier->id, ['assigned_qty' => 1, 'created_by' => $holder->id]);
+
+        return $component;
     }
 
-    private function acceptanceCategory(string $type): Category
+    private function acceptanceCategory(string $type, array $attributes = []): Category
     {
-        return Category::factory()->create([
+        return Category::factory()->create(array_merge([
             'category_type' => $type,
             'require_acceptance' => true,
-        ]);
+        ], $attributes));
     }
 
     private function assetIn(Category $category, array $attributes = []): Asset
