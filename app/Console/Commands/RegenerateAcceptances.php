@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Actions\Acceptances\CreateCheckoutAcceptanceAction;
+use App\Mail\AcceptanceReRequestMail;
 use App\Models\Accessory;
 use App\Models\AccessoryCheckout;
 use App\Models\Asset;
@@ -16,6 +17,7 @@ use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Mail;
 
 /**
  * Re-requests EULA acceptance from users who currently hold items.
@@ -30,7 +32,8 @@ class RegenerateAcceptances extends Command
         {--category=* : Limit to these category ids (default: all categories requiring acceptance)}
         {--company=* : Limit to these company ids (default: all companies)}
         {--dry-run : Print the report; create nothing}
-        {--exclude-declined : Skip users whose latest response was a decline (default: re-ask them)}';
+        {--exclude-declined : Skip users whose latest response was a decline (default: re-ask them)}
+        {--notify : Also email each affected user}';
 
     protected $description = 'Re-request EULA acceptance from users who currently hold items';
 
@@ -64,6 +67,24 @@ class RegenerateAcceptances extends Command
 
     private bool $dryRun = false;
 
+    private bool $notify = false;
+
+    /**
+     * The holders this run created rows for, keyed by user id, each with how many rows
+     * they got. Keying by holder is what keeps a holder re-requested for three items to
+     * one email rather than three.
+     *
+     * @var array<int, array{user: User, count: int}>
+     */
+    private array $holdersToNotify = [];
+
+    /**
+     * Holders who got rows but could not be emailed, as ID/name table rows.
+     *
+     * @var array<int, array{0: int, 1: string}>
+     */
+    private array $holdersWithoutEmail = [];
+
     /**
      * The rows this run re-requested, in the order the builders found them. Under
      * --dry-run they are the rows it would have created.
@@ -89,18 +110,23 @@ class RegenerateAcceptances extends Command
 
     private int $created = 0;
 
+    private int $notified = 0;
+
     public function handle(): int
     {
         $this->categoryIds = $this->option('category');
         $this->companyIds = $this->option('company');
         $this->excludeDeclined = (bool) $this->option('exclude-declined');
         $this->dryRun = (bool) $this->option('dry-run');
+        $this->notify = (bool) $this->option('notify');
 
         $this->findAssetCandidates();
         $this->findLicenseSeatCandidates();
         $this->findAccessoryCandidates();
         $this->findConsumableCandidates();
         $this->findComponentCandidates();
+
+        $this->notifyHolders();
 
         return $this->printReport();
     }
@@ -408,6 +434,43 @@ class RegenerateAcceptances extends Command
         );
 
         $this->created++;
+
+        $holder = $pair['user'];
+        $this->holdersToNotify[$holder->id] = [
+            'user' => $holder,
+            'count' => ($this->holdersToNotify[$holder->id]['count'] ?? 0) + 1,
+        ];
+    }
+
+    /**
+     * Emails the holders this run created rows for, when --notify was passed.
+     *
+     * One message per holder, never one per row: a holder re-requested for three items
+     * is asked once, for three items. A holder with no email address still keeps their
+     * rows — they will see them on /account/accept at their next login, just without the
+     * nudge — and is reported instead.
+     */
+    private function notifyHolders(): void
+    {
+        if (! $this->notify) {
+            return;
+        }
+
+        foreach ($this->holdersToNotify as $holder) {
+            $user = $holder['user'];
+
+            if (! $user->email) {
+                $this->holdersWithoutEmail[] = [$user->id, $user->present()->fullName];
+
+                continue;
+            }
+
+            $mail = new AcceptanceReRequestMail($user, $holder['count']);
+
+            Mail::to($user->email)->send($user->locale ? $mail->locale($user->locale) : $mail);
+
+            $this->notified++;
+        }
     }
 
     /**
@@ -517,6 +580,15 @@ class RegenerateAcceptances extends Command
         }
 
         $this->info($this->dryRun ? 'Nothing was created.' : 'Created: '.$this->created.'.');
+
+        if ($this->notify) {
+            $this->info('Notified: '.$this->notified.'.');
+
+            if ($this->holdersWithoutEmail !== []) {
+                $this->info('The following users do not have an email address:');
+                $this->table(['ID', 'Name'], $this->holdersWithoutEmail);
+            }
+        }
 
         return 0;
     }

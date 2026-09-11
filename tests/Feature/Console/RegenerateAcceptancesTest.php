@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Console;
 
+use App\Mail\AcceptanceReRequestMail;
 use App\Models\Accessory;
 use App\Models\Asset;
 use App\Models\AssetModel;
@@ -16,6 +17,7 @@ use App\Models\Location;
 use App\Models\User;
 use Database\Factories\CheckoutAcceptanceFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
 
 class RegenerateAcceptancesTest extends TestCase
@@ -704,6 +706,106 @@ class RegenerateAcceptancesTest extends TestCase
         $this->artisan('snipeit:regenerate-acceptances')->assertExitCode(0);
 
         $this->assertNull($this->newestAcceptance()->alert_on_response_id);
+    }
+
+    public function test_notify_sends_one_email_per_holder_however_many_rows_they_got(): void
+    {
+        Mail::fake();
+        $company = Company::factory()->create();
+        $alice = User::factory()->create(['email' => 'alice@example.test']);
+        $bob = User::factory()->create(['email' => 'bob@example.test']);
+        $this->heldAsset($alice, $this->acceptanceCategory('asset'), $company, 'Alice laptop');
+        $this->heldAccessory($alice, $this->acceptanceCategory('accessory'), $company, 'Mouse');
+        $this->heldAsset($bob, $this->acceptanceCategory('asset'), $company, 'Bob laptop');
+
+        $this->artisan('snipeit:regenerate-acceptances', ['--notify' => true])
+            ->expectsOutput('Created: 3.')
+            ->expectsOutput('Notified: 2.')
+            ->assertExitCode(0);
+
+        Mail::assertSent(AcceptanceReRequestMail::class, function (AcceptanceReRequestMail $mail) {
+            return $mail->hasTo('alice@example.test')
+                && $mail->itemCount === 2
+                && $mail->hasSubject(trans('mail.acceptance_re_request'))
+                && str_contains($mail->render(), trans_choice('mail.acceptance_re_request_intro', 2, ['count' => 2]));
+        });
+        Mail::assertSent(
+            AcceptanceReRequestMail::class,
+            fn (AcceptanceReRequestMail $mail) => $mail->hasTo('bob@example.test') && $mail->itemCount === 1,
+        );
+        Mail::assertSent(AcceptanceReRequestMail::class, 2);
+    }
+
+    public function test_nothing_is_emailed_without_the_notify_flag(): void
+    {
+        Mail::fake();
+        $holder = User::factory()->create();
+        $this->assetIn($this->acceptanceCategory('asset'), [
+            'assigned_to' => $holder->id,
+            'assigned_type' => User::class,
+        ]);
+
+        $this->artisan('snipeit:regenerate-acceptances')
+            ->expectsOutput('Created: 1.')
+            ->doesntExpectOutput('Notified: 1.')
+            ->assertExitCode(0);
+
+        Mail::assertNothingSent();
+    }
+
+    public function test_dry_run_with_notify_emails_nobody(): void
+    {
+        Mail::fake();
+        $holder = User::factory()->create();
+        $this->assetIn($this->acceptanceCategory('asset'), [
+            'assigned_to' => $holder->id,
+            'assigned_type' => User::class,
+        ]);
+
+        $this->artisan('snipeit:regenerate-acceptances', ['--dry-run' => true, '--notify' => true])
+            ->expectsOutput('Nothing was created.')
+            ->expectsOutput('Notified: 0.')
+            ->assertExitCode(0);
+
+        Mail::assertNothingSent();
+    }
+
+    public function test_holder_without_an_email_still_gets_their_row_and_is_reported(): void
+    {
+        Mail::fake();
+        $holder = User::factory()->create(['email' => '']);
+        $asset = $this->assetIn($this->acceptanceCategory('asset'), [
+            'assigned_to' => $holder->id,
+            'assigned_type' => User::class,
+        ]);
+
+        $this->artisan('snipeit:regenerate-acceptances', ['--notify' => true])
+            ->expectsOutput('Created: 1.')
+            ->expectsOutput('Notified: 0.')
+            ->expectsOutput('The following users do not have an email address:')
+            ->expectsTable(['ID', 'Name'], [[$holder->id, $holder->present()->fullName]])
+            ->assertExitCode(0);
+
+        Mail::assertNothingSent();
+        $this->assertSame(
+            ['Asset #'.$asset->id.' -> user #'.$holder->id.' qty null'],
+            $this->acceptanceRows(),
+        );
+    }
+
+    public function test_the_no_email_table_is_not_printed_when_every_holder_has_an_email(): void
+    {
+        Mail::fake();
+        $holder = User::factory()->create(['email' => 'holder@example.test']);
+        $this->assetIn($this->acceptanceCategory('asset'), [
+            'assigned_to' => $holder->id,
+            'assigned_type' => User::class,
+        ]);
+
+        $this->artisan('snipeit:regenerate-acceptances', ['--notify' => true])
+            ->expectsOutput('Notified: 1.')
+            ->doesntExpectOutput('The following users do not have an email address:')
+            ->assertExitCode(0);
     }
 
     /**
