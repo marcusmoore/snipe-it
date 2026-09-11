@@ -70,11 +70,15 @@ class RegenerateAcceptances extends Command
     private bool $notify = false;
 
     /**
-     * The holders this run created rows for, keyed by user id, each with how many rows
-     * they got. Keying by holder is what keeps a holder re-requested for three items to
-     * one email rather than three.
+     * The holders this run created rows for, keyed by user id, each with the items they
+     * were re-requested for. Keying by holder is what keeps a holder re-requested for
+     * three items to one email rather than three.
      *
-     * @var array<int, array{user: User, count: int}>
+     * The items are scalars, never the models: holding a checkoutable per created row
+     * would pin every item this run touches in memory and undo the chunking that bounds
+     * the command.
+     *
+     * @var array<int, array{user: User, items: array<int, array{name: string, type: class-string, qty: int|null}>}>
      */
     private array $holdersToNotify = [];
 
@@ -436,9 +440,11 @@ class RegenerateAcceptances extends Command
         $this->created++;
 
         $holder = $pair['user'];
-        $this->holdersToNotify[$holder->id] = [
-            'user' => $holder,
-            'count' => ($this->holdersToNotify[$holder->id]['count'] ?? 0) + 1,
+        $this->holdersToNotify[$holder->id]['user'] = $holder;
+        $this->holdersToNotify[$holder->id]['items'][] = [
+            'name' => $pair['item']->present()->name,
+            'type' => $pair['item']::class,
+            'qty' => $this->creationQty($pair['item'], $pair['qty']),
         ];
     }
 
@@ -465,7 +471,7 @@ class RegenerateAcceptances extends Command
                 continue;
             }
 
-            $mail = new AcceptanceReRequestMail($user, $holder['count']);
+            $mail = new AcceptanceReRequestMail($user, $holder['items']);
 
             Mail::to($user->email)->send($user->locale ? $mail->locale($user->locale) : $mail);
 

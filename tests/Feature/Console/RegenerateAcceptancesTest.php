@@ -725,15 +725,62 @@ class RegenerateAcceptancesTest extends TestCase
 
         Mail::assertSent(AcceptanceReRequestMail::class, function (AcceptanceReRequestMail $mail) {
             return $mail->hasTo('alice@example.test')
-                && $mail->itemCount === 2
+                && count($mail->items) === 2
                 && $mail->hasSubject(trans('mail.acceptance_re_request'))
                 && str_contains($mail->render(), trans_choice('mail.acceptance_re_request_intro', 2, ['count' => 2]));
         });
         Mail::assertSent(
             AcceptanceReRequestMail::class,
-            fn (AcceptanceReRequestMail $mail) => $mail->hasTo('bob@example.test') && $mail->itemCount === 1,
+            fn (AcceptanceReRequestMail $mail) => $mail->hasTo('bob@example.test') && count($mail->items) === 1,
         );
         Mail::assertSent(AcceptanceReRequestMail::class, 2);
+    }
+
+    public function test_the_email_names_every_item_the_holder_was_re_requested_for(): void
+    {
+        Mail::fake();
+        $company = Company::factory()->create();
+        $holder = User::factory()->create(['email' => 'holder@example.test']);
+        $this->heldAsset($holder, $this->acceptanceCategory('asset'), $company, 'Alice laptop');
+        $mouse = $this->heldAccessory($holder, $this->acceptanceCategory('accessory'), $company, 'Mouse');
+        $mouse->checkouts()->create(['assigned_to' => $holder->id, 'assigned_type' => User::class]);
+
+        $this->artisan('snipeit:regenerate-acceptances', ['--notify' => true])->assertExitCode(0);
+
+        Mail::assertSent(AcceptanceReRequestMail::class, function (AcceptanceReRequestMail $mail) {
+            $body = $mail->render();
+
+            return str_contains($body, 'Alice laptop')
+                && str_contains($body, trans('general.asset'))
+                && str_contains($body, 'Mouse ('.trans('general.accessory').') × 2')
+                && ! str_contains($body, trans_choice('mail.acceptance_re_request_more_items', 1, ['count' => 1]));
+        });
+    }
+
+    public function test_the_email_lists_ten_items_then_counts_the_rest(): void
+    {
+        Mail::fake();
+        $company = Company::factory()->create();
+        $category = $this->acceptanceCategory('asset');
+        $holder = User::factory()->create(['email' => 'holder@example.test']);
+
+        foreach (range(1, 12) as $number) {
+            $this->heldAsset($holder, $category, $company, 'Laptop '.$number);
+        }
+
+        $this->artisan('snipeit:regenerate-acceptances', ['--notify' => true])->assertExitCode(0);
+
+        Mail::assertSent(AcceptanceReRequestMail::class, function (AcceptanceReRequestMail $mail) {
+            $body = $mail->render();
+            $named = array_filter(
+                range(1, 12),
+                fn (int $number) => str_contains($body, 'Laptop '.$number.' #'),
+            );
+
+            return count($mail->items) === 12
+                && count($named) === 10
+                && str_contains($body, trans_choice('mail.acceptance_re_request_more_items', 2, ['count' => 2]));
+        });
     }
 
     public function test_nothing_is_emailed_without_the_notify_flag(): void
