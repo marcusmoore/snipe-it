@@ -78,7 +78,7 @@ class RegenerateAcceptances extends Command
      * would pin every item this run touches in memory and undo the chunking that bounds
      * the command.
      *
-     * @var array<int, array{user: User, items: array<int, array{name: string, type: class-string, qty: int|null}>}>
+     * @var array<int, array{user: User, items: array<int, array{name: string, type: 'asset'|'license'|'accessory'|'consumable'|'component', qty: int|null}>}>
      */
     private array $holdersToNotify = [];
 
@@ -443,9 +443,26 @@ class RegenerateAcceptances extends Command
         $this->holdersToNotify[$holder->id]['user'] = $holder;
         $this->holdersToNotify[$holder->id]['items'][] = [
             'name' => $pair['item']->present()->name,
-            'type' => $pair['item']::class,
+            'type' => $this->itemType($pair['item']),
             'qty' => $this->creationQty($pair['item'], $pair['qty']),
         ];
+    }
+
+    /**
+     * Which kind of thing this is, as the token the mail turns into a word.
+     *
+     * @param  Checkoutable  $item
+     * @return 'asset'|'license'|'accessory'|'consumable'|'component'
+     */
+    private function itemType(Model $item): string
+    {
+        return match (true) {
+            $item instanceof Asset => 'asset',
+            $item instanceof LicenseSeat => 'license',
+            $item instanceof Accessory => 'accessory',
+            $item instanceof Consumable => 'consumable',
+            $item instanceof Component => 'component',
+        };
     }
 
     /**

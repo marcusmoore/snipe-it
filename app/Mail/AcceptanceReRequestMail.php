@@ -2,10 +2,6 @@
 
 namespace App\Mail;
 
-use App\Models\Accessory;
-use App\Models\Asset;
-use App\Models\Consumable;
-use App\Models\LicenseSeat;
 use App\Models\User;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailables\Address;
@@ -24,7 +20,7 @@ class AcceptanceReRequestMail extends BaseMailable
     private const ITEM_LIST_LIMIT = 10;
 
     /**
-     * @param  array<int, array{name: string, type: class-string, qty: int|null}>  $items
+     * @param  array<int, array{name: string, type: 'asset'|'license'|'accessory'|'consumable'|'component', qty: int|null}>  $items
      */
     public function __construct(
         public readonly User $holder,
@@ -52,18 +48,28 @@ class AcceptanceReRequestMail extends BaseMailable
             with: [
                 'assigned_to' => $this->holder->present()->fullName,
                 'count' => count($this->items),
-                'shown_items' => array_map(
-                    fn (array $item) => [
-                        'name' => $item['name'],
-                        'type' => $this->typeLabel($item['type']),
-                        'qty' => $item['qty'],
-                    ],
-                    array_slice($this->items, 0, self::ITEM_LIST_LIMIT),
-                ),
+                'shown_items' => $this->shownItems(),
                 'remaining' => max(count($this->items) - self::ITEM_LIST_LIMIT, 0),
                 'accept_url' => route('account.accept'),
             ],
         );
+    }
+
+    /**
+     * The items the message names, each labelled in words a holder uses.
+     *
+     * @return array<int, array{name: string, type: string, qty: int|null}>
+     */
+    private function shownItems(): array
+    {
+        return collect($this->items)
+            ->take(self::ITEM_LIST_LIMIT)
+            ->map(fn (array $item) => [
+                'name' => $item['name'],
+                'type' => $this->typeLabel($item['type']),
+                'qty' => $item['qty'],
+            ])
+            ->all();
     }
 
     /**
@@ -73,16 +79,16 @@ class AcceptanceReRequestMail extends BaseMailable
      * is not a word anyone outside this codebase uses. This runs while the mailable is
      * being rendered, so it is already inside the holder's locale.
      *
-     * @param  class-string  $type
+     * @param  'asset'|'license'|'accessory'|'consumable'|'component'  $type
      */
     private function typeLabel(string $type): string
     {
         return match ($type) {
-            Asset::class => trans('general.asset'),
-            LicenseSeat::class => trans('general.license'),
-            Accessory::class => trans('general.accessory'),
-            Consumable::class => trans('general.consumable'),
-            default => trans('general.component'),
+            'asset' => trans('general.asset'),
+            'license' => trans('general.license'),
+            'accessory' => trans('general.accessory'),
+            'consumable' => trans('general.consumable'),
+            'component' => trans('general.component'),
         };
     }
 
