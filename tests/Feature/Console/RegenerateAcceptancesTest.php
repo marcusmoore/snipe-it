@@ -18,6 +18,7 @@ use App\Models\User;
 use Database\Factories\CheckoutAcceptanceFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Testing\PendingCommand;
 use Tests\TestCase;
 
 class RegenerateAcceptancesTest extends TestCase
@@ -853,6 +854,198 @@ class RegenerateAcceptancesTest extends TestCase
             ->expectsOutput('Notified: 1.')
             ->doesntExpectOutput('The following users do not have an email address:')
             ->assertExitCode(0);
+    }
+
+    /**
+     * The wizard's prompts, pre-answered in the order `runWizard()` walks them.
+     *
+     * `multiselect()` falls back to a single `choice()` call under test, so each picker
+     * is one `expectsQuestion` taking an array of ids. The two pickers are only asked
+     * when there is something to pick, so a fixture with no company never sees the
+     * company step.
+     *
+     * @param  array<int, int>  $categoryIds
+     * @param  array<int, int>  $companyIds
+     */
+    private function runWizard(
+        array $categoryIds = [],
+        array $companyIds = [],
+        bool $excludeDeclined = false,
+        bool $notify = false,
+        bool $confirm = true,
+    ): PendingCommand {
+        return $this->artisan('snipeit:regenerate-acceptances')
+            ->expectsQuestion('Which categories should this run cover?', $categoryIds)
+            ->expectsQuestion('Which companies should this run cover?', $companyIds)
+            ->expectsConfirmation('Skip holders whose latest response was a decline?', $excludeDeclined ? 'yes' : 'no')
+            ->expectsConfirmation('Email each affected holder?', $notify ? 'yes' : 'no')
+            ->expectsConfirmation('Create these acceptance requests?', $confirm ? 'yes' : 'no');
+    }
+
+    public function test_wizard_creates_the_rows_it_previewed_when_confirmed(): void
+    {
+        $company = Company::factory()->create();
+        $holder = User::factory()->create();
+        $asset = $this->heldAsset($holder, $this->acceptanceCategory('asset'), $company, 'Wizard laptop');
+
+        $this->runWizard()
+            ->expectsOutput('Created: 1.')
+            ->assertExitCode(0);
+
+        $this->assertSame(
+            ['Asset #'.$asset->id.' -> user #'.$holder->id.' qty null'],
+            $this->acceptanceRows(),
+        );
+    }
+
+    public function test_wizard_creates_nothing_when_the_operator_aborts(): void
+    {
+        $company = Company::factory()->create();
+        $holder = User::factory()->create();
+        $this->heldAsset($holder, $this->acceptanceCategory('asset'), $company, 'Wizard laptop');
+
+        $this->runWizard(confirm: false)
+            ->expectsOutput('Nothing was created.')
+            ->doesntExpectOutput('Created: 1.')
+            ->assertExitCode(0);
+
+        $this->assertSame([], $this->acceptanceRows());
+    }
+
+    public function test_wizard_sends_nothing_when_the_operator_aborts(): void
+    {
+        Mail::fake();
+        $company = Company::factory()->create();
+        $holder = User::factory()->create(['email' => 'holder@example.test']);
+        $this->heldAsset($holder, $this->acceptanceCategory('asset'), $company, 'Wizard laptop');
+
+        $this->runWizard(notify: true, confirm: false)->assertExitCode(0);
+
+        Mail::assertNothingSent();
+    }
+
+    /**
+     * The preview is a dry run, so a confirmed wizard run scans twice.
+     *
+     * "Nothing was created." is the dry pass's footer and "Created: 1." the real one;
+     * seeing both in a run the operator confirmed is what proves the preview happened
+     * before the rows did.
+     */
+    public function test_wizard_previews_as_a_dry_run_then_creates_for_real(): void
+    {
+        $company = Company::factory()->create();
+        $holder = User::factory()->create();
+        $this->heldAsset($holder, $this->acceptanceCategory('asset'), $company, 'Wizard laptop');
+
+        $this->runWizard()
+            ->expectsOutput('Nothing was created.')
+            ->expectsOutput('Created: 1.')
+            ->assertExitCode(0);
+
+        $this->assertCount(1, $this->acceptanceRows());
+    }
+
+    public function test_wizard_answers_carry_into_the_run(): void
+    {
+        Mail::fake();
+        $company = Company::factory()->create();
+        $holder = User::factory()->create(['email' => 'holder@example.test']);
+        $this->heldAsset($holder, $this->acceptanceCategory('asset'), $company, 'Wizard laptop');
+
+        $this->runWizard(notify: true)
+            ->expectsOutput('Notified: 1.')
+            ->assertExitCode(0);
+
+        Mail::assertSent(AcceptanceReRequestMail::class, 1);
+    }
+
+    public function test_wizard_excludes_decliners_when_the_operator_says_so(): void
+    {
+        $company = Company::factory()->create();
+        $holder = User::factory()->create();
+        $asset = $this->heldAsset($holder, $this->acceptanceCategory('asset'), $company, 'Wizard laptop');
+        $this->acceptanceFor($asset, $holder)->declined()->create();
+
+        $this->runWizard(excludeDeclined: true)
+            ->expectsOutput('Previously declined and excluded: 1.')
+            ->assertExitCode(0);
+
+        $this->assertSame(
+            ['Asset #'.$asset->id.' -> user #'.$holder->id.' qty null declined'],
+            $this->acceptanceRows(),
+        );
+    }
+
+    /**
+     * Decision 16's announce-and-skip: a flag answers its step, and the step is not asked.
+     *
+     * Every prompt the wizard could reach is left unanswered here except the final
+     * confirm. If a skipped step were actually asked, it would reach the mocked question
+     * helper and throw rather than silently taking a default.
+     */
+    public function test_wizard_announces_and_skips_every_step_a_flag_answered(): void
+    {
+        Mail::fake();
+        $company = Company::factory()->create();
+        $category = $this->acceptanceCategory('asset');
+        $holder = User::factory()->create(['email' => 'holder@example.test']);
+        $this->heldAsset($holder, $category, $company, 'Wizard laptop');
+
+        $this->artisan('snipeit:regenerate-acceptances', [
+            '--category' => [$category->id],
+            '--company' => [$company->id],
+            '--exclude-declined' => true,
+            '--notify' => true,
+        ])
+            ->expectsConfirmation('Create these acceptance requests?', 'yes')
+            ->expectsOutput('--category passed — skipping')
+            ->expectsOutput('--company passed — skipping')
+            ->expectsOutput('--exclude-declined passed — skipping')
+            ->expectsOutput('--notify passed — skipping')
+            ->expectsOutput('Notified: 1.')
+            ->assertExitCode(0);
+    }
+
+    public function test_interactive_dry_run_stops_at_the_preview_without_confirming(): void
+    {
+        $company = Company::factory()->create();
+        $holder = User::factory()->create();
+        $this->heldAsset($holder, $this->acceptanceCategory('asset'), $company, 'Wizard laptop');
+
+        $this->artisan('snipeit:regenerate-acceptances', ['--dry-run' => true])
+            ->expectsQuestion('Which categories should this run cover?', [])
+            ->expectsQuestion('Which companies should this run cover?', [])
+            ->expectsConfirmation('Skip holders whose latest response was a decline?', 'no')
+            ->expectsConfirmation('Email each affected holder?', 'no')
+            ->expectsOutput('Nothing was created.')
+            ->assertExitCode(0);
+
+        $this->assertSame([], $this->acceptanceRows());
+    }
+
+    /**
+     * Decision C parity: a --no-interaction run is slice 3's run, unchanged.
+     *
+     * The wizard never starts, so no prompt is pre-answered here; reaching one would
+     * throw. The flag defaults are the ones that applied before the wizard existed.
+     */
+    public function test_no_interaction_run_behaves_exactly_as_it_did_before_the_wizard(): void
+    {
+        Mail::fake();
+        $company = Company::factory()->create();
+        $holder = User::factory()->create(['email' => 'holder@example.test']);
+        $asset = $this->heldAsset($holder, $this->acceptanceCategory('asset'), $company, 'Wizard laptop');
+
+        $this->artisan('snipeit:regenerate-acceptances', ['--no-interaction' => true])
+            ->expectsOutput('Created: 1.')
+            ->doesntExpectOutput('Notified: 1.')
+            ->assertExitCode(0);
+
+        $this->assertSame(
+            ['Asset #'.$asset->id.' -> user #'.$holder->id.' qty null'],
+            $this->acceptanceRows(),
+        );
+        Mail::assertNothingSent();
     }
 
     /**
