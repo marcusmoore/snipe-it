@@ -404,6 +404,7 @@ class LdapSync extends Command
                     // Check if the relationship already exists
                     if (! $user->groups()->where('group_id', $ldap_default_group)->exists()) {
                         $user->groups()->attach($ldap_default_group);
+                        $user->logGroupAttached((int) $ldap_default_group);
                     }
                 }
 

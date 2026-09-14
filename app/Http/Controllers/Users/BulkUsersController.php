@@ -342,7 +342,7 @@ class BulkUsersController extends Controller
             }
 
             if ($canEditAuth && $request->filled('groups') && auth()->user()->isSuperUser()) {
-                $user->groups()->sync($request->input('groups'));
+                $user->syncGroupsWithLogging((array) $request->input('groups'));
             }
         }
 
