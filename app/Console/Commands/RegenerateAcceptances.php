@@ -51,12 +51,12 @@ class RegenerateAcceptances extends Command
         $this->dryRun = (bool) $this->option('dry-run');
         $this->notify = (bool) $this->option('notify');
 
-        if ($this->refuseUnusableCategories()) {
+        if ($this->refuseUnusableScope()) {
             return self::FAILURE;
         }
 
         if ($this->input->isInteractive() && ! $this->runWizard()) {
-            return 0;
+            return self::SUCCESS;
         }
 
         return $this->printReport($this->regenerate(dryRun: $this->dryRun));
@@ -98,9 +98,9 @@ class RegenerateAcceptances extends Command
      * refused run, since naming only the kind found first would send the operator round
      * a second failed run to discover the other.
      *
-     * @return bool whether the run was refused
+     * @return bool whether the scope is unusable
      */
-    private function refuseUnusableCategories(): bool
+    private function reportUnusableCategories(): bool
     {
         if ($this->categoryIds === []) {
             return false;
@@ -128,9 +128,62 @@ class RegenerateAcceptances extends Command
                 ['ID', 'Category'],
                 $withoutAcceptance->map(fn (Category $category) => [$category->id, $category->name])->all(),
             );
+            $this->line('Turn on Require Acceptance on them, or drop them from --category.');
         }
 
-        $this->line('Nothing was run. Drop those ids from --category, or turn on Require Acceptance on the category, and run again.');
+        return true;
+    }
+
+    /**
+     * Reports every `--company` id that names no company, and says whether it is usable.
+     *
+     * A company has no acceptance setting to get wrong, so an unknown id is the only way
+     * to mis-scope by company — but it fails the same silent way a bad category id does,
+     * narrowing the run to nothing that reads as nothing to do.
+     *
+     * @return bool whether the scope is unusable
+     */
+    private function reportUnknownCompanies(): bool
+    {
+        if ($this->companyIds === []) {
+            return false;
+        }
+
+        $knownIds = Company::whereIn('id', $this->companyIds)->pluck('id')->all();
+        $unknownIds = array_values(array_diff($this->companyIds, $knownIds));
+
+        if ($unknownIds === []) {
+            return false;
+        }
+
+        $this->error(vsprintf('No company exists with %s %s.', [
+            Str::plural('id', count($unknownIds)),
+            implode(', ', $unknownIds),
+        ]));
+
+        return true;
+    }
+
+    /**
+     * Refuses a run whose `--category` or `--company` ids cannot scope it, after naming
+     * every problem with both.
+     *
+     * Both scopes are reported before the refusal, under one closing line, so an
+     * operator who mistyped an id in each is told about both rather than sent round a
+     * second failed run to discover the second.
+     *
+     * @return bool whether the run was refused
+     */
+    private function refuseUnusableScope(): bool
+    {
+        $categoriesAreUnusable = $this->reportUnusableCategories();
+        $companiesAreUnusable = $this->reportUnknownCompanies();
+
+        if (! $categoriesAreUnusable && ! $companiesAreUnusable) {
+            return false;
+        }
+
+        $this->line('Nothing was run.');
 
         return true;
     }

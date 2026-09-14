@@ -17,6 +17,7 @@ use App\Models\Location;
 use App\Models\User;
 use Database\Factories\CheckoutAcceptanceFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Testing\PendingCommand;
 use Tests\TestCase;
@@ -330,7 +331,8 @@ class RegenerateAcceptancesTest extends TestCase
         $this->artisan('snipeit:regenerate-acceptances', ['--no-interaction' => true, '--category' => [$ignored->id]])
             ->expectsOutput('These categories do not require acceptance, so nothing in them can be re-requested:')
             ->expectsTable(['ID', 'Category'], [[$ignored->id, 'Plain Laptops']])
-            ->expectsOutput('Nothing was run. Drop those ids from --category, or turn on Require Acceptance on the category, and run again.')
+            ->expectsOutput('Turn on Require Acceptance on them, or drop them from --category.')
+            ->expectsOutput('Nothing was run.')
             ->assertExitCode(1);
 
         $this->assertSame([], $this->acceptanceRows());
@@ -392,6 +394,38 @@ class RegenerateAcceptancesTest extends TestCase
         $this->artisan('snipeit:regenerate-acceptances', ['--category' => [$valid->id, $ignored->id]])
             ->expectsTable(['ID', 'Category'], [[$ignored->id, 'Plain Laptops']])
             ->assertExitCode(1);
+    }
+
+    public function test_run_is_refused_when_a_company_id_does_not_exist(): void
+    {
+        $holder = User::factory()->create();
+        $this->heldAsset($holder, $this->acceptanceCategory('asset'), Company::factory()->create(), 'In scope asset');
+
+        $this->artisan('snipeit:regenerate-acceptances', ['--no-interaction' => true, '--company' => ['999999']])
+            ->expectsOutput('No company exists with id 999999.')
+            ->expectsOutput('Nothing was run.')
+            ->assertExitCode(1);
+
+        $this->assertSame([], $this->acceptanceRows());
+    }
+
+    /**
+     * A bad category id and a bad company id are both reported by the one refused run,
+     * under a single closing line rather than one per scope that failed.
+     */
+    public function test_refusal_names_unknown_category_and_company_ids_together(): void
+    {
+        Artisan::call('snipeit:regenerate-acceptances', [
+            '--no-interaction' => true,
+            '--category' => ['999999'],
+            '--company' => ['888888'],
+        ]);
+
+        $output = Artisan::output();
+
+        $this->assertStringContainsString('No category exists with id 999999.', $output);
+        $this->assertStringContainsString('No company exists with id 888888.', $output);
+        $this->assertSame(1, substr_count($output, 'Nothing was run.'));
     }
 
     /**
