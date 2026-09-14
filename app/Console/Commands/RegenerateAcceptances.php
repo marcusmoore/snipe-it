@@ -319,7 +319,7 @@ class RegenerateAcceptances extends Command
         if ($result->candidateCount === 0) {
             $this->info('No users currently hold items requiring acceptance in that scope.');
 
-            return 0;
+            return self::SUCCESS;
         }
 
         if ($result->reportRows !== []) {
@@ -350,6 +350,6 @@ class RegenerateAcceptances extends Command
             }
         }
 
-        return 0;
+        return self::SUCCESS;
     }
 }
