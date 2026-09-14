@@ -310,6 +310,150 @@ class RegenerateAcceptancesTest extends TestCase
     }
 
     /**
+     * `--category` is ANDed with the requires-acceptance scope, so a category that does
+     * not require acceptance narrows the run to nothing rather than widening it into
+     * that category. The danger is not a wrong set — it is that an empty report reads
+     * exactly like "correct scope, nothing to do", so a fat-fingered id looks like a
+     * clean bill of health. Refusing to run, and naming what is wrong with each id, is
+     * what tells the two apart.
+     */
+    public function test_run_is_refused_when_a_category_does_not_require_acceptance(): void
+    {
+        $holder = User::factory()->create();
+        $this->heldAsset($holder, $this->acceptanceCategory('asset'), Company::factory()->create(), 'In scope asset');
+        $ignored = Category::factory()->create([
+            'name' => 'Plain Laptops',
+            'category_type' => 'asset',
+            'require_acceptance' => false,
+        ]);
+
+        $this->artisan('snipeit:regenerate-acceptances', ['--no-interaction' => true, '--category' => [$ignored->id]])
+            ->expectsOutput('These categories do not require acceptance, so nothing in them can be re-requested:')
+            ->expectsTable(['ID', 'Category'], [[$ignored->id, 'Plain Laptops']])
+            ->expectsOutput('Nothing was run. Drop those ids from --category, or turn on Require Acceptance on the category, and run again.')
+            ->assertExitCode(1);
+
+        $this->assertSame([], $this->acceptanceRows());
+    }
+
+    public function test_run_is_refused_when_a_category_id_does_not_exist(): void
+    {
+        $holder = User::factory()->create();
+        $this->heldAsset($holder, $this->acceptanceCategory('asset'), Company::factory()->create(), 'In scope asset');
+
+        $this->artisan('snipeit:regenerate-acceptances', ['--no-interaction' => true, '--category' => ['999999']])
+            ->expectsOutput('No category exists with id 999999.')
+            ->assertExitCode(1);
+
+        $this->assertSame([], $this->acceptanceRows());
+    }
+
+    /**
+     * Both kinds of bad id are reported by the one refused run.
+     *
+     * Reporting only the first kind found would send the operator round a second failed
+     * run to discover the second, which is the same "fix it, still nothing" loop the
+     * refusal exists to end.
+     */
+    public function test_refusal_names_unknown_and_non_acceptance_category_ids_together(): void
+    {
+        $ignored = Category::factory()->create([
+            'name' => 'Office Supplies',
+            'category_type' => 'accessory',
+            'require_acceptance' => false,
+        ]);
+
+        $this->artisan('snipeit:regenerate-acceptances', [
+            '--no-interaction' => true,
+            '--category' => ['999999', $ignored->id, '888888'],
+        ])
+            ->expectsOutput('No category exists with ids 999999, 888888.')
+            ->expectsOutput('These categories do not require acceptance, so nothing in them can be re-requested:')
+            ->expectsTable(['ID', 'Category'], [[$ignored->id, 'Office Supplies']])
+            ->assertExitCode(1);
+    }
+
+    /**
+     * The refusal lands before the wizard, not after it.
+     *
+     * No prompt is pre-answered, so reaching one throws rather than taking a default —
+     * which is what proves the operator is not walked through four questions before
+     * being told the scope they passed was unusable.
+     */
+    public function test_interactive_run_is_refused_before_any_prompt_is_asked(): void
+    {
+        $valid = $this->acceptanceCategory('asset');
+        $ignored = Category::factory()->create([
+            'name' => 'Plain Laptops',
+            'category_type' => 'asset',
+            'require_acceptance' => false,
+        ]);
+
+        $this->artisan('snipeit:regenerate-acceptances', ['--category' => [$valid->id, $ignored->id]])
+            ->expectsTable(['ID', 'Category'], [[$ignored->id, 'Plain Laptops']])
+            ->assertExitCode(1);
+    }
+
+    /**
+     * Symfony hands `--category=1,2` back as the single string `'1,2'`, and MySQL then
+     * coerces that string to its leading integer inside the `whereIn` — so the un-split
+     * form used to scope the run to category 1 alone while reporting nothing amiss.
+     */
+    public function test_comma_separated_category_ids_are_accepted(): void
+    {
+        $holder = User::factory()->create();
+        $first = $this->acceptanceCategory('asset');
+        $second = $this->acceptanceCategory('asset');
+
+        $this->heldAsset($holder, $first, Company::factory()->create(), 'First asset');
+        $this->heldAsset($holder, $second, Company::factory()->create(), 'Second asset');
+        $this->heldAsset($holder, $this->acceptanceCategory('asset'), Company::factory()->create(), 'Out of scope asset');
+
+        $this->artisan('snipeit:regenerate-acceptances', [
+            '--no-interaction' => true,
+            '--category' => [$first->id.','.$second->id],
+        ])
+            ->expectsOutputToContain('First asset')
+            ->expectsOutputToContain('Second asset')
+            ->expectsOutput('To re-request: 2.')
+            ->assertExitCode(0);
+    }
+
+    public function test_comma_separated_company_ids_are_accepted(): void
+    {
+        $holder = User::factory()->create();
+        $category = $this->acceptanceCategory('asset');
+        $first = Company::factory()->create();
+        $second = Company::factory()->create();
+
+        $this->heldAsset($holder, $category, $first, 'First asset');
+        $this->heldAsset($holder, $category, $second, 'Second asset');
+        $this->heldAsset($holder, $category, Company::factory()->create(), 'Out of scope asset');
+
+        $this->artisan('snipeit:regenerate-acceptances', [
+            '--no-interaction' => true,
+            '--company' => [$first->id.','.$second->id],
+        ])
+            ->expectsOutputToContain('First asset')
+            ->expectsOutputToContain('Second asset')
+            ->expectsOutput('To re-request: 2.')
+            ->assertExitCode(0);
+    }
+
+    public function test_refusal_names_only_the_unknown_id_from_a_comma_separated_list(): void
+    {
+        $first = $this->acceptanceCategory('asset');
+        $second = $this->acceptanceCategory('asset');
+
+        $this->artisan('snipeit:regenerate-acceptances', [
+            '--no-interaction' => true,
+            '--category' => [$first->id.','.$second->id.',999999'],
+        ])
+            ->expectsOutput('No category exists with id 999999.')
+            ->assertExitCode(1);
+    }
+
+    /**
      * Each builder names its own category path — `model.category` for assets,
      * `license.category` for seats, `category` for the other three — and its own
      * company column, so both filters are pinned per type rather than once.

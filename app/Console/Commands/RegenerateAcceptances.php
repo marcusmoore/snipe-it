@@ -7,6 +7,7 @@ use App\Actions\Acceptances\RegenerateAcceptancesResult;
 use App\Models\Category;
 use App\Models\Company;
 use Illuminate\Console\Command;
+use Illuminate\Support\Str;
 
 use function Laravel\Prompts\confirm;
 use function Laravel\Prompts\multiselect;
@@ -44,17 +45,94 @@ class RegenerateAcceptances extends Command
 
     public function handle(): int
     {
-        $this->categoryIds = $this->option('category');
-        $this->companyIds = $this->option('company');
+        $this->categoryIds = $this->splitIds($this->option('category'));
+        $this->companyIds = $this->splitIds($this->option('company'));
         $this->excludeDeclined = (bool) $this->option('exclude-declined');
         $this->dryRun = (bool) $this->option('dry-run');
         $this->notify = (bool) $this->option('notify');
+
+        if ($this->refuseUnusableCategories()) {
+            return self::FAILURE;
+        }
 
         if ($this->input->isInteractive() && ! $this->runWizard()) {
             return 0;
         }
 
         return $this->printReport($this->regenerate(dryRun: $this->dryRun));
+    }
+
+    /**
+     * The ids behind a repeatable id option, with comma-separated values split out.
+     *
+     * Symfony hands `--category=1,2` back as the single string `'1,2'` rather than two
+     * ids, and MySQL then coerces that string to its leading integer inside a `whereIn`
+     * — so the un-split form scopes the run to category 1 alone and reports nothing
+     * amiss. Splitting here makes `--category=1,2` and `--category=1 --category=2` mean
+     * the same thing, and leaves a genuinely unknown id to be named on its own.
+     *
+     * @param  array<int, string>  $values
+     * @return array<int, string>
+     */
+    private function splitIds(array $values): array
+    {
+        return collect($values)
+            ->flatMap(fn (string $value) => explode(',', $value))
+            ->map(fn (string $id) => trim($id))
+            ->filter()
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Reports every `--category` id the run cannot use, and says whether it was refused.
+     *
+     * `--category` is ANDed with the requires-acceptance scope rather than added to it,
+     * so an id that is unknown, or whose category does not require acceptance,
+     * contributes nothing and the run reports an empty scope. That report is
+     * indistinguishable from a correctly scoped run with no work to do, which is how a
+     * mistyped id reads to an operator as a clean bill of health.
+     *
+     * The two mistakes are reported separately because they are fixed differently — one
+     * is a wrong id, the other a category setting — and both are reported by the one
+     * refused run, since naming only the kind found first would send the operator round
+     * a second failed run to discover the other.
+     *
+     * @return bool whether the run was refused
+     */
+    private function refuseUnusableCategories(): bool
+    {
+        if ($this->categoryIds === []) {
+            return false;
+        }
+
+        $categories = Category::whereIn('id', $this->categoryIds)->orderBy('name')->get();
+
+        $unknownIds = array_values(array_diff($this->categoryIds, $categories->modelKeys()));
+        $withoutAcceptance = $categories->where('require_acceptance', false);
+
+        if ($unknownIds === [] && $withoutAcceptance->isEmpty()) {
+            return false;
+        }
+
+        if ($unknownIds !== []) {
+            $this->error(vsprintf('No category exists with %s %s.', [
+                Str::plural('id', count($unknownIds)),
+                implode(', ', $unknownIds),
+            ]));
+        }
+
+        if ($withoutAcceptance->isNotEmpty()) {
+            $this->error('These categories do not require acceptance, so nothing in them can be re-requested:');
+            $this->table(
+                ['ID', 'Category'],
+                $withoutAcceptance->map(fn (Category $category) => [$category->id, $category->name])->all(),
+            );
+        }
+
+        $this->line('Nothing was run. Drop those ids from --category, or turn on Require Acceptance on the category, and run again.');
+
+        return true;
     }
 
     /**
