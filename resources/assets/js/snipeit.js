@@ -370,7 +370,6 @@ $(function () {
             }
         });
 
-
     // $('.datepicker').datepicker();
     // var datepicker = $.fn.datepicker.noConflict(); // return $.fn.datepicker to previously assigned value
     // $.fn.bootstrapDP = datepicker;
@@ -878,7 +877,7 @@ $(document).ready(function () {
     });
 
     // Auto-init eonasdan datetimepickers. bootstrap-datepicker has a native
-    // data-provide auto-init; eonasdan does not, so we do it ourselves.
+    // data-provide auto-init. eonasdan does not, so we do it ourselves.
     // Options are read from data-attributes on the wrapper so blade components
     // can tune format/side-by-side without touching this JS.
     //

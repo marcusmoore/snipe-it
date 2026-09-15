@@ -1897,12 +1897,6 @@ parameters:
 			path: app/Http/Controllers/Api/UsersController.php
 
 		-
-			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Relations\\Relation\:\:sync\(\)\.$#'
-			identifier: method.notFound
-			count: 2
-			path: app/Http/Controllers/Api/UsersController.php
-
-		-
 			message: '#^Method App\\Http\\Transformers\\AssetsTransformer\:\:transformAssets\(\) invoked with 3 parameters, 2 required\.$#'
 			identifier: arguments.count
 			count: 1
@@ -2026,12 +2020,6 @@ parameters:
 			message: '#^PHPDoc tag @param for parameter \$request with type App\\Http\\Requests\\ImageUploadRequest is not subtype of native type App\\Http\\Requests\\StoreAssetModelRequest\.$#'
 			identifier: parameter.phpDocType
 			count: 2
-			path: app/Http/Controllers/AssetModelsController.php
-
-		-
-			message: '#^PHPDoc tag @param references unknown parameter\: \$modelId$#'
-			identifier: parameter.notFound
-			count: 6
 			path: app/Http/Controllers/AssetModelsController.php
 
 		-
@@ -3471,7 +3459,7 @@ parameters:
 		-
 			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Relations\\Relation\:\:sync\(\)\.$#'
 			identifier: method.notFound
-			count: 2
+			count: 1
 			path: app/Http/Controllers/Users/BulkUsersController.php
 
 		-
@@ -3520,12 +3508,6 @@ parameters:
 			message: '#^Access to an undefined property App\\Models\\User\:\:\$manages_locations_count\.$#'
 			identifier: property.notFound
 			count: 1
-			path: app/Http/Controllers/Users/UsersController.php
-
-		-
-			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Relations\\Relation\:\:sync\(\)\.$#'
-			identifier: method.notFound
-			count: 2
 			path: app/Http/Controllers/Users/UsersController.php
 
 		-
@@ -8157,7 +8139,7 @@ parameters:
 		-
 			message: '#^Access to an undefined property App\\Models\\Actionlog\:\:\$created_by\.$#'
 			identifier: property.notFound
-			count: 5
+			count: 6
 			path: app/Models/User.php
 
 		-
@@ -8235,6 +8217,12 @@ parameters:
 		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id\.$#'
 			identifier: property.notFound
+			count: 2
+			path: app/Models/User.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$name\.$#'
+			identifier: property.notFound
 			count: 1
 			path: app/Models/User.php
 
@@ -8246,6 +8234,12 @@ parameters:
 
 		-
 			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Relations\\MorphMany\<App\\Models\\Maintenance, \$this\(App\\Models\\User\)\>\:\:withTrashed\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Models/User.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Relations\\Relation\:\:sync\(\)\.$#'
 			identifier: method.notFound
 			count: 1
 			path: app/Models/User.php
@@ -9593,6 +9587,18 @@ parameters:
 			identifier: nullsafe.neverNull
 			count: 2
 			path: app/Providers/ValidationServiceProvider.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\LicenseSeat\:\:\$created_by\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/PredefinedKitCheckoutService.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Relations\\Relation\:\:attach\(\)\.$#'
+			identifier: method.notFound
+			count: 2
+			path: app/Services/PredefinedKitCheckoutService.php
 
 		-
 			message: '#^Call to function is_null\(\) with App\\Models\\User will always evaluate to false\.$#'

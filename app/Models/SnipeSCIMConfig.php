@@ -322,7 +322,37 @@ class SnipeMutableCollection extends MutableCollection
         $requestedUserIds = $this->userIdsFromMemberPayload($value);
         $previouslyAttachedIds = $this->pivotFilterToAttached($object, $requestedUserIds);
 
-        parent::add($value, $object);
+        //   1) Skip its trailing $object->load($this->attribute) call.
+        //      That load fires a `select users.* from users inner join
+        //      users_groups` that hydrates the entire membership into
+        //      User models on every PATCH, enough to exhaust PHP memory
+        //      on a group with tens of thousands of members. The
+        //      response's `members` list is rebuilt by our doRead()
+        //      override (id-only pluck), so the load is redundant here.
+        //   2) Attach only the id delta we already know is new
+        //      (requestedUserIds minus previouslyAttachedIds) instead
+        //      of syncWithoutDetaching(). Laravel's syncWithoutDetaching
+        //      begins by SELECT-ing every pivot row for group_id to
+        //      figure out what already exists, defeating the point of
+        //      the bounded pre-check.
+        $submittedValues = collect($value)->pluck('value')->all();
+        $existingObjects = $object
+            ->{$this->attribute}()
+            ->getRelated()
+            ->findMany($submittedValues)
+            ->map(fn($o) => $o->getKey());
+
+        if (($diff = collect($submittedValues)->diff($existingObjects))->count() > 0) {
+            throw new SCIMException(
+                sprintf('One or more %s are unknown: %s', $this->attribute, implode(',', $diff->all())),
+                500
+            );
+        }
+
+        $toAttach = array_values(array_diff($requestedUserIds, $previouslyAttachedIds));
+        if ($toAttach !== []) {
+            $object->{$this->attribute}()->attach($toAttach);
+        }
 
         $this->logGroupMembershipChangesForIds(
             $object,
@@ -337,14 +367,39 @@ class SnipeMutableCollection extends MutableCollection
         // one user id, list-value form targets an explicit list. Both
         // reduce to a small requestedUserIds set that we pre-check
         // against the pivot so we log only real detachments.
-        if ($path?->getValuePathFilter()?->getComparisonExpression() !== null) {
-            $requestedUserIds = [(int) $path->getValuePathFilter()->getComparisonExpression()->compareValue];
+        $comparison = $path?->getValuePathFilter()?->getComparisonExpression();
+        if ($comparison !== null) {
+            $requestedUserIds = [(int) $comparison->compareValue];
         } else {
             $requestedUserIds = $this->userIdsFromMemberPayload($value);
         }
         $previouslyAttachedIds = $this->pivotFilterToAttached($object, $requestedUserIds);
 
-        parent::remove($value, $object, $path);
+        // Inline vendor MutableCollection::remove() minus its trailing
+        // $object->load($this->attribute) call. Same reason as add():
+        // the full-membership hydration exhausts memory on large
+        // groups and doRead() rebuilds the response list itself.
+        if ($comparison !== null) {
+            $attributes = $comparison->attributePath->attributeNames ?? [];
+            $operator = $comparison->operator;
+
+            if ($value !== null) {
+                throw new SCIMException('Remove operation with filter requires a null value parameter', 400);
+            }
+            if (count($attributes) !== 1) {
+                throw new SCIMException(sprintf('Filter must specify exactly one attribute, found %d attributes', count($attributes)), 400);
+            }
+            if ($operator !== 'eq') {
+                throw new SCIMException(sprintf('Unsupported filter operator "%s" - only "eq" is supported', $operator), 400);
+            }
+            if ($attributes[0] !== 'value') {
+                throw new SCIMException(sprintf('Cannot filter on "%s" - only filtering on "value" attribute is supported', $attributes[0]), 400);
+            }
+
+            $object->{$this->attribute}()->detach([$comparison->compareValue]);
+        } else {
+            $object->{$this->attribute}()->detach(collect($value)->pluck('value')->all());
+        }
 
         $this->logGroupMembershipChangesForIds(
             $object,
@@ -387,7 +442,7 @@ class SnipeMutableCollection extends MutableCollection
      */
     private function pivotFilterToAttached(Model $object, array $requestedUserIds): array
     {
-        if (! ($object instanceof Group || $object instanceof SCIMGroup) || $requestedUserIds === []) {
+        if (!$object instanceof Group || $requestedUserIds === []) {
             return [];
         }
 
@@ -410,7 +465,7 @@ class SnipeMutableCollection extends MutableCollection
      */
     private function logGroupMembershipChangesForIds(Model $object, array $attachedIds, array $detachedIds): void
     {
-        if (! ($object instanceof Group || $object instanceof SCIMGroup)) {
+        if (!$object instanceof Group) {
             return;
         }
 

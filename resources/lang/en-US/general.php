@@ -824,6 +824,7 @@ return [
     'select_all_none' => 'Select/Unselect All',
     'generic_model_not_found' => 'That :model was not found or you do not have permission to access it',
     'report_not_editable' => 'You do not have permission to edit this report template',
+    'report_template' => 'report template',
     'deleted_models' => 'Deleted Asset Models',
     'deleted_users' => 'Deleted Users',
     'cost_each' => ':amount each',

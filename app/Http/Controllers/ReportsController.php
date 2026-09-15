@@ -759,7 +759,13 @@ class ReportsController extends Controller
 
             $executionTime = microtime(true) - $_SERVER['REQUEST_TIME_FLOAT'];
             Log::debug('Starting headers: '.$executionTime);
-            fputcsv($handle, $header);
+            // Formula-escape the header before writing. Custom-field
+            // names are attacker-editable via the customfields
+            // permission and carry no character filter, so a header
+            // cell like "=cmd|'/c calc.exe'!A1" would evaluate as a
+            // formula on a reports.view user's workstation.
+            $headerFormatter = new EscapeFormula('`');
+            fputcsv($handle, $headerFormatter->escapeRecord($header));
             $executionTime = microtime(true) - $_SERVER['REQUEST_TIME_FLOAT'];
             Log::debug('Added headers: '.$executionTime);
 

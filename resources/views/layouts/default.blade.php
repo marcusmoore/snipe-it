@@ -418,7 +418,7 @@
                                             <li{!! (request()->is('statuslabels/'.$status_nav->id) ? ' class="active" aria-current="page"' : '') !!}>
                                                 <a href="{{ route('statuslabels.show', ['statuslabel' => $status_nav->id]) }}">
                                                     <i class="fas fa-circle text-grey fa-fw"
-                                                       aria-hidden="true"{!!  ($status_nav->color!='' ? ' style="color: '.e($status_nav->color).'"' : '') !!}></i>
+                                                       aria-hidden="true"{!! ($status_nav->color != '' ? ' style="color: '.e($status_nav->color).'"' : '') !!}></i>
                                                     {{ $status_nav->name }}
                                                     <span class="badge badge-secondary">{{ $status_nav->asset_count }}</span></a></li>
                                         @endforeach

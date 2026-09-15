@@ -917,7 +917,7 @@ class User extends SnipeModel implements AuthenticatableContract, AuthorizableCo
         // log entirely, so the pivot mutation is still visible.
         $detached = Group::find($groupId);
         $oldSnapshot = $newSnapshot;
-        $oldSnapshot[] = ['id' => $groupId, 'name' => $detached?->name ?? ('#'.$groupId)];
+        $oldSnapshot[] = ['id' => $groupId, 'name' => $detached ? $detached->name : '#'.$groupId];
         usort($oldSnapshot, fn ($a, $b) => $a['id'] <=> $b['id']);
 
         $this->recordGroupsChange($oldSnapshot, $newSnapshot);

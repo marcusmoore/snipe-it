@@ -628,6 +628,16 @@ class UserFactory extends Factory
         return $this->appendPermission(['statuslabels.delete' => '1']);
     }
 
+    public function createStatusLabels()
+    {
+        return $this->appendPermission(['statuslabels.create' => '1']);
+    }
+
+    public function editStatusLabels()
+    {
+        return $this->appendPermission(['statuslabels.edit' => '1']);
+    }
+
     public function deleteSuppliers()
     {
         return $this->appendPermission(['suppliers.delete' => '1']);

@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Accessory;
 use App\Models\Actionlog;
 use App\Models\Asset;
+use App\Models\CheckoutAcceptance;
 use App\Models\Company;
 use App\Models\Component;
 use App\Models\Consumable;
@@ -432,6 +433,15 @@ class BulkUsersController extends Controller
             }
         }
 
+        // Company-scoped consumable set: the CompanyableTrait's global
+        // scope filters this to consumables the caller can actually
+        // see. Used to fence the ConsumableAssignment delete below to
+        // the caller's tenant, closing the FMCS bypass reported in
+        // GHSA-m647-5cjf-gf92 while leaving the existing permission
+        // model (editUsers alone can bulk-remove consumable pivots)
+        // intact for same-company operations.
+        $scopedConsumableIds = Consumable::whereIn('id', $consumableUserRows->pluck('consumable_id')->unique())->pluck('id');
+
         if ($request->input('delete_user') == '1' && $users->isNotEmpty() && auth()->user()->cannot('delete', User::class)) {
             return redirect()->route('users.index')->with('error', trans('general.insufficient_permissions'));
         }
@@ -448,7 +458,15 @@ class BulkUsersController extends Controller
         ]);
 
         LicenseSeat::whereIn('id', $licenses->pluck('id'))->update(['assigned_to' => null]);
-        ConsumableAssignment::whereIn('id', $consumableUserRows->pluck('id'))->delete();
+
+        $scopedConsumableRowIds = $consumableUserRows
+            ->whereIn('consumable_id', $scopedConsumableIds)
+            ->pluck('id');
+        ConsumableAssignment::whereIn('id', $scopedConsumableRowIds)->delete();
+
+        CheckoutAcceptance::pending()
+            ->whereIn('assigned_to_id', $user_raw_array)
+            ->delete();
 
         foreach ($users as $user) {
             $user->accessories()->sync([]);
