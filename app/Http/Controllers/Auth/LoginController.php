@@ -76,7 +76,7 @@ class LoginController extends Controller
         $this->loginViaRemoteUser($request);
         $this->loginViaSaml($request);
         if (Auth::check()) {
-            return redirect()->intended('/');
+            return Helper::safeIntended('/');
         }
 
         if (! $request->session()->has('loggedout')) {
@@ -358,7 +358,7 @@ class LoginController extends Controller
         }
 
         // Redirect to the users page
-        return redirect()->intended()->with('success', trans('auth/message.signin.success'));
+        return Helper::safeIntended()->with('success', trans('auth/message.signin.success'));
     }
 
     /**
@@ -460,7 +460,7 @@ class LoginController extends Controller
             $user->saveQuietly();
             $request->session()->put('2fa_authed', $user->id);
 
-            return redirect()->intended()->with('success', trans('auth/message.signin.success'));
+            return Helper::safeIntended()->with('success', trans('auth/message.signin.success'));
         }
 
         return redirect()->route('two-factor')->with('error', trans('auth/message.two_factor.invalid_code'));

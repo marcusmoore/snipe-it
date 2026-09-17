@@ -988,16 +988,20 @@ class User extends SnipeModel implements AuthenticatableContract, AuthorizableCo
      * Superuser editors skip the merge because they can see every
      * company, so their submission already represents full intent.
      */
-    public function syncCompaniesPreservingInvisibleTo(User $editor, array $submittedCompanyIds): void
+    public function syncCompaniesPreservingInvisibleTo(?User $editor, array $submittedCompanyIds): void
     {
         $submitted = array_map('intval', $submittedCompanyIds);
 
         // FMCS is off, so every user can see every company
         // and there is no invisible-to-editor set to preserve. Superuser
         // editors also skip because their submission already
-        // represents full intent across all tenants.
+        // represents full intent across all tenants. A null editor
+        // means no scope context (CLI-run importer, seeder, artisan
+        // command), which behaves like a superuser edit: sync the
+        // submission verbatim because there is no scope to preserve
+        // against.
         $fmcsOn = (bool) Setting::getSettings()->full_multiple_companies_support;
-        if (! $fmcsOn || $editor->isSuperUser()) {
+        if (! $fmcsOn || $editor === null || $editor->isSuperUser()) {
             $this->syncCompaniesWithLogging($submitted);
 
             return;

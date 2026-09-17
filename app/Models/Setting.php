@@ -276,12 +276,31 @@ class Setting extends Model
         // strip_tags guards against injection reaching a
         // context that treats < as an HTML boundary. The old encode-then-
         // selectively-decode chain silently undid its own work on > and "
-        // and did not touch either @import or url(), so it's gone.
+        // and did not touch either @import or url(), so it is gone.
         $custom_css = strip_tags($custom_css);
 
+        // CSS lets you write hex escapes (`\XXXXXX`, optional trailing
+        // whitespace) and single-char escapes (`\X`) inside identifiers
+        // and strings. Browsers decode `@\69 mport` to `@import` at parse
+        // time. GHSA-gc22-r333-8q45 reported this bypass of the source-
+        // text regex below. Instead of mirroring CSS's escape decoder,
+        // refuse to render any CSS containing a backslash. Legitimate
+        // custom branding CSS does not need escape sequences, and the
+        // url() guard further down already applies this same rule to
+        // url() values for the same reason.
+        if (str_contains($custom_css, '\\')) {
+            return '';
+        }
+
+        // CSS comments are stripped during tokenization at every position
+        // except inside strings, so `@im/*c*/port` parses as `@import` in
+        // a browser. Strip comments here first so the at-rule and url()
+        // regexes below see the same token stream the browser will.
+        $custom_css = preg_replace('#/\*.*?\*/#s', '', (string) $custom_css);
+
         // \b (word boundary) instead of \s+ so `@import"url"` and
-        // `@import/*c*/"url"` — both valid CSS tokenizations that a
-        // \s+ pattern would leave in place — still get stripped. `\b`
+        // `@import/*c*/"url"` (both valid CSS tokenizations that a
+        // \s+ pattern would leave in place) still get stripped. \b
         // sits between the `t` of `@import` and any non-word character
         // that follows (string quote, `/`, whitespace, etc.), so any
         // legal CSS token immediately after the at-keyword triggers
@@ -300,9 +319,22 @@ class Setting extends Model
                 // `//attacker.example` at render time. Testing the raw
                 // literal against the scheme regex below would miss the
                 // bypass.
-                if ($value === ''
-                    || str_contains($value, '\\')
-                    || preg_match('#^(https?:)?//|^data:|^javascript:|^vbscript:#i', $value)) {
+                if ($value === '' || str_contains($value, '\\')) {
+                    return '';
+                }
+
+                // Allowlist rather than denylist: reject any value that
+                // starts with a URI scheme (`scheme:`, with or without
+                // `//`) or a protocol-relative `//`. Same-origin relative
+                // paths (`/uploads/logos/foo.png`, `images/foo.png`) pass.
+                // The old denylist required `//` after the scheme, which
+                // missed shapes like `http:127.0.0.1:9931/bg` that
+                // browsers still resolve to a cross-origin fetch when the
+                // page scheme differs from the URL scheme. Branding
+                // assets go through the settings-UI upload flow and land
+                // under /uploads/, so custom CSS never needs external
+                // scheme URLs. See GHSA-v279-2q6w-g8j4.
+                if (preg_match('#^[a-zA-Z][a-zA-Z0-9+.-]*:|^//#', $value)) {
                     return '';
                 }
 

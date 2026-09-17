@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Traits\Acceptable;
 use App\Models\Traits\AdjustsQuantity;
 use App\Models\Traits\CompanyableTrait;
 use App\Models\Traits\HasOrders;
@@ -32,6 +33,7 @@ class Component extends SnipeModel
 
     protected $presenter = ComponentPresenter::class;
 
+    use Acceptable;
     use AdjustsQuantity;
     use CompanyableTrait;
     use HasOrders;

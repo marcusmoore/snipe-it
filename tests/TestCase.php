@@ -14,6 +14,7 @@ use Tests\Support\CanSkipTests;
 use Tests\Support\CustomTestMacros;
 use Tests\Support\InitializesSettings;
 use Tests\Support\InteractsWithAuthentication;
+use Tests\Support\SeedsShippedSyncAdapters;
 
 abstract class TestCase extends BaseTestCase
 {
@@ -25,6 +26,7 @@ abstract class TestCase extends BaseTestCase
     use InitializesSettings;
     use InteractsWithAuthentication;
     use LazilyRefreshDatabase;
+    use SeedsShippedSyncAdapters;
 
     private array $globallyDisabledMiddleware = [
         SecurityHeaders::class,
@@ -41,6 +43,7 @@ abstract class TestCase extends BaseTestCase
         $this->withoutMiddleware($this->globallyDisabledMiddleware);
 
         $this->initializeSettings();
+        $this->seedShippedSyncAdapters();
 
         // Flush the custom field filter map cache between tests so that
         // dynamically-created custom fields are always picked up fresh.

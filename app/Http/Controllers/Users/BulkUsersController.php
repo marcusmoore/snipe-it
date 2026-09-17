@@ -331,14 +331,22 @@ class BulkUsersController extends Controller
 
             if ($bulkCompanyIds || $clearCompanies) {
                 if ($clearCompanies && ! auth()->user()->isSuperUser() && Company::isFullMultipleCompanySupportEnabled()) {
-                    // Non-superusers can only detach companies they belong to; sync([]) would
-                    // also wipe memberships for companies outside their scope.
+                    // Non-superusers can only detach companies they belong to. A raw
+                    // sync([]) would also wipe memberships for companies outside their
+                    // scope.
                     $user->companies()->detach(Company::getIdsForCurrentUser(
                         $user->companies()->pluck('companies.id')->toArray()
                     ));
                     $user->syncLegacyCompanyIdMirror();
                 } else {
-                    $user->syncCompaniesWithLogging($allowedIds);
+                    // GHSA-wwp4-qx8p-62g8: route through the FMCS-safe helper so a
+                    // scoped editor cannot strip the target's memberships in
+                    // companies the editor cannot see. Raw sync() treats its
+                    // argument as the full new pivot set and deletes anything
+                    // else. The helper reads the target's current pivot
+                    // unscoped, splits into visible + invisible-to-editor,
+                    // and merges the invisible slice back before syncing.
+                    $user->syncCompaniesPreservingInvisibleTo(auth()->user(), $bulkCompanyIds);
                 }
             }
 

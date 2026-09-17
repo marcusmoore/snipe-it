@@ -451,6 +451,12 @@ parameters:
 			path: app/Console/Commands/PurgeEulaPDFs.php
 
 		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Console/Commands/PushInventory.php
+
+		-
 			message: '#^Offset int does not exist on array\<string, string\>\.$#'
 			identifier: offsetAccess.notFound
 			count: 1
@@ -1781,6 +1787,12 @@ parameters:
 			identifier: parameter.phpDocType
 			count: 1
 			path: app/Http/Controllers/Api/ProfileController.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Statuslabel\:\:\$color\.$#'
+			identifier: property.notFound
+			count: 3
+			path: app/Http/Controllers/Api/StatuslabelsController.php
 
 		-
 			message: '#^Access to an undefined property Illuminate\\Pagination\\LengthAwarePaginator\<int, App\\Models\\Statuslabel\>\:\:\$use_text\.$#'
@@ -3253,6 +3265,12 @@ parameters:
 			path: app/Http/Controllers/SettingsController.php
 
 		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/SettingsController.php
+
+		-
 			message: '#^Loose comparison using \=\= between false and ''1'' will always evaluate to false\.$#'
 			identifier: equal.alwaysFalse
 			count: 1
@@ -3335,6 +3353,12 @@ parameters:
 			identifier: assign.propertyType
 			count: 1
 			path: app/Http/Controllers/SetupController.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Statuslabel\:\:\$color\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Http/Controllers/StatuslabelsController.php
 
 		-
 			message: '#^Access to an undefined property App\\Models\\Statuslabel\:\:\$created_by\.$#'
@@ -3679,6 +3703,12 @@ parameters:
 			path: app/Http/Transformers/AssetsTransformer.php
 
 		-
+			message: '#^Access to an undefined property App\\Models\\Asset\:\:\$externalSource\.$#'
+			identifier: property.notFound
+			count: 5
+			path: app/Http/Transformers/AssetsTransformer.php
+
+		-
 			message: '#^Access to an undefined property App\\Models\\Setting\:\:\$alt_barcode\.$#'
 			identifier: property.notFound
 			count: 1
@@ -3971,6 +4001,12 @@ parameters:
 			identifier: property.notFound
 			count: 3
 			path: app/Http/Transformers/PredefinedKitsTransformer.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Statuslabel\:\:\$color\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Transformers/StatuslabelsTransformer.php
 
 		-
 			message: '#^Access to an undefined property App\\Models\\Supplier\:\:\$accessories_count\.$#'
@@ -8137,6 +8173,12 @@ parameters:
 			path: app/Models/Supplier.php
 
 		-
+			message: '#^Using nullsafe property access "\?\-\>config" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Models/SyncAdapterConfig.php
+
+		-
 			message: '#^Access to an undefined property App\\Models\\Actionlog\:\:\$created_by\.$#'
 			identifier: property.notFound
 			count: 6
@@ -8531,12 +8573,6 @@ parameters:
 			identifier: nullsafe.neverNull
 			count: 2
 			path: app/Notifications/CheckoutAccessoryNotification.php
-
-		-
-			message: '#^Access to an undefined property App\\Notifications\\CheckoutAssetNotification\:\:\$settings\.$#'
-			identifier: property.notFound
-			count: 5
-			path: app/Notifications/CheckoutAssetNotification.php
 
 		-
 			message: '#^Ternary operator condition is always true\.$#'
@@ -9585,7 +9621,7 @@ parameters:
 		-
 			message: '#^Using nullsafe property access "\?\-\>name" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
 			identifier: nullsafe.neverNull
-			count: 2
+			count: 5
 			path: app/Providers/ValidationServiceProvider.php
 
 		-
@@ -9725,6 +9761,48 @@ parameters:
 			identifier: class.notFound
 			count: 1
 			path: app/Services/Saml.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>name" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/SyncAdapters/MappingTargets.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between non\-empty\-string and null will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: app/SyncAdapters/MerakiSystemsManager/MerakiClient.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Actionlog\:\:\$created_by\.$#'
+			identifier: property.notFound
+			count: 3
+			path: app/SyncAdapters/SyncAdapter.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>email" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/SyncAdapters/SyncAdapter.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>model_number" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/SyncAdapters/SyncAdapter.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>name" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 7
+			path: app/SyncAdapters/SyncAdapter.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>username" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/SyncAdapters/SyncAdapter.php
 
 		-
 			message: '#^Expression on left side of \?\? is not nullable\.$#'
