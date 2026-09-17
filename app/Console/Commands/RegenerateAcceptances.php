@@ -323,7 +323,7 @@ class RegenerateAcceptances extends Command
         }
 
         if ($result->reportRows !== []) {
-            $this->table(['User', 'Item', 'Type', 'Units currently held', 'Units to re-request'], $result->reportRows);
+            $this->table(['User ID', 'User', 'Item', 'Item Type', 'Item ID', 'Units currently held', 'Units to re-request'], $result->reportRows);
         }
 
         $this->info('To re-request: '.count($result->reportRows).'.');

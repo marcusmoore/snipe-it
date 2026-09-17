@@ -345,9 +345,11 @@ class RegenerateAcceptancesAction
         $result->sendCountsByType[$type] = ($result->sendCountsByType[$type] ?? 0) + 1;
 
         $result->reportRows[] = [
+            $pair['user']->getKey(),
             $pair['user']->present()->fullName,
             $pair['item']->present()->name,
             $type,
+            $pair['item']->getKey(),
             $pair['units'],
             $pair['qty'],
         ];

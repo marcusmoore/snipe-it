@@ -42,7 +42,7 @@ class RegenerateAcceptancesResult
      * The rows this run re-requested, in the order the builders found them. Under a dry
      * run they are the rows it would have created.
      *
-     * @var array<int, array{0: string, 1: string, 2: string, 3: int, 4: int}>
+     * @var array<int, array{0: int, 1: string, 2: string, 3: string, 4: int, 5: int, 6: int}>
      */
     public array $reportRows = [];
 
