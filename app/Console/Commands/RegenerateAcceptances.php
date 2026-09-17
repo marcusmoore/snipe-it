@@ -315,6 +315,13 @@ class RegenerateAcceptances extends Command
      * Prints what the run re-requested, or under a dry run what it would have, followed
      * by the pairs it passed over and why.
      *
+     * The declined line runs below the table it qualifies, and only on a run that is
+     * re-asking decliners: it names the flag that would stop that, because including
+     * them is decision 5's default and the one judgment on the report an operator might
+     * want to reverse. Under `--exclude-declined` it is left out rather than reworded —
+     * every declined pair is excluded under that flag, so the count would be identical
+     * to the one heading the excluded table and would read as a second population.
+     *
      * The closing tally is held back when a confirmation prompt is about to follow. The
      * wizard's preview is a real dry run, so it would otherwise sign off with "Nothing
      * was created." — and then ask whether to create anything, which reads as though the
@@ -338,10 +345,12 @@ class RegenerateAcceptances extends Command
             $this->line('  '.$type.': '.$count);
         }
 
-        $this->info('Previously declined: '.$result->previouslyDeclined.'.');
-
         if ($result->reportRows !== []) {
             $this->table(['User ID', 'User', 'Item', 'Item Type', 'Item ID', 'Units currently held', 'Units to re-request'], $result->reportRows);
+        }
+
+        if (! $result->excludeDeclined && $result->previouslyDeclined > 0) {
+            $this->warn('Includes '.$result->previouslyDeclined.' previously declined that are being asked again.');
         }
 
         $this->newLine();

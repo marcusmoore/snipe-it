@@ -835,7 +835,7 @@ class RegenerateAcceptancesTest extends TestCase
 
         $this->artisan('snipeit:regenerate-acceptances', ['--no-interaction' => true])
             ->expectsOutput('To re-request: 1.')
-            ->expectsOutput('Previously declined: 1.')
+            ->expectsOutput('Includes 1 previously declined that are being asked again.')
             ->assertExitCode(0);
     }
 
@@ -850,7 +850,7 @@ class RegenerateAcceptancesTest extends TestCase
 
         $this->artisan('snipeit:regenerate-acceptances', ['--no-interaction' => true, '--exclude-declined' => true])
             ->expectsOutput('To re-request: 0.')
-            ->expectsOutput('Previously declined: 1.')
+            ->doesntExpectOutputToContain('being asked again')
             ->expectsOutput('Previously declined and excluded: 1.')
             ->expectsTable(
                 ['User ID', 'User', 'Item', 'Item Type', 'Item ID', 'Units currently held'],
@@ -871,7 +871,26 @@ class RegenerateAcceptancesTest extends TestCase
 
         $this->artisan('snipeit:regenerate-acceptances', ['--no-interaction' => true, '--exclude-declined' => true])
             ->expectsOutput('To re-request: 1.')
-            ->expectsOutput('Previously declined: 0.')
+            ->expectsOutput('Previously declined and excluded: 0.')
+            ->assertExitCode(0);
+    }
+
+    /**
+     * A run with nobody to report says nothing, rather than reporting a population of
+     * none. The sentence exists to flag a judgment the operator may want to reverse, and
+     * there is no judgment to reverse when no holder ever declined.
+     */
+    public function test_no_declined_line_is_printed_when_nobody_declined(): void
+    {
+        $holder = User::factory()->create();
+        $this->assetIn($this->acceptanceCategory('asset'), [
+            'assigned_to' => $holder->id,
+            'assigned_type' => User::class,
+        ]);
+
+        $this->artisan('snipeit:regenerate-acceptances', ['--no-interaction' => true])
+            ->expectsOutput('To re-request: 1.')
+            ->doesntExpectOutputToContain('previously declined')
             ->assertExitCode(0);
     }
 
@@ -1372,7 +1391,7 @@ class RegenerateAcceptancesTest extends TestCase
             ->expectsOutput('  Accessory: 2')
             ->expectsOutput('  Consumable: 1')
             ->expectsOutput('  Component: 1')
-            ->expectsOutput('Previously declined: 1.')
+            ->expectsOutput('Includes 1 previously declined that are being asked again.')
             ->expectsOutput('Already covered by a pending request: 1.')
             ->expectsOutput('Created: 8.')
             ->assertExitCode(0);
