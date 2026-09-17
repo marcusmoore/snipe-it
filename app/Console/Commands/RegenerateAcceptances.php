@@ -394,8 +394,8 @@ class RegenerateAcceptances extends Command
             $this->info('Notified: '.$result->notified.'.');
 
             if ($result->holdersWithoutEmail !== []) {
-                $this->info('The following users do not have an email address:');
-                $this->table(['ID', 'Name'], $result->holdersWithoutEmail);
+                $this->info('The following users were not emailed because they do not have an email address:');
+                $this->table(['ID', 'User'], $result->holdersWithoutEmail);
             }
         } elseif ($result->created > 0) {
             $this->line('Nobody was emailed. Run snipeit:acceptance-reminder to email them.');

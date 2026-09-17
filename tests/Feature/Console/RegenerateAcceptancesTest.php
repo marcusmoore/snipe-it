@@ -1111,8 +1111,8 @@ class RegenerateAcceptancesTest extends TestCase
         $this->artisan('snipeit:regenerate-acceptances', ['--no-interaction' => true, '--notify' => true])
             ->expectsOutput('Created: 1.')
             ->expectsOutput('Notified: 0.')
-            ->expectsOutput('The following users do not have an email address:')
-            ->expectsTable(['ID', 'Name'], [[$holder->id, $holder->present()->fullName]])
+            ->expectsOutput('The following users were not emailed because they do not have an email address:')
+            ->expectsTable(['ID', 'User'], [[$holder->id, $holder->present()->fullName]])
             ->assertExitCode(0);
 
         Mail::assertNothingSent();
