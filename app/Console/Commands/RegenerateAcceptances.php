@@ -227,7 +227,7 @@ class RegenerateAcceptances extends Command
         $this->askWhetherToExcludeDeclined();
         $this->askWhetherToNotify();
 
-        $this->printReport($this->regenerate(dryRun: true));
+        $this->printReport($this->regenerate(dryRun: true), awaitingConfirmation: ! $this->dryRun);
 
         if ($this->dryRun) {
             return false;
@@ -314,8 +314,17 @@ class RegenerateAcceptances extends Command
     /**
      * Prints what the run re-requested, or under a dry run what it would have, followed
      * by the pairs it passed over and why.
+     *
+     * The closing tally is held back when a confirmation prompt is about to follow. The
+     * wizard's preview is a real dry run, so it would otherwise sign off with "Nothing
+     * was created." — and then ask whether to create anything, which reads as though the
+     * question came too late. The same goes for the notify tally, which would report
+     * nobody emailed immediately before asking whether to email. A standalone
+     * `--dry-run` has no question coming and keeps its footer.
+     *
+     * @param  bool  $awaitingConfirmation  whether the operator is about to be asked to go ahead
      */
-    private function printReport(RegenerateAcceptancesResult $result): int
+    private function printReport(RegenerateAcceptancesResult $result, bool $awaitingConfirmation = false): int
     {
         if ($result->candidateCount === 0) {
             $this->info('No users currently hold items requiring acceptance in that scope.');
@@ -349,6 +358,10 @@ class RegenerateAcceptances extends Command
             if ($result->declinedRows !== []) {
                 $this->table(['User ID', 'User', 'Item', 'Item Type', 'Item ID', 'Units currently held'], $result->declinedRows);
             }
+        }
+
+        if ($awaitingConfirmation) {
+            return self::SUCCESS;
         }
 
         $this->newLine();

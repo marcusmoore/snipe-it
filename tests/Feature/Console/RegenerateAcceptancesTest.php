@@ -775,6 +775,34 @@ class RegenerateAcceptancesTest extends TestCase
     }
 
     /**
+     * Each count heads the table it describes rather than trailing it, and the covered
+     * block starts after the re-request block rather than inside it.
+     *
+     * Asserted against the raw output because `expectsOutput()` and `expectsTable()` are
+     * order-independent — every other test in this file passes whichever way round these
+     * are printed.
+     */
+    public function test_each_count_is_printed_above_the_table_it_describes(): void
+    {
+        $holder = User::factory()->create();
+        $this->assetIn($this->acceptanceCategory('asset'), [
+            'assigned_to' => $holder->id,
+            'assigned_type' => User::class,
+        ]);
+        $accessory = Accessory::factory()->create(['category_id' => $this->acceptanceCategory('accessory')->id]);
+        $accessory->checkouts()->create(['assigned_to' => $holder->id, 'assigned_type' => User::class]);
+        $this->acceptanceFor($accessory, $holder)->pending()->create();
+
+        Artisan::call('snipeit:regenerate-acceptances', ['--no-interaction' => true]);
+
+        $output = Artisan::output();
+
+        $this->assertLessThan(strpos($output, 'Units to re-request'), strpos($output, 'To re-request: 1.'));
+        $this->assertLessThan(strpos($output, 'Already covered by a pending request: 1.'), strpos($output, 'Units to re-request'));
+        $this->assertLessThan(strpos($output, 'Units already pending'), strpos($output, 'Already covered by a pending request: 1.'));
+    }
+
+    /**
      * `acceptanceHistory()` deliberately over-fetches — it queries every candidate item id
      * against every candidate user id, a cross product — so rows belonging to other
      * holders of the same accessory arrive in the same result set and have to be split
@@ -1131,20 +1159,23 @@ class RegenerateAcceptancesTest extends TestCase
     }
 
     /**
-     * The preview is a dry run, so a confirmed wizard run scans twice.
+     * The preview holds back the footer it would otherwise sign off with, because the
+     * next thing the operator sees is the question it contradicts: a dry pass reporting
+     * "Nothing was created." immediately above "Create these acceptance requests?" reads
+     * as though the question arrived too late.
      *
-     * "Nothing was created." is the dry pass's footer and "Created: 1." the real one;
-     * seeing both in a run the operator confirmed is what proves the preview happened
-     * before the rows did.
+     * Only the confirmed pass's "Created: 1." survives. That the preview really was a dry
+     * run is proven by `test_wizard_creates_nothing_when_the_operator_aborts`, which is
+     * the behaviour rather than a proxy for it.
      */
-    public function test_wizard_previews_as_a_dry_run_then_creates_for_real(): void
+    public function test_wizard_preview_does_not_sign_off_before_asking_to_confirm(): void
     {
         $company = Company::factory()->create();
         $holder = User::factory()->create();
         $this->heldAsset($holder, $this->acceptanceCategory('asset'), $company, 'Wizard laptop');
 
         $this->runWizard()
-            ->expectsOutput('Nothing was created.')
+            ->doesntExpectOutput('Nothing was created.')
             ->expectsOutput('Created: 1.')
             ->assertExitCode(0);
 
@@ -1159,6 +1190,7 @@ class RegenerateAcceptancesTest extends TestCase
         $this->heldAsset($holder, $this->acceptanceCategory('asset'), $company, 'Wizard laptop');
 
         $this->runWizard(notify: true)
+            ->doesntExpectOutput('Notified: 0.')
             ->expectsOutput('Notified: 1.')
             ->assertExitCode(0);
 
