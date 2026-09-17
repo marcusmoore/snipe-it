@@ -312,7 +312,8 @@ class RegenerateAcceptances extends Command
     }
 
     /**
-     * Prints what the run re-requested, or under a dry run what it would have.
+     * Prints what the run re-requested, or under a dry run what it would have, followed
+     * by the pairs it passed over and why.
      */
     private function printReport(RegenerateAcceptancesResult $result): int
     {
@@ -335,8 +336,16 @@ class RegenerateAcceptances extends Command
         $this->info('Previously declined: '.$result->previouslyDeclined.'.');
         $this->info('Already covered by a pending request: '.$result->alreadyCovered.'.');
 
+        if ($result->coveredRows !== []) {
+            $this->table(['User ID', 'User', 'Item', 'Item Type', 'Item ID', 'Units currently held', 'Units already pending'], $result->coveredRows);
+        }
+
         if ($result->excludeDeclined) {
             $this->info('Previously declined and excluded: '.$result->declinedAndExcluded.'.');
+
+            if ($result->declinedRows !== []) {
+                $this->table(['User ID', 'User', 'Item', 'Item Type', 'Item ID', 'Units currently held'], $result->declinedRows);
+            }
         }
 
         $this->info($result->dryRun ? 'Nothing was created.' : 'Created: '.$result->created.'.');

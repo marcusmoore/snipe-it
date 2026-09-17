@@ -47,6 +47,22 @@ class RegenerateAcceptancesResult
     public array $reportRows = [];
 
     /**
+     * The pairs a pending request already covers, which this run left alone. The last
+     * column is what that pending coverage is worth, against the units held beside it.
+     *
+     * @var array<int, array{0: int, 1: string, 2: string, 3: string, 4: int, 5: int, 6: int}>
+     */
+    public array $coveredRows = [];
+
+    /**
+     * The pairs held back by `excludeDeclined`, in the same columns as the others minus
+     * a units-to-re-request that is by definition none.
+     *
+     * @var array<int, array{0: int, 1: string, 2: string, 3: string, 4: int, 5: int}>
+     */
+    public array $declinedRows = [];
+
+    /**
      * How many pairs each checkoutable type contributed.
      *
      * @var array<string, int>

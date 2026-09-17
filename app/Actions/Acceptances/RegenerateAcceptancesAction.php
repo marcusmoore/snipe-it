@@ -26,7 +26,7 @@ use Illuminate\Support\Facades\Mail;
  *
  * @phpstan-type Checkoutable Accessory|Asset|Component|Consumable|LicenseSeat
  * @phpstan-type Candidate array{item: Checkoutable, user: User, units: int}
- * @phpstan-type ClassifiedCandidate array{item: Checkoutable, user: User, units: int, qty: int, outcome: string, declined: bool}
+ * @phpstan-type ClassifiedCandidate array{item: Checkoutable, user: User, units: int, qty: int, coverage: int, outcome: string, declined: bool}
  */
 class RegenerateAcceptancesAction
 {
@@ -307,6 +307,7 @@ class RegenerateAcceptancesAction
         return [
             ...$candidate,
             'qty' => $shortfall,
+            'coverage' => $pendingCoverage,
             'declined' => $declined,
             'outcome' => match (true) {
                 $shortfall <= 0 => self::OUTCOME_COVERED,
@@ -317,7 +318,11 @@ class RegenerateAcceptancesAction
     }
 
     /**
-     * Tallies one classified pair, adding a report row when it is one to re-request.
+     * Tallies one classified pair and records it under the outcome it landed in.
+     *
+     * Every outcome keeps its rows, not just the re-requested ones: a count on its own
+     * tells an operator that a pair was passed over without telling them which pair, and
+     * the ones this run declines to act on are exactly the ones they may need to chase.
      *
      * @param  ClassifiedCandidate  $pair
      */
@@ -327,6 +332,7 @@ class RegenerateAcceptancesAction
 
         if ($pair['outcome'] === self::OUTCOME_COVERED) {
             $result->alreadyCovered++;
+            $result->coveredRows[] = [...self::pairRow($pair), $pair['coverage']];
 
             return;
         }
@@ -337,6 +343,7 @@ class RegenerateAcceptancesAction
 
         if ($pair['outcome'] === self::OUTCOME_DECLINED_EXCLUDED) {
             $result->declinedAndExcluded++;
+            $result->declinedRows[] = self::pairRow($pair);
 
             return;
         }
@@ -344,14 +351,25 @@ class RegenerateAcceptancesAction
         $type = class_basename($pair['item']);
         $result->sendCountsByType[$type] = ($result->sendCountsByType[$type] ?? 0) + 1;
 
-        $result->reportRows[] = [
+        $result->reportRows[] = [...self::pairRow($pair), $pair['qty']];
+    }
+
+    /**
+     * The columns every outcome's table shares, identifying the pair and what it holds.
+     * Each caller appends whatever its own outcome has to say about it.
+     *
+     * @param  ClassifiedCandidate  $pair
+     * @return array{0: int, 1: string, 2: string, 3: string, 4: int, 5: int}
+     */
+    private static function pairRow(array $pair): array
+    {
+        return [
             $pair['user']->getKey(),
             $pair['user']->present()->fullName,
             $pair['item']->present()->name,
-            $type,
+            class_basename($pair['item']),
             $pair['item']->getKey(),
             $pair['units'],
-            $pair['qty'],
         ];
     }
 
@@ -411,10 +429,17 @@ class RegenerateAcceptancesAction
      * is asked once, for three items. A holder with no email address still keeps their
      * rows — they will see them on /account/accept at their next login, just without the
      * nudge — and is recorded on the run instead, for the caller to report.
+     *
+     * The dry-run guard is redundant today and deliberately kept: holders are collected
+     * in `createAcceptance()`, which a dry run never reaches, so this currently has an
+     * empty list to iterate whatever it does. That makes "a preview sends nothing" a
+     * property of where the accumulation happens rather than of anything stated here —
+     * move the accumulation and a preview starts emailing. The guard says the intent out
+     * loud so that move cannot be silent.
      */
     private static function notifyHolders(RegenerateAcceptancesResult $result): void
     {
-        if (! $result->notify) {
+        if (! $result->notify || $result->dryRun) {
             return;
         }
 

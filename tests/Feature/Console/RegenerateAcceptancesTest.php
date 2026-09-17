@@ -666,6 +666,10 @@ class RegenerateAcceptancesTest extends TestCase
         $this->artisan('snipeit:regenerate-acceptances', ['--no-interaction' => true])
             ->expectsOutput('To re-request: 0.')
             ->expectsOutput('Already covered by a pending request: 1.')
+            ->expectsTable(
+                ['User ID', 'User', 'Item', 'Item Type', 'Item ID', 'Units currently held', 'Units already pending'],
+                [[$holder->id, $holder->present()->fullName, $asset->present()->name, 'Asset', $asset->id, 1, 1]],
+            )
             ->assertExitCode(0);
     }
 
@@ -681,6 +685,7 @@ class RegenerateAcceptancesTest extends TestCase
         $this->artisan('snipeit:regenerate-acceptances', ['--no-interaction' => true])
             ->expectsOutput('To re-request: 1.')
             ->expectsOutput('Already covered by a pending request: 0.')
+            ->doesntExpectOutputToContain('Units already pending')
             ->assertExitCode(0);
     }
 
@@ -750,6 +755,25 @@ class RegenerateAcceptancesTest extends TestCase
             ->assertExitCode(0);
     }
 
+    public function test_the_covered_table_reports_the_units_the_pending_rows_are_worth(): void
+    {
+        $holder = User::factory()->create();
+        $accessory = Accessory::factory()->create(['category_id' => $this->acceptanceCategory('accessory')->id]);
+        $accessory->checkouts()->createMany([
+            ['assigned_to' => $holder->id, 'assigned_type' => User::class],
+            ['assigned_to' => $holder->id, 'assigned_type' => User::class],
+        ]);
+        $this->acceptanceFor($accessory, $holder)->pending()->create(['qty' => 2]);
+
+        $this->artisan('snipeit:regenerate-acceptances', ['--no-interaction' => true])
+            ->expectsOutput('To re-request: 0.')
+            ->expectsTable(
+                ['User ID', 'User', 'Item', 'Item Type', 'Item ID', 'Units currently held', 'Units already pending'],
+                [[$holder->id, $holder->present()->fullName, $accessory->present()->name, 'Accessory', $accessory->id, 2, 2]],
+            )
+            ->assertExitCode(0);
+    }
+
     /**
      * `acceptanceHistory()` deliberately over-fetches — it queries every candidate item id
      * against every candidate user id, a cross product — so rows belonging to other
@@ -800,6 +824,10 @@ class RegenerateAcceptancesTest extends TestCase
             ->expectsOutput('To re-request: 0.')
             ->expectsOutput('Previously declined: 1.')
             ->expectsOutput('Previously declined and excluded: 1.')
+            ->expectsTable(
+                ['User ID', 'User', 'Item', 'Item Type', 'Item ID', 'Units currently held'],
+                [[$holder->id, $holder->present()->fullName, $asset->present()->name, 'Asset', $asset->id, 1]],
+            )
             ->assertExitCode(0);
     }
 
