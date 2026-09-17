@@ -177,7 +177,7 @@ class RegenerateAcceptancesTest extends TestCase
         ]);
 
         $this->artisan('snipeit:regenerate-acceptances', ['--no-interaction' => true])
-            ->expectsOutputToContain('To re-request: 1.')
+            ->expectsOutputToContain('Total acceptances to regenerate: 1.')
             ->assertExitCode(0);
     }
 
@@ -449,7 +449,7 @@ class RegenerateAcceptancesTest extends TestCase
         ])
             ->expectsOutputToContain('First asset')
             ->expectsOutputToContain('Second asset')
-            ->expectsOutput('To re-request: 2.')
+            ->expectsOutput('Total acceptances to regenerate: 2.')
             ->assertExitCode(0);
     }
 
@@ -470,7 +470,7 @@ class RegenerateAcceptancesTest extends TestCase
         ])
             ->expectsOutputToContain('First asset')
             ->expectsOutputToContain('Second asset')
-            ->expectsOutput('To re-request: 2.')
+            ->expectsOutput('Total acceptances to regenerate: 2.')
             ->assertExitCode(0);
     }
 
@@ -502,7 +502,7 @@ class RegenerateAcceptancesTest extends TestCase
 
         $this->artisan('snipeit:regenerate-acceptances', ['--no-interaction' => true, '--category' => [$wanted->id]])
             ->expectsOutputToContain('In scope asset')
-            ->expectsOutput('To re-request: 1.')
+            ->expectsOutput('Total acceptances to regenerate: 1.')
             ->assertExitCode(0);
     }
 
@@ -517,7 +517,7 @@ class RegenerateAcceptancesTest extends TestCase
 
         $this->artisan('snipeit:regenerate-acceptances', ['--no-interaction' => true, '--company' => [$wanted->id]])
             ->expectsOutputToContain('In scope asset')
-            ->expectsOutput('To re-request: 1.')
+            ->expectsOutput('Total acceptances to regenerate: 1.')
             ->assertExitCode(0);
     }
 
@@ -531,7 +531,7 @@ class RegenerateAcceptancesTest extends TestCase
 
         $this->artisan('snipeit:regenerate-acceptances', ['--no-interaction' => true, '--category' => [$wanted->id]])
             ->expectsOutputToContain('In scope licence')
-            ->expectsOutput('To re-request: 1.')
+            ->expectsOutput('Total acceptances to regenerate: 1.')
             ->assertExitCode(0);
     }
 
@@ -549,7 +549,7 @@ class RegenerateAcceptancesTest extends TestCase
 
         $this->artisan('snipeit:regenerate-acceptances', ['--no-interaction' => true, '--company' => [$wanted->id]])
             ->expectsOutputToContain('In scope licence')
-            ->expectsOutput('To re-request: 1.')
+            ->expectsOutput('Total acceptances to regenerate: 1.')
             ->assertExitCode(0);
     }
 
@@ -563,7 +563,7 @@ class RegenerateAcceptancesTest extends TestCase
 
         $this->artisan('snipeit:regenerate-acceptances', ['--no-interaction' => true, '--category' => [$wanted->id]])
             ->expectsOutputToContain('In scope accessory')
-            ->expectsOutput('To re-request: 1.')
+            ->expectsOutput('Total acceptances to regenerate: 1.')
             ->assertExitCode(0);
     }
 
@@ -578,7 +578,7 @@ class RegenerateAcceptancesTest extends TestCase
 
         $this->artisan('snipeit:regenerate-acceptances', ['--no-interaction' => true, '--company' => [$wanted->id]])
             ->expectsOutputToContain('In scope accessory')
-            ->expectsOutput('To re-request: 1.')
+            ->expectsOutput('Total acceptances to regenerate: 1.')
             ->assertExitCode(0);
     }
 
@@ -592,7 +592,7 @@ class RegenerateAcceptancesTest extends TestCase
 
         $this->artisan('snipeit:regenerate-acceptances', ['--no-interaction' => true, '--category' => [$wanted->id]])
             ->expectsOutputToContain('In scope consumable')
-            ->expectsOutput('To re-request: 1.')
+            ->expectsOutput('Total acceptances to regenerate: 1.')
             ->assertExitCode(0);
     }
 
@@ -607,7 +607,7 @@ class RegenerateAcceptancesTest extends TestCase
 
         $this->artisan('snipeit:regenerate-acceptances', ['--no-interaction' => true, '--company' => [$wanted->id]])
             ->expectsOutputToContain('In scope consumable')
-            ->expectsOutput('To re-request: 1.')
+            ->expectsOutput('Total acceptances to regenerate: 1.')
             ->assertExitCode(0);
     }
 
@@ -621,7 +621,7 @@ class RegenerateAcceptancesTest extends TestCase
 
         $this->artisan('snipeit:regenerate-acceptances', ['--no-interaction' => true, '--category' => [$wanted->id]])
             ->expectsOutputToContain('In scope component')
-            ->expectsOutput('To re-request: 1.')
+            ->expectsOutput('Total acceptances to regenerate: 1.')
             ->assertExitCode(0);
     }
 
@@ -636,7 +636,7 @@ class RegenerateAcceptancesTest extends TestCase
 
         $this->artisan('snipeit:regenerate-acceptances', ['--no-interaction' => true, '--company' => [$wanted->id]])
             ->expectsOutputToContain('In scope component')
-            ->expectsOutput('To re-request: 1.')
+            ->expectsOutput('Total acceptances to regenerate: 1.')
             ->assertExitCode(0);
     }
 
@@ -664,7 +664,7 @@ class RegenerateAcceptancesTest extends TestCase
         $this->acceptanceFor($asset, $holder)->pending()->create();
 
         $this->artisan('snipeit:regenerate-acceptances', ['--no-interaction' => true])
-            ->expectsOutput('To re-request: 0.')
+            ->expectsOutput('Total acceptances to regenerate: 0.')
             ->expectsOutput('Already covered by a pending request: 1.')
             ->expectsTable(
                 ['User ID', 'User', 'Item', 'Item Type', 'Item ID', 'Units currently held', 'Units already pending'],
@@ -683,7 +683,7 @@ class RegenerateAcceptancesTest extends TestCase
         $this->acceptanceFor($asset, $holder)->accepted()->create();
 
         $this->artisan('snipeit:regenerate-acceptances', ['--no-interaction' => true])
-            ->expectsOutput('To re-request: 1.')
+            ->expectsOutput('Total acceptances to regenerate: 1.')
             ->expectsOutput('Already covered by a pending request: 0.')
             ->doesntExpectOutputToContain('Units already pending')
             ->assertExitCode(0);
@@ -699,7 +699,7 @@ class RegenerateAcceptancesTest extends TestCase
         $this->acceptanceFor($asset, $holder)->pending()->create()->delete();
 
         $this->artisan('snipeit:regenerate-acceptances', ['--no-interaction' => true])
-            ->expectsOutput('To re-request: 1.')
+            ->expectsOutput('Total acceptances to regenerate: 1.')
             ->assertExitCode(0);
     }
 
@@ -766,7 +766,7 @@ class RegenerateAcceptancesTest extends TestCase
         $this->acceptanceFor($accessory, $holder)->pending()->create(['qty' => 2]);
 
         $this->artisan('snipeit:regenerate-acceptances', ['--no-interaction' => true])
-            ->expectsOutput('To re-request: 0.')
+            ->expectsOutput('Total acceptances to regenerate: 0.')
             ->expectsTable(
                 ['User ID', 'User', 'Item', 'Item Type', 'Item ID', 'Units currently held', 'Units already pending'],
                 [[$holder->id, $holder->present()->fullName, $accessory->present()->name, 'Accessory', $accessory->id, 2, 2]],
@@ -797,7 +797,7 @@ class RegenerateAcceptancesTest extends TestCase
 
         $output = Artisan::output();
 
-        $this->assertLessThan(strpos($output, 'Units to re-request'), strpos($output, 'To re-request: 1.'));
+        $this->assertLessThan(strpos($output, 'Units to re-request'), strpos($output, 'Total acceptances to regenerate: 1.'));
         $this->assertLessThan(strpos($output, 'Already covered by a pending request: 1.'), strpos($output, 'Units to re-request'));
         $this->assertLessThan(strpos($output, 'Units already pending'), strpos($output, 'Already covered by a pending request: 1.'));
     }
@@ -834,8 +834,8 @@ class RegenerateAcceptancesTest extends TestCase
         $this->acceptanceFor($asset, $holder)->declined()->create();
 
         $this->artisan('snipeit:regenerate-acceptances', ['--no-interaction' => true])
-            ->expectsOutput('To re-request: 1.')
-            ->expectsOutput('Includes 1 previously declined that are being asked again.')
+            ->expectsOutput('Total acceptances to regenerate: 1.')
+            ->expectsOutput('Includes 1 previously declined, being asked to accept again.')
             ->assertExitCode(0);
     }
 
@@ -849,7 +849,7 @@ class RegenerateAcceptancesTest extends TestCase
         $this->acceptanceFor($asset, $holder)->declined()->create();
 
         $this->artisan('snipeit:regenerate-acceptances', ['--no-interaction' => true, '--exclude-declined' => true])
-            ->expectsOutput('To re-request: 0.')
+            ->expectsOutput('Total acceptances to regenerate: 0.')
             ->doesntExpectOutputToContain('being asked again')
             ->expectsOutput('Previously declined and excluded: 1.')
             ->expectsTable(
@@ -870,7 +870,7 @@ class RegenerateAcceptancesTest extends TestCase
         $this->acceptanceFor($asset, $holder)->accepted()->create();
 
         $this->artisan('snipeit:regenerate-acceptances', ['--no-interaction' => true, '--exclude-declined' => true])
-            ->expectsOutput('To re-request: 1.')
+            ->expectsOutput('Total acceptances to regenerate: 1.')
             ->expectsOutput('Previously declined and excluded: 0.')
             ->assertExitCode(0);
     }
@@ -889,7 +889,7 @@ class RegenerateAcceptancesTest extends TestCase
         ]);
 
         $this->artisan('snipeit:regenerate-acceptances', ['--no-interaction' => true])
-            ->expectsOutput('To re-request: 1.')
+            ->expectsOutput('Total acceptances to regenerate: 1.')
             ->doesntExpectOutputToContain('previously declined')
             ->assertExitCode(0);
     }
@@ -903,7 +903,7 @@ class RegenerateAcceptancesTest extends TestCase
         ]);
 
         $this->artisan('snipeit:regenerate-acceptances', ['--no-interaction' => true, '--dry-run' => true])
-            ->expectsOutput('To re-request: 1.')
+            ->expectsOutput('Total acceptances to regenerate: 1.')
             ->expectsOutput('Nothing was created.')
             ->assertExitCode(0);
 
@@ -1385,13 +1385,9 @@ class RegenerateAcceptancesTest extends TestCase
         $this->assetIn($assetCategory);
 
         $this->artisan('snipeit:regenerate-acceptances', ['--no-interaction' => true])
-            ->expectsOutput('To re-request: 8.')
-            ->expectsOutput('  Asset: 3')
-            ->expectsOutput('  LicenseSeat: 1')
-            ->expectsOutput('  Accessory: 2')
-            ->expectsOutput('  Consumable: 1')
-            ->expectsOutput('  Component: 1')
-            ->expectsOutput('Includes 1 previously declined that are being asked again.')
+            ->expectsOutput('Total acceptances to regenerate: 8.')
+            ->expectsTable(['Asset', 'LicenseSeat', 'Accessory', 'Consumable', 'Component'], [[3, 1, 2, 1, 1]])
+            ->expectsOutput('Includes 1 previously declined, being asked to accept again.')
             ->expectsOutput('Already covered by a pending request: 1.')
             ->expectsOutput('Created: 8.')
             ->assertExitCode(0);

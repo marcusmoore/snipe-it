@@ -339,18 +339,20 @@ class RegenerateAcceptances extends Command
             return self::SUCCESS;
         }
 
-        $this->info('To re-request: '.count($result->reportRows).'.');
+        $this->info('Total acceptances to regenerate: '.count($result->reportRows).'.');
 
-        foreach ($result->sendCountsByType as $type => $count) {
-            $this->line('  '.$type.': '.$count);
+        if ($result->sendCountsByType !== []) {
+            $this->info('Total by type:');
+            $this->table(array_keys($result->sendCountsByType), [array_values($result->sendCountsByType)]);
         }
 
         if ($result->reportRows !== []) {
+            $this->info('Details:');
             $this->table(['User ID', 'User', 'Item', 'Item Type', 'Item ID', 'Units currently held', 'Units to re-request'], $result->reportRows);
         }
 
         if (! $result->excludeDeclined && $result->previouslyDeclined > 0) {
-            $this->warn('Includes '.$result->previouslyDeclined.' previously declined that are being asked again.');
+            $this->warn('Includes '.$result->previouslyDeclined.' previously declined, being asked to accept again.');
         }
 
         $this->newLine();
