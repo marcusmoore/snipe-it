@@ -34,7 +34,7 @@ class RegenerateAcceptancesTest extends TestCase
 
         $this->artisan('snipeit:regenerate-acceptances', ['--no-interaction' => true])
             ->expectsTable(
-                ['User', 'Item', 'Type', 'Units held', 'Qty'],
+                ['User', 'Item', 'Type', 'Units currently held', 'Units to re-request'],
                 [[$holder->present()->fullName, $asset->present()->name, 'Asset', 1, 1]],
             )
             ->assertExitCode(0);
@@ -122,7 +122,7 @@ class RegenerateAcceptancesTest extends TestCase
 
         $this->artisan('snipeit:regenerate-acceptances', ['--no-interaction' => true])
             ->expectsTable(
-                ['User', 'Item', 'Type', 'Units held', 'Qty'],
+                ['User', 'Item', 'Type', 'Units currently held', 'Units to re-request'],
                 [[$holder->present()->fullName, $asset->present()->name, 'Asset', 1, 1]],
             )
             ->assertExitCode(0);
@@ -228,7 +228,7 @@ class RegenerateAcceptancesTest extends TestCase
 
         $this->artisan('snipeit:regenerate-acceptances', ['--no-interaction' => true])
             ->expectsTable(
-                ['User', 'Item', 'Type', 'Units held', 'Qty'],
+                ['User', 'Item', 'Type', 'Units currently held', 'Units to re-request'],
                 [[$holder->present()->fullName, $accessory->present()->name, 'Accessory', 2, 2]],
             )
             ->assertExitCode(0);
@@ -270,7 +270,7 @@ class RegenerateAcceptancesTest extends TestCase
 
         $this->artisan('snipeit:regenerate-acceptances', ['--no-interaction' => true])
             ->expectsTable(
-                ['User', 'Item', 'Type', 'Units held', 'Qty'],
+                ['User', 'Item', 'Type', 'Units currently held', 'Units to re-request'],
                 [[$holder->present()->fullName, $consumable->present()->name, 'Consumable', 2, 2]],
             )
             ->assertExitCode(0);
@@ -289,7 +289,7 @@ class RegenerateAcceptancesTest extends TestCase
 
         $this->artisan('snipeit:regenerate-acceptances', ['--no-interaction' => true])
             ->expectsTable(
-                ['User', 'Item', 'Type', 'Units held', 'Qty'],
+                ['User', 'Item', 'Type', 'Units currently held', 'Units to re-request'],
                 [
                     [$holder->present()->fullName, $laptop->present()->name, 'Asset', 1, 1],
                     [$holder->present()->fullName, $desktop->present()->name, 'Asset', 1, 1],
@@ -711,7 +711,7 @@ class RegenerateAcceptancesTest extends TestCase
 
         $this->artisan('snipeit:regenerate-acceptances', ['--no-interaction' => true])
             ->expectsTable(
-                ['User', 'Item', 'Type', 'Units held', 'Qty'],
+                ['User', 'Item', 'Type', 'Units currently held', 'Units to re-request'],
                 [[$holder->present()->fullName, $accessory->present()->name, 'Accessory', 3, 2]],
             )
             ->assertExitCode(0);
@@ -744,7 +744,7 @@ class RegenerateAcceptancesTest extends TestCase
 
         $this->artisan('snipeit:regenerate-acceptances', ['--no-interaction' => true])
             ->expectsTable(
-                ['User', 'Item', 'Type', 'Units held', 'Qty'],
+                ['User', 'Item', 'Type', 'Units currently held', 'Units to re-request'],
                 [[$holder->present()->fullName, $accessory->present()->name, 'Accessory', 2, 1]],
             )
             ->assertExitCode(0);
@@ -766,7 +766,7 @@ class RegenerateAcceptancesTest extends TestCase
 
         $this->artisan('snipeit:regenerate-acceptances', ['--no-interaction' => true])
             ->expectsTable(
-                ['User', 'Item', 'Type', 'Units held', 'Qty'],
+                ['User', 'Item', 'Type', 'Units currently held', 'Units to re-request'],
                 [[$holder->present()->fullName, $accessory->present()->name, 'Accessory', 1, 1]],
             )
             ->assertExitCode(0);
