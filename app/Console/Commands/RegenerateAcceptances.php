@@ -323,10 +323,6 @@ class RegenerateAcceptances extends Command
             return self::SUCCESS;
         }
 
-        if ($result->reportRows !== []) {
-            $this->table(['User ID', 'User', 'Item', 'Item Type', 'Item ID', 'Units currently held', 'Units to re-request'], $result->reportRows);
-        }
-
         $this->info('To re-request: '.count($result->reportRows).'.');
 
         foreach ($result->sendCountsByType as $type => $count) {
@@ -334,6 +330,12 @@ class RegenerateAcceptances extends Command
         }
 
         $this->info('Previously declined: '.$result->previouslyDeclined.'.');
+
+        if ($result->reportRows !== []) {
+            $this->table(['User ID', 'User', 'Item', 'Item Type', 'Item ID', 'Units currently held', 'Units to re-request'], $result->reportRows);
+        }
+
+        $this->newLine();
         $this->info('Already covered by a pending request: '.$result->alreadyCovered.'.');
 
         if ($result->coveredRows !== []) {
@@ -341,6 +343,7 @@ class RegenerateAcceptances extends Command
         }
 
         if ($result->excludeDeclined) {
+            $this->newLine();
             $this->info('Previously declined and excluded: '.$result->declinedAndExcluded.'.');
 
             if ($result->declinedRows !== []) {
@@ -348,6 +351,7 @@ class RegenerateAcceptances extends Command
             }
         }
 
+        $this->newLine();
         $this->info($result->dryRun ? 'Nothing was created.' : 'Created: '.$result->created.'.');
 
         if ($result->notify) {
