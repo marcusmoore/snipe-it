@@ -1049,9 +1049,37 @@ class RegenerateAcceptancesTest extends TestCase
         $this->artisan('snipeit:regenerate-acceptances', ['--no-interaction' => true])
             ->expectsOutput('Created: 1.')
             ->doesntExpectOutput('Notified: 1.')
+            ->expectsOutputToContain('snipeit:acceptance-reminder')
             ->assertExitCode(0);
 
         Mail::assertNothingSent();
+    }
+
+    /**
+     * The rows a run without `--notify` writes are silent until somebody emails them, so
+     * the footer names the command that does. It is not offered when the run emailed the
+     * holders itself, nor when it wrote nothing for anyone to be reminded about — and a
+     * dry run falls under the latter, since `created` only counts real rows.
+     */
+    public function test_the_reminder_command_is_only_named_when_rows_were_created_without_notify(): void
+    {
+        Mail::fake();
+        $holder = User::factory()->create(['email' => 'holder@example.test']);
+        $this->assetIn($this->acceptanceCategory('asset'), [
+            'assigned_to' => $holder->id,
+            'assigned_type' => User::class,
+        ]);
+
+        $this->artisan('snipeit:regenerate-acceptances', ['--no-interaction' => true, '--dry-run' => true])
+            ->expectsOutput('Total acceptances to regenerate: 1.')
+            ->expectsOutput('Nothing was created.')
+            ->doesntExpectOutputToContain('snipeit:acceptance-reminder')
+            ->assertExitCode(0);
+
+        $this->artisan('snipeit:regenerate-acceptances', ['--no-interaction' => true, '--notify' => true])
+            ->expectsOutput('Notified: 1.')
+            ->doesntExpectOutputToContain('snipeit:acceptance-reminder')
+            ->assertExitCode(0);
     }
 
     public function test_dry_run_with_notify_emails_nobody(): void
@@ -1386,7 +1414,7 @@ class RegenerateAcceptancesTest extends TestCase
 
         $this->artisan('snipeit:regenerate-acceptances', ['--no-interaction' => true])
             ->expectsOutput('Total acceptances to regenerate: 8.')
-            ->expectsTable(['Asset', 'LicenseSeat', 'Accessory', 'Consumable', 'Component'], [[3, 1, 2, 1, 1]])
+            ->expectsTable(['Assets', 'License Seats', 'Accessories', 'Consumables', 'Components'], [[3, 1, 2, 1, 1]])
             ->expectsOutput('Includes 1 previously declined, being asked to accept again.')
             ->expectsOutput('Already covered by a pending request: 1.')
             ->expectsOutput('Created: 8.')

@@ -329,6 +329,12 @@ class RegenerateAcceptances extends Command
      * nobody emailed immediately before asking whether to email. A standalone
      * `--dry-run` has no question coming and keeps its footer.
      *
+     * A run that created rows without `--notify` closes by naming
+     * `snipeit:acceptance-reminder`, because the rows it just wrote are silent until
+     * somebody emails them. The pointer says that command's scope is every pending
+     * request rather than this run's, since a `--category`-scoped run does not narrow it.
+     * `created` is only incremented off a dry run, so it carries the dry-run case too.
+     *
      * @param  bool  $awaitingConfirmation  whether the operator is about to be asked to go ahead
      */
     private function printReport(RegenerateAcceptancesResult $result, bool $awaitingConfirmation = false): int
@@ -343,7 +349,13 @@ class RegenerateAcceptances extends Command
 
         if ($result->sendCountsByType !== []) {
             $this->info('Total by type:');
-            $this->table(array_keys($result->sendCountsByType), [array_values($result->sendCountsByType)]);
+            $this->table(
+                collect($result->sendCountsByType)
+                    ->keys()
+                    ->map(fn ($string) => Str::of($string)->headline()->plural())
+                    ->toArray(),
+                [array_values($result->sendCountsByType)]
+            );
         }
 
         if ($result->reportRows !== []) {
@@ -385,6 +397,8 @@ class RegenerateAcceptances extends Command
                 $this->info('The following users do not have an email address:');
                 $this->table(['ID', 'Name'], $result->holdersWithoutEmail);
             }
+        } elseif ($result->created > 0) {
+            $this->line('Nobody was emailed. Run snipeit:acceptance-reminder to email them.');
         }
 
         return self::SUCCESS;
