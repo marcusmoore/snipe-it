@@ -1133,7 +1133,7 @@ class RegenerateAcceptancesTest extends TestCase
 
         $this->artisan('snipeit:regenerate-acceptances', ['--no-interaction' => true, '--notify' => true])
             ->expectsOutput('Notified: 1.')
-            ->doesntExpectOutput('The following users do not have an email address:')
+            ->doesntExpectOutput('The following users were not emailed because they do not have an email address:')
             ->assertExitCode(0);
     }
 
@@ -1262,7 +1262,7 @@ class RegenerateAcceptancesTest extends TestCase
     }
 
     /**
-     * Decision 16's announce-and-skip: a flag answers its step, and the step is not asked.
+     * A flag answers its step, and the wizard announces it rather than asking it.
      *
      * Every prompt the wizard could reach is left unanswered here except the final
      * confirm. If a skipped step were actually asked, it would reach the mocked question
@@ -1309,7 +1309,7 @@ class RegenerateAcceptancesTest extends TestCase
     }
 
     /**
-     * Decision C parity: a --no-interaction run is slice 3's run, unchanged.
+     * A `--no-interaction` run is unchanged by the wizard existing.
      *
      * The wizard never starts, so no prompt is pre-answered here; reaching one would
      * throw. The flag defaults are the ones that applied before the wizard existed.

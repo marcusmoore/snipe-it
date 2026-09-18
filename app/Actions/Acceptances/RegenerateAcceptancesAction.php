@@ -111,7 +111,7 @@ class RegenerateAcceptancesAction
      *
      * `license_seats.assigned_to` is denormalised and unreliable in both directions:
      * the API asset-checkout path attaches a seat without ever stamping the holder, and
-     * five checkin paths clear it while deliberately leaving `asset_id` set. So a seat
+     * several checkin paths clear it while deliberately leaving `asset_id` set. So a seat
      * with an `asset_id` takes its holder from that asset's *current* assignment, and
      * only a seat with no asset falls back to `assigned_to`. Either way a seat yields at
      * most one pair, so seats carrying both columns cannot double-count.
@@ -561,8 +561,10 @@ class RegenerateAcceptancesAction
      * CheckoutableListener::resolveAcceptanceTarget(). A user holds their own items;
      * an asset's items are held by whoever that asset is assigned to. Anything else
      * — a location, an unassigned asset — has no holder. Soft-deleted users are not
-     * holders either: every relation this walks is declared withTrashed(), so a deleted
-     * user would otherwise come back and be re-asked to accept.
+     * holders either: the relations this walks are declared withTrashed(), so a deleted
+     * user would otherwise come back and be re-asked to accept. The consumable builder
+     * reaches its holders without coming through here, so a deleted user holding only
+     * consumables — the one case `DeleteUserRequest` allows — is not filtered out.
      */
     private static function resolveHolder(?Model $target): ?User
     {

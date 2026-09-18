@@ -316,11 +316,11 @@ class RegenerateAcceptances extends Command
      * by the pairs it passed over and why.
      *
      * The declined line runs below the table it qualifies, and only on a run that is
-     * re-asking decliners: it names the flag that would stop that, because including
-     * them is decision 5's default and the one judgment on the report an operator might
-     * want to reverse. Under `--exclude-declined` it is left out rather than reworded —
-     * every declined pair is excluded under that flag, so the count would be identical
-     * to the one heading the excluded table and would read as a second population.
+     * re-asking decliners: re-asking them is the default, and the one judgment on the
+     * report an operator might want to reverse. Under `--exclude-declined` it is left
+     * out rather than reworded — every declined pair is excluded under that flag, so the
+     * count would be identical to the one heading the excluded table and would read as a
+     * second population.
      *
      * The closing tally is held back when a confirmation prompt is about to follow. The
      * wizard's preview is a real dry run, so it would otherwise sign off with "Nothing
@@ -331,9 +331,9 @@ class RegenerateAcceptances extends Command
      *
      * A run that created rows without `--notify` closes by naming
      * `snipeit:acceptance-reminder`, because the rows it just wrote are silent until
-     * somebody emails them. The pointer says that command's scope is every pending
-     * request rather than this run's, since a `--category`-scoped run does not narrow it.
-     * `created` is only incremented off a dry run, so it carries the dry-run case too.
+     * somebody emails them. That command emails every user with a pending request, so
+     * its reach is wider than a `--category`-scoped run of this one. `created` is only
+     * incremented off a dry run, so it carries the dry-run case too.
      *
      * @param  bool  $awaitingConfirmation  whether the operator is about to be asked to go ahead
      */
