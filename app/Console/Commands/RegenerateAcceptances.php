@@ -261,6 +261,10 @@ class RegenerateAcceptances extends Command
             options: $categories->all(),
             hint: 'Select none to cover every category requiring acceptance.',
         );
+
+        if ($this->categoryIds === []) {
+            $this->line('Covering every category that requires acceptance.');
+        }
     }
 
     private function askForCompanies(): void
@@ -282,6 +286,10 @@ class RegenerateAcceptances extends Command
             options: $companies->all(),
             hint: 'Select none to cover every company.',
         );
+
+        if ($this->companyIds === []) {
+            $this->line('Covering every company.');
+        }
     }
 
     private function askWhetherToExcludeDeclined(): void

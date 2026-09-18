@@ -1170,6 +1170,8 @@ class RegenerateAcceptancesTest extends TestCase
         $asset = $this->heldAsset($holder, $this->acceptanceCategory('asset'), $company, 'Wizard laptop');
 
         $this->runWizard()
+            ->expectsOutput('Covering every category that requires acceptance.')
+            ->expectsOutput('Covering every company.')
             ->expectsOutput('Created: 1.')
             ->assertExitCode(0);
 
@@ -1285,6 +1287,8 @@ class RegenerateAcceptancesTest extends TestCase
             ->expectsConfirmation('Create these acceptance requests?', 'yes')
             ->expectsOutput('--category passed — skipping')
             ->expectsOutput('--company passed — skipping')
+            ->doesntExpectOutput('Covering every category that requires acceptance.')
+            ->doesntExpectOutput('Covering every company.')
             ->expectsOutput('--exclude-declined passed — skipping')
             ->expectsOutput('--notify passed — skipping')
             ->expectsOutput('Notified: 1.')
