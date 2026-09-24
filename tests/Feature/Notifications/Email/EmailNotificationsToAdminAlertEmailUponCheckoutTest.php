@@ -7,9 +7,12 @@ use App\Mail\CheckoutAssetMail;
 use App\Models\Asset;
 use App\Models\AssetModel;
 use App\Models\Category;
+use App\Models\Location;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Mail;
 use PHPUnit\Framework\Attributes\Group;
+use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 #[Group('notifications')]
@@ -42,7 +45,8 @@ class EmailNotificationsToAdminAlertEmailUponCheckoutTest extends TestCase
         $this->user = User::factory()->create();
     }
 
-    public function test_admin_alert_email_sends()
+    #[Test]
+    public function admin_alert_email_sends()
     {
         $this->settings->enableAdminCC('cc@example.com');
 
@@ -55,7 +59,8 @@ class EmailNotificationsToAdminAlertEmailUponCheckoutTest extends TestCase
         });
     }
 
-    public function test_admin_alert_email_still_sent_when_category_is_not_set_to_send_email_to_user()
+    #[Test]
+    public function admin_alert_email_still_sent_when_category_is_not_set_to_send_email_to_user()
     {
         $this->settings->enableAdminCC('cc@example.com');
 
@@ -66,7 +71,8 @@ class EmailNotificationsToAdminAlertEmailUponCheckoutTest extends TestCase
         });
     }
 
-    public function test_admin_alert_email_still_sent_when_user_has_no_email_address()
+    #[Test]
+    public function admin_alert_email_still_sent_when_user_has_no_email_address()
     {
         $this->settings->enableAdminCC('cc@example.com');
 
@@ -80,7 +86,8 @@ class EmailNotificationsToAdminAlertEmailUponCheckoutTest extends TestCase
         });
     }
 
-    public function test_admin_alert_email_sent_when_always_send_is_true_and_asset_does_not_require_acceptance()
+    #[Test]
+    public function admin_alert_email_sent_when_always_send_is_true_and_asset_does_not_require_acceptance()
     {
         $this->settings
             ->enableAdminCC('cc@example.com')
@@ -95,7 +102,8 @@ class EmailNotificationsToAdminAlertEmailUponCheckoutTest extends TestCase
         });
     }
 
-    public function test_admin_alert_email_not_sent_when_always_send_is_false_and_asset_does_not_require_acceptance()
+    #[Test]
+    public function admin_alert_email_not_sent_when_always_send_is_false_and_asset_does_not_require_acceptance()
     {
         $this->settings
             ->enableAdminCC('cc@example.com')
@@ -110,11 +118,39 @@ class EmailNotificationsToAdminAlertEmailUponCheckoutTest extends TestCase
         });
     }
 
-    private function fireCheckoutEvent(): void
+    #[Test]
+    public function admin_alert_email_sent_when_checked_out_to_an_asset_with_no_assigned_user()
+    {
+        $this->settings
+            ->enableAdminCC('cc@example.com')
+            ->enableAdminCCAlways();
+
+        $this->fireCheckoutEvent(Asset::factory()->create());
+
+        Mail::assertSent(CheckoutAssetMail::class, function (CheckoutAssetMail $mail) {
+            return $mail->hasTo('cc@example.com');
+        });
+    }
+
+    #[Test]
+    public function admin_alert_email_sent_when_checked_out_to_a_location_with_no_manager()
+    {
+        $this->settings
+            ->enableAdminCC('cc@example.com')
+            ->enableAdminCCAlways();
+
+        $this->fireCheckoutEvent(Location::factory()->create(['manager_id' => null]));
+
+        Mail::assertSent(CheckoutAssetMail::class, function (CheckoutAssetMail $mail) {
+            return $mail->hasTo('cc@example.com');
+        });
+    }
+
+    private function fireCheckoutEvent(?Model $target = null): void
     {
         event(new CheckoutableCheckedOut(
             $this->asset,
-            $this->user,
+            $target ?? $this->user,
             User::factory()->superuser()->create(),
             '',
         ));
