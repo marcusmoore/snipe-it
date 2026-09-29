@@ -108,6 +108,20 @@ class CheckoutableEmailLocaleTest extends TestCase
 
     #[Test]
     #[DataProvider('checkoutAndCheckin')]
+    public function admin_only_email_is_sent_in_the_settings_locale_when_the_category_does_not_email_the_user(string $mailable, Closure $fireEvent): void
+    {
+        $this->settings->enableAdminCC('cc@example.com')->enableAdminCCAlways();
+        $user = User::factory()->create(['locale' => 'es-ES']);
+        $asset = $this->assetThatDoesNotEmailTheUser();
+        app()->setLocale(self::ACTING_ADMIN_LOCALE);
+
+        $fireEvent($asset, $user);
+
+        $this->assertSame(self::SETTINGS_LOCALE, $this->sentTo($mailable, 'cc@example.com')->locale);
+    }
+
+    #[Test]
+    #[DataProvider('checkoutAndCheckin')]
     public function user_email_falls_back_to_the_settings_locale_when_the_user_has_no_locale(string $mailable, Closure $fireEvent): void
     {
         $user = User::factory()->create(['locale' => null]);
@@ -136,6 +150,18 @@ class CheckoutableEmailLocaleTest extends TestCase
     {
         $category = Category::factory()->create([
             'checkin_email' => true,
+            'eula_text' => null,
+            'require_acceptance' => false,
+            'use_default_eula' => false,
+        ]);
+
+        return Asset::factory()->for(AssetModel::factory()->for($category), 'model')->create();
+    }
+
+    private function assetThatDoesNotEmailTheUser(): Asset
+    {
+        $category = Category::factory()->create([
+            'checkin_email' => false,
             'eula_text' => null,
             'require_acceptance' => false,
             'use_default_eula' => false,
