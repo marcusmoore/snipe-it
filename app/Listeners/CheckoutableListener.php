@@ -106,7 +106,7 @@ class CheckoutableListener
 
             if (! empty($to)) {
                 try {
-                    $toMail = (clone $mailable)->locale($this->getLocale($notifiable));
+                    $toMail = (clone $mailable)->locale($this->getLocale($shouldSendEmailToUser, $notifiable));
                     Mail::to(array_flatten($to))->send($toMail);
                     Log::info('Checkout Mail sent to checkout target');
                 } catch (ClientException $e) {
@@ -204,7 +204,7 @@ class CheckoutableListener
 
             if (! empty($to)) {
                 try {
-                    $toMail = (clone $mailable)->locale($this->getLocale($notifiable));
+                    $toMail = (clone $mailable)->locale($this->getLocale($shouldSendEmailToUser, $notifiable));
                     Mail::to(array_flatten($to))->send($toMail);
                     Log::info('Checkin Mail sent to checkin target');
                 } catch (ClientException $e) {
@@ -646,9 +646,9 @@ class CheckoutableListener
         };
     }
 
-    private function getLocale(mixed $notifiable): string
+    private function getLocale(bool $shouldEmailUser, mixed $notifiable): string
     {
-        if ($notifiable instanceof User && $notifiable->email) {
+        if ($shouldEmailUser && ($notifiable instanceof User && $notifiable->email)) {
             return Helper::mapLegacyLocale($notifiable->preferredLocale());
         }
 
