@@ -117,7 +117,7 @@ class CheckoutableListener
             }
             if (! empty($cc)) {
                 try {
-                    $ccMail = (clone $mailable)->locale(Setting::getSettings()->locale);
+                    $ccMail = (clone $mailable)->locale($this->getSettingsLocale());
                     Mail::cc(array_flatten($cc))->send($ccMail);
                 } catch (ClientException $e) {
                     Log::debug('Exception caught during checkout email: '.$e->getMessage());
@@ -215,7 +215,7 @@ class CheckoutableListener
             }
             if (! empty($cc)) {
                 try {
-                    $ccMail = (clone $mailable)->locale(Setting::getSettings()->locale);
+                    $ccMail = (clone $mailable)->locale($this->getSettingsLocale());
                     Mail::cc(array_flatten($cc))->send($ccMail);
                 } catch (ClientException $e) {
                     Log::debug('Exception caught during checkin email: '.$e->getMessage());
@@ -652,6 +652,11 @@ class CheckoutableListener
             return Helper::mapLegacyLocale($notifiable->preferredLocale());
         }
 
+        return $this->getSettingsLocale();
+    }
+
+    private function getSettingsLocale(): string
+    {
         return Helper::mapLegacyLocale(Setting::getSettings()->locale);
     }
 }
