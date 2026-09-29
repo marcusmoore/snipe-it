@@ -1727,7 +1727,7 @@ class Helper
      *
      * @since 6.3.0
      *
-     * @return string []
+     * @return string
      */
     public static function mapLegacyLocale($language_code = null)
     {

@@ -646,7 +646,7 @@ class CheckoutableListener
         };
     }
 
-    private function getLocale(mixed $notifiable)
+    private function getLocale(mixed $notifiable): string
     {
         if ($notifiable instanceof User && $notifiable->email) {
             return Helper::mapLegacyLocale($notifiable->preferredLocale());
