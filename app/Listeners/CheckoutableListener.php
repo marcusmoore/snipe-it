@@ -4,6 +4,7 @@ namespace App\Listeners;
 
 use App\Actions\Acceptances\CreateCheckoutAcceptanceAction;
 use App\Events\CheckoutableCheckedOut;
+use App\Helpers\Helper;
 use App\Mail\CheckinAccessoryMail;
 use App\Mail\CheckinAssetMail;
 use App\Mail\CheckinComponentMail;
@@ -105,7 +106,7 @@ class CheckoutableListener
 
             if (! empty($to)) {
                 try {
-                    $toMail = (clone $mailable)->locale($notifiable->locale);
+                    $toMail = (clone $mailable)->locale($this->getLocale($notifiable));
                     Mail::to(array_flatten($to))->send($toMail);
                     Log::info('Checkout Mail sent to checkout target');
                 } catch (ClientException $e) {
@@ -203,7 +204,7 @@ class CheckoutableListener
 
             if (! empty($to)) {
                 try {
-                    $toMail = (clone $mailable)->locale($notifiable->locale);
+                    $toMail = (clone $mailable)->locale($this->getLocale($notifiable));
                     Mail::to(array_flatten($to))->send($toMail);
                     Log::info('Checkin Mail sent to checkin target');
                 } catch (ClientException $e) {
@@ -643,5 +644,14 @@ class CheckoutableListener
             $checkoutable instanceof LicenseSeat => $checkoutable->license->category,
             default => null,
         };
+    }
+
+    private function getLocale(mixed $notifiable)
+    {
+        if ($notifiable instanceof User && $notifiable->email) {
+            return Helper::mapLegacyLocale($notifiable->preferredLocale());
+        }
+
+        return Helper::mapLegacyLocale(Setting::getSettings()->locale);
     }
 }
