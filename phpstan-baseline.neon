@@ -7243,6 +7243,12 @@ parameters:
 			path: app/Models/Group.php
 
 		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Relations\\Relation\:\:detach\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Models/Group.php
+
+		-
 			message: '#^Access to an undefined property App\\Models\\Asset\:\:\$assigned\.$#'
 			identifier: property.notFound
 			count: 1
@@ -8433,6 +8439,12 @@ parameters:
 		-
 			message: '#^Using nullsafe property access "\?\-\>company_id" in isset\(\) is unnecessary\. Use \-\> instead\.$#'
 			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Models/User.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Relations\\Relation\:\:detach\(\)\.$#'
+			identifier: method.notFound
 			count: 1
 			path: app/Models/User.php
 

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Setting;
 use App\Models\User;
+use GuzzleHttp\Exception\ClientException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -32,20 +33,26 @@ class GoogleAuthController extends Controller
 
     public function handleGoogleCallback(): RedirectResponse
     {
+        // Bail before Socialite hits the token endpoint when the callback
+        // was reached without a fresh code: user hit Deny, browser back-button
+        // replay, bookmarked callback URL, or Google returned an OAuth error.
+        // Otherwise Socialite POSTs an empty code and gets a 400 that bubbles
+        // as an unhandled ClientException 500.
+        if (request()->has('error') || ! request()->has('code')) {
+            Log::debug('Google callback hit without a code (error='.request('error', 'none').')');
+
+            return redirect()->route('login')
+                ->withErrors(['username' => [trans('auth/general.google_login_failed')]]);
+        }
+
         try {
             $socialUser = Socialite::driver('google')->user();
             Log::debug('Google user found in Google Workspace');
-        } catch (InvalidStateException $exception) {
-            Log::debug('Google user NOT found in Google Workspace');
+        } catch (InvalidStateException|ClientException $exception) {
+            Log::debug('Google callback error: '.$exception->getMessage());
 
             return redirect()->route('login')
-                ->withErrors(
-                    [
-                        'username' => [
-                            trans('auth/general.google_login_failed'),
-                        ],
-                    ]
-                );
+                ->withErrors(['username' => [trans('auth/general.google_login_failed')]]);
         }
 
         $user = User::where('username', $socialUser->getEmail())
@@ -63,7 +70,7 @@ class GoogleAuthController extends Controller
             }
 
             Log::debug('Google user '.$socialUser->getEmail().' found in Snipe-IT');
-            
+
             $user->avatar = $socialUser->avatar;
             $user->last_login = \Carbon::now();
             $user->save();

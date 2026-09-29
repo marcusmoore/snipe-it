@@ -139,8 +139,11 @@ $config['disks']['public'] = $config['disks'][env('PUBLIC_FILESYSTEM_DISK', 'loc
 // When PUBLIC_S3_PROXY is enabled, all "public" uploads are served through the application
 // instead of being accessed directly from S3. This allows using a single private S3 bucket
 // for all storage, with the app proxying requests for public files (images, logos, avatars).
+// No 'visibility' key: the proxy works because the URL points at the app's
+// /storage-proxy route, not because of any per-object ACL, so we drop the
+// visibility that would otherwise send ACL: private and be rejected by
+// buckets configured with Object Ownership = Bucket owner enforced.
 if (env('PUBLIC_S3_PROXY', false)) {
-    $config['disks']['public']['visibility'] = 'private';
     $config['disks']['public']['url'] = env('APP_URL').'/storage-proxy';
 }
 

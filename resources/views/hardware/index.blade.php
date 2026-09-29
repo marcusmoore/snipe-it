@@ -7,6 +7,7 @@
       $requestOrderNumber = request()->input('order_number');
       $requestCompanyId = request()->input('company_id');
       $requestStatusTypeId = request()->input('status_id');
+      $requestPastEol = request()->boolean('past_eol');
   @endphp
 
   @if (is_scalar($requestCompanyId) && ($company instanceof \App\Models\Company))
@@ -61,6 +62,7 @@
                     'order_number' => is_scalar($requestOrderNumber) ? strval($requestOrderNumber) : null,
                     'company_id' => is_scalar($requestCompanyId) ? $requestCompanyId : null,
                     'status_id' => is_scalar($requestStatusTypeId) ? $requestStatusTypeId : null,
+                    'past_eol' => $requestPastEol ? 1 : null,
                 ))"
                 :status_type="is_scalar($requestStatusType) ? $requestStatusType : null"
             />

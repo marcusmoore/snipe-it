@@ -746,7 +746,12 @@ class UsersController extends Controller
             return view('users.print')
                 ->with('users', [$user])
                 ->with('indirectItemsCount', $indirectItemsCount)
-                ->with('settings', Setting::getSettings());
+                ->with('settings', Setting::getSettings())
+                ->with('canViewAssets', $canViewAssets)
+                ->with('canViewLicenses', $canViewLicenses)
+                ->with('canViewAccessories', $canViewAccessories)
+                ->with('canViewConsumables', $canViewConsumables)
+                ->with('canViewComponents', $canViewComponents);
         }
 
         return redirect()->route('users.index')->with('error', trans('admin/users/message.user_not_found', compact('id')));

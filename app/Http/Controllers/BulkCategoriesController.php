@@ -11,10 +11,77 @@ use App\Exceptions\ItemStillHasComponents;
 use App\Exceptions\ItemStillHasConsumables;
 use App\Exceptions\ItemStillHasLicenses;
 use App\Models\Category;
+use Illuminate\Contracts\View\View;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
 class BulkCategoriesController extends Controller
 {
+    public function edit(Request $request): View|RedirectResponse
+    {
+        $categories_raw_array = $request->input('ids');
+
+        if (! is_array($categories_raw_array) || count($categories_raw_array) === 0) {
+            return redirect()->route('categories.index')
+                ->with('error', trans('admin/categories/message.bulkedit.no_selection'));
+        }
+
+        if ($request->input('bulk_actions') === 'delete') {
+            return $this->destroy($request);
+        }
+
+        $this->authorize('update', Category::class);
+
+        $categories = Category::whereIn('id', $categories_raw_array)
+            ->withCount([
+                'assets as assets_count',
+                'models as models_count',
+                'accessories as accessories_count',
+                'consumables as consumables_count',
+                'components as components_count',
+                'licenses as licenses_count',
+            ])
+            ->orderBy('name', 'ASC')
+            ->get();
+
+        return view('categories/bulk-edit', compact('categories'));
+    }
+
+    public function update(Request $request): RedirectResponse
+    {
+        $this->authorize('update', Category::class);
+
+        $categories_raw_array = $request->input('ids');
+
+        if (! is_array($categories_raw_array) || count($categories_raw_array) === 0) {
+            return redirect()->route('categories.index')
+                ->with('error', trans('admin/categories/message.bulkedit.no_selection'));
+        }
+
+        $update_array = [];
+
+        foreach (['require_acceptance', 'use_default_eula', 'checkin_email', 'alert_on_response'] as $boolean_field) {
+            $value = $request->input($boolean_field);
+            if ($value !== null && $value !== '') {
+                $update_array[$boolean_field] = (int) $value;
+            }
+        }
+
+        if ($request->filled('tag_color')) {
+            $update_array['tag_color'] = $request->input('tag_color');
+        }
+
+        if (count($update_array) === 0) {
+            return redirect()->route('categories.index')
+                ->with('warning', trans('admin/categories/message.bulkedit.no_changes'));
+        }
+
+        $updated = Category::whereIn('id', $categories_raw_array)->update($update_array);
+
+        return redirect()->route('categories.index')
+            ->with('success', trans_choice('admin/categories/message.bulkedit.success', $updated, ['count' => $updated]));
+    }
+
     public function destroy(Request $request)
     {
         $this->authorize('delete', Category::class);

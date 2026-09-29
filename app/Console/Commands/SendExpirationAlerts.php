@@ -8,7 +8,9 @@ use App\Models\Asset;
 use App\Models\License;
 use App\Models\Setting;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use Symfony\Component\Mailer\Exception\TransportException;
 
 class SendExpirationAlerts extends Command
 {
@@ -58,7 +60,13 @@ class SendExpirationAlerts extends Command
 
             if ($assets->count() > 0) {
 
-                Mail::to($recipients)->send(new ExpiringAssetsMail($assets, $alert_interval));
+                try {
+                    Mail::to($recipients)->send(new ExpiringAssetsMail($assets, $alert_interval));
+                } catch (TransportException $e) {
+                    $message = 'Failed to send expiring-assets alert: '.$e->getMessage();
+                    Log::warning($message);
+                    $this->error($message);
+                }
 
                 $this->table(
                     [
@@ -91,7 +99,13 @@ class SendExpirationAlerts extends Command
                 ->orderBy('termination_date', 'ASC')
                 ->get();
             if ($licenses->count() > 0) {
-                Mail::to($recipients)->send(new ExpiringLicenseMail($licenses, $alert_interval));
+                try {
+                    Mail::to($recipients)->send(new ExpiringLicenseMail($licenses, $alert_interval));
+                } catch (TransportException $e) {
+                    $message = 'Failed to send expiring-licenses alert: '.$e->getMessage();
+                    Log::warning($message);
+                    $this->error($message);
+                }
 
                 $this->table(
                     [

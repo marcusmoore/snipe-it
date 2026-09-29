@@ -3,9 +3,9 @@
 ])
 
 {{-- Batch equivalent of the notification callout that every
-     singleton checkout screen renders. Same four conditions:
+     singleton checkout screen renders. Conditions must match what
+     the backend actually does at fulfillment time:
        - the item requires acceptance (acceptance email fires)
-       - global signature-required is on (each recipient signs)
        - the item has a EULA attached (EULA email fires)
        - a webhook endpoint is configured (each fulfilled
          checkout POSTs to it)
@@ -13,7 +13,7 @@
      fulfill hands out to N different requesters and there is no
      single-user surface to sign against. --}}
 
-@if ($item->requireAcceptance() || (string) $snipeSettings->require_accept_signature === '1' || $item->getEula() || $snipeSettings->webhook_endpoint != '')
+@if ($item->requireAcceptance() || $item->getEula() || $snipeSettings->webhook_endpoint != '')
     <div class="form-group">
         <div class="col-md-12">
             <x-callout type="info" role="status">
@@ -24,7 +24,7 @@
                     {{ trans('admin/categories/general.required_acceptance') }}
                     <br>
                 @endif
-                @if ((string) $snipeSettings->require_accept_signature === '1')
+                @if ($item->requireAcceptance() && (string) $snipeSettings->require_accept_signature === '1')
                     <x-icon type="signature" class="fa-fw"/>
                     {{ trans('admin/categories/general.required_signature') }}
                     <br>

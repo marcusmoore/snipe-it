@@ -21,21 +21,23 @@
          post-submit redirect. --}}
     <input type="hidden" name="active_tab" id="requestItemActiveTab" value="">
 
-    {{-- Qty row is hidden when the trigger sets
-         data-item-type="asset". Assets are 1:1
-         (you request THE asset, not N of it). The
-         hidden input keeps request-quantity=1
-         posted so the server-side path stays
+    {{-- Qty row is hidden by JS when the trigger sets
+         data-item-type="asset" or "license". Assets are 1:1
+         (you request THE asset, not N of it). Licenses are
+         one-seat-per-request by convention. The input stays
+         in the DOM with value=1 so the POST shape stays
          uniform across every requestable type. --}}
-    <x-form.row
-        id="requestItemQuantityRow"
-        name="request-quantity"
-        type="number"
-        :label="trans('general.qty')"
-        :min="1"
-        default="1"
-        required
-    />
+    <div id="requestItemQuantityRow">
+        <x-form.row
+            id="requestItemQuantity"
+            name="request-quantity"
+            type="number"
+            :label="trans('general.qty')"
+            :min="1"
+            default="1"
+            required
+        />
+    </div>
 
     {{-- Start / end dates are optional. Requesters who just
          want "whenever this becomes available" leave both

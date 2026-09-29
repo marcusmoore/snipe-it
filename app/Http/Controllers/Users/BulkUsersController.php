@@ -6,6 +6,7 @@ use App\Events\UserMerged;
 use App\Helpers\Helper;
 use App\Http\Controllers\Controller;
 use App\Models\Accessory;
+use App\Models\AccessoryCheckout;
 use App\Models\Actionlog;
 use App\Models\Asset;
 use App\Models\CheckoutAcceptance;
@@ -131,7 +132,12 @@ class BulkUsersController extends Controller
 
                 return view('users.print')
                     ->with('users', $users)
-                    ->with('settings', Setting::getSettings());
+                    ->with('settings', Setting::getSettings())
+                    ->with('canViewAssets', $canViewAssets)
+                    ->with('canViewLicenses', $canViewLicenses)
+                    ->with('canViewAccessories', $canViewAccessories)
+                    ->with('canViewConsumables', $canViewConsumables)
+                    ->with('canViewComponents', $canViewComponents);
             }
         }
 
@@ -477,12 +483,26 @@ class BulkUsersController extends Controller
             ->pluck('id');
         ConsumableAssignment::whereIn('id', $scopedConsumableRowIds)->delete();
 
-        CheckoutAcceptance::pending()
+        // Delete only the pivot rows we already permission-checked and
+        // audit-logged.
+        AccessoryCheckout::whereIn('id', $scopedAccessoryUserRows->pluck('id'))->delete();
+
+        // Delete only pending acceptances whose underlying checkoutable is in scope.
+        $scopedAcceptanceIds = CheckoutAcceptance::pending()
             ->whereIn('assigned_to_id', $user_raw_array)
-            ->delete();
+            ->get(['id', 'checkoutable_type', 'checkoutable_id'])
+            ->filter(fn($acceptance) => match ($acceptance->checkoutable_type) {
+                Asset::class => $assets->pluck('id')->contains($acceptance->checkoutable_id),
+                Accessory::class => $scopedAccessoryUserRows->pluck('accessory_id')->contains($acceptance->checkoutable_id),
+                LicenseSeat::class => $scopedLicenseSeats->pluck('id')->contains($acceptance->checkoutable_id),
+                Consumable::class => $scopedConsumableIds->contains($acceptance->checkoutable_id),
+                default => false,
+            })
+            ->pluck('id');
+
+        CheckoutAcceptance::whereIn('id', $scopedAcceptanceIds)->delete();
 
         foreach ($users as $user) {
-            $user->accessories()->sync([]);
             if ($request->input('delete_user') == '1') {
                 if (auth()->user()->cannot('delete', $user)) {
                     return redirect()->route('users.index')->with('error', trans('general.insufficient_permissions'));

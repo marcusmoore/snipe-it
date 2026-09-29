@@ -8,6 +8,7 @@ use App\Models\Location;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 /**
  * This trait allows for cleaner searching of models,
@@ -701,19 +702,24 @@ trait Searchable
 
             if ($dbColumn !== null) {
                 $column = $table.'.'.$dbColumn;
+                $isText = $this->isTextTypeColumn($table, $dbColumn);
 
                 $method = $boolean === 'or' ? 'orWhere' : 'where';
 
-                $query->{$method}(function (Builder $subQuery) use ($column, $isNull): void {
+                $query->{$method}(function (Builder $subQuery) use ($column, $isNull, $isText): void {
                     if ($isNull) {
-                        $subQuery->whereNull($column)
-                            ->orWhere($column, '=', '');
+                        $subQuery->whereNull($column);
+                        if ($isText) {
+                            $subQuery->orWhere($column, '=', '');
+                        }
 
                         return;
                     }
 
-                    $subQuery->whereNotNull($column)
-                        ->where($column, '!=', '');
+                    $subQuery->whereNotNull($column);
+                    if ($isText) {
+                        $subQuery->where($column, '!=', '');
+                    }
                 });
 
                 return $query;
@@ -723,18 +729,23 @@ trait Searchable
         // Direct attribute column.
         if (in_array($filterKey, $searchableAttributes, true)) {
             $column = $table.'.'.$filterKey;
+            $isText = $this->isTextTypeColumn($table, $filterKey);
             $method = $boolean === 'or' ? 'orWhere' : 'where';
 
-            $query->{$method}(function (Builder $subQuery) use ($column, $isNull): void {
+            $query->{$method}(function (Builder $subQuery) use ($column, $isNull, $isText): void {
                 if ($isNull) {
-                    $subQuery->whereNull($column)
-                        ->orWhere($column, '=', '');
+                    $subQuery->whereNull($column);
+                    if ($isText) {
+                        $subQuery->orWhere($column, '=', '');
+                    }
 
                     return;
                 }
 
-                $subQuery->whereNotNull($column)
-                    ->where($column, '!=', '');
+                $subQuery->whereNotNull($column);
+                if ($isText) {
+                    $subQuery->where($column, '!=', '');
+                }
             });
 
             return $query;
@@ -1230,6 +1241,36 @@ trait Searchable
 
         // Exact match on db_column (e.g. "_snipeit_cpu_4") only.
         return $map[$filterKey] ?? null;
+    }
+
+    /**
+     * Whether the given column is a text-shaped type (varchar, text, etc.).
+     *
+     * Used by applyNullFilter to decide whether the empty-string ('') check
+     * makes sense alongside IS NULL / IS NOT NULL. On DATE / DATETIME / numeric
+     * columns, comparing to '' in strict MySQL modes yields UNKNOWN and
+     * silently excludes every row (the exact bug in GH #19708 for
+     * asset_eol_date). Skipping the empty-string check for those columns
+     * fixes it without changing behavior on text columns.
+     *
+     * Answers are cached per table.column for the request.
+     */
+    private function isTextTypeColumn(string $table, string $column): bool
+    {
+        static $cache = [];
+        $key = $table.'.'.$column;
+
+        if (array_key_exists($key, $cache)) {
+            return $cache[$key];
+        }
+
+        try {
+            $type = strtolower(Schema::getColumnType($table, $column));
+        } catch (\Throwable) {
+            return $cache[$key] = true;
+        }
+
+        return $cache[$key] = str_contains($type, 'char') || str_contains($type, 'text');
     }
 
     /**

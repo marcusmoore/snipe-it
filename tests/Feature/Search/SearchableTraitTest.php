@@ -846,6 +846,42 @@ class SearchableTraitTest extends TestCase
     }
 
     /**
+     * Regression coverage for GH #19708: `is:not_null` on a DATE column
+     * previously returned zero rows because the applyNullFilter added a
+     * `!= ''` check that MySQL evaluates as UNKNOWN against DATE columns
+     * in strict mode, excluding every row.
+     */
+    public function test_is_null_filter_on_date_column()
+    {
+        // AssetFactory's afterMaking hook overwrites asset_eol_date, so set it after create.
+        $withEol = Asset::factory()->create();
+        $withEol->asset_eol_date = now()->addYear()->format('Y-m-d');
+        $withEol->save();
+
+        $withoutEol = Asset::factory()->create();
+        $withoutEol->asset_eol_date = null;
+        $withoutEol->save();
+
+        $superuser = User::factory()->viewAssets()->create();
+
+        $notNull = $this->actingAsForApi($superuser)
+            ->getJson(route('api.assets.index', ['filter' => json_encode(['asset_eol_date' => 'is:not_null'])]))
+            ->assertOk();
+
+        $notNullIds = collect($notNull->json('rows'))->pluck('id')->map(fn ($id) => (int) $id)->all();
+        $this->assertContains((int) $withEol->id, $notNullIds);
+        $this->assertNotContains((int) $withoutEol->id, $notNullIds);
+
+        $isNull = $this->actingAsForApi($superuser)
+            ->getJson(route('api.assets.index', ['filter' => json_encode(['asset_eol_date' => 'is:null'])]))
+            ->assertOk();
+
+        $isNullIds = collect($isNull->json('rows'))->pluck('id')->map(fn ($id) => (int) $id)->all();
+        $this->assertContains((int) $withoutEol->id, $isNullIds);
+        $this->assertNotContains((int) $withEol->id, $isNullIds);
+    }
+
+    /**
      * "is:not_null" on the User virtual "name" column should match users where
      * at least one constituent column (first_name, last_name) is not null.
      * All factory-created users have a first_name, so they should all appear.

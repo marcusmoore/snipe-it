@@ -130,6 +130,8 @@ class SnipeRootComplex extends Complex
             return;
         }
 
+        $subNode = null;
+
         foreach ($value as $key => $v) {
             if (is_numeric($key)) {
                 throw new SCIMException('Invalid key: '.$key.' for complex object '.$this->getFullKey());
@@ -185,6 +187,23 @@ class SnipeRootComplex extends Complex
                 if ($path !== null && $path->isNotEmpty()) {
                     $newValue = [implode('.', $path->getAttributePathAttributes()) => $v];
                 }
+
+                // Vendor Complex::replace declares $subNode inside its
+                // foreach then references it outside the loop. Handing
+                // it an empty array (e.g. PATCH body `"emails": []`)
+                // makes the foreach a no-op and PHP 8 throws
+                // "Undefined variable $subNode" at the outer reference.
+                // Skip empty-array recursions here so the whole request
+                // does not 500 on a client that sent a well-formed
+                // "clear this multi-valued attribute" body. Non-empty
+                // scalars and populated arrays fall through to the
+                // library normally. "Clear" semantics for multi-valued
+                // attributes are still reachable via the SCIM PATCH
+                // remove operation.
+                if (is_array($newValue) && $newValue === []) {
+                    continue;
+                }
+
                 $subNode->replace($newValue, $object, $path);
             }
         }
@@ -340,7 +359,7 @@ class SnipeMutableCollection extends MutableCollection
             ->{$this->attribute}()
             ->getRelated()
             ->findMany($submittedValues)
-            ->map(fn($o) => $o->getKey());
+            ->map(fn ($o) => $o->getKey());
 
         if (($diff = collect($submittedValues)->diff($existingObjects))->count() > 0) {
             throw new SCIMException(
@@ -442,7 +461,7 @@ class SnipeMutableCollection extends MutableCollection
      */
     private function pivotFilterToAttached(Model $object, array $requestedUserIds): array
     {
-        if (!$object instanceof Group || $requestedUserIds === []) {
+        if (! $object instanceof Group || $requestedUserIds === []) {
             return [];
         }
 
@@ -465,7 +484,7 @@ class SnipeMutableCollection extends MutableCollection
      */
     private function logGroupMembershipChangesForIds(Model $object, array $attachedIds, array $detachedIds): void
     {
-        if (!$object instanceof Group) {
+        if (! $object instanceof Group) {
             return;
         }
 

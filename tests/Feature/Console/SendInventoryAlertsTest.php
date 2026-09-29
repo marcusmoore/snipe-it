@@ -3,6 +3,9 @@
 namespace Tests\Feature\Console;
 
 use App\Models\Consumable;
+use Illuminate\Notifications\ChannelManager;
+use Illuminate\Support\Facades\Log;
+use Symfony\Component\Mailer\Exception\TransportException;
 use Tests\TestCase;
 
 /**
@@ -78,5 +81,27 @@ class SendInventoryAlertsTest extends TestCase
         $this->artisan('snipeit:inventory-alerts')
             ->expectsOutputToContain('No alert email configured')
             ->assertExitCode(0);
+    }
+
+    public function test_survives_transport_exception_and_logs_warning(): void
+    {
+        $this->settings->set([
+            'alerts_enabled' => 1,
+            'alert_email' => 'ops@example.test',
+            'alert_threshold' => 0,
+        ]);
+
+        Consumable::factory()->create(['qty' => 0, 'min_amt' => 1]);
+
+        $this->mock(ChannelManager::class, function ($mock) {
+            $mock->shouldReceive('send')->andThrow(new TransportException('SMTP auth failed'));
+            $mock->shouldReceive('sendNow')->andThrow(new TransportException('SMTP auth failed'));
+        });
+
+        Log::spy();
+
+        $this->artisan('snipeit:inventory-alerts')->assertExitCode(0);
+
+        Log::shouldHaveReceived('warning')->atLeast()->once();
     }
 }

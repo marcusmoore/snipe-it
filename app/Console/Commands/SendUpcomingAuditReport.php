@@ -7,7 +7,9 @@ use App\Models\Asset;
 use App\Models\Setting;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use Symfony\Component\Mailer\Exception\TransportException;
 
 class SendUpcomingAuditReport extends Command
 {
@@ -66,8 +68,14 @@ class SendUpcomingAuditReport extends Command
                     ->filter(fn ($item) => ! empty($item))
                     ->all();
 
-                Mail::to($recipients)->send(new SendUpcomingAuditMail($assets_for_email, $settings->audit_warning_days, $asset_count));
-                $this->info('Audit notification sent to: '.$settings->alert_email);
+                try {
+                    Mail::to($recipients)->send(new SendUpcomingAuditMail($assets_for_email, $settings->audit_warning_days, $asset_count));
+                    $this->info('Audit notification sent to: '.$settings->alert_email);
+                } catch (TransportException $e) {
+                    $message = 'Failed to send upcoming-audit alert: '.$e->getMessage();
+                    Log::warning($message);
+                    $this->error($message);
+                }
 
             } else {
                 $this->info('There is no admin alert email set so no email will be sent.');

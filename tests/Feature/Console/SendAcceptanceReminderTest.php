@@ -5,7 +5,10 @@ namespace Tests\Feature\Console;
 use App\Mail\UnacceptedAssetReminderMail;
 use App\Models\CheckoutAcceptance;
 use App\Models\User;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use Mockery;
+use Symfony\Component\Mailer\Exception\TransportException;
 use Tests\TestCase;
 
 class SendAcceptanceReminderTest extends TestCase
@@ -54,5 +57,21 @@ class SendAcceptanceReminderTest extends TestCase
             ->assertExitCode(0);
 
         Mail::assertNotSent(UnacceptedAssetReminderMail::class);
+    }
+
+    public function test_survives_transport_exception_and_logs_warning(): void
+    {
+        $user = User::factory()->create(['email' => 'transport-fail@test.com']);
+        CheckoutAcceptance::factory()->pending()->create(['assigned_to_id' => $user->id]);
+
+        $pending = Mockery::mock();
+        $pending->shouldReceive('send')->andThrow(new TransportException('SMTP auth failed'));
+        Mail::shouldReceive('to')->andReturn($pending);
+
+        Log::spy();
+
+        $this->artisan('snipeit:acceptance-reminder')->assertExitCode(0);
+
+        Log::shouldHaveReceived('warning')->atLeast()->once();
     }
 }

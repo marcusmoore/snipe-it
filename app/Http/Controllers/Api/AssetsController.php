@@ -175,8 +175,8 @@ class AssetsController extends Controller
                 'model.manufacturer',
                 'model.fieldset',
                 'model.depreciation',
-    'supplier',
-    'externalSource',
+                'supplier',
+                'externalSource',
             ); // it might be tempting to add 'assetlog' here, but don't. It blows up update-heavy users.
 
         if ($filter_non_deprecable_assets) {
@@ -221,6 +221,10 @@ class AssetsController extends Controller
                         break;
                 }
                 break;
+        }
+
+        if ($request->boolean('past_eol')) {
+            $assets->PastEol();
         }
 
         /**
@@ -395,11 +399,16 @@ class AssetsController extends Controller
         // This is kinda gross, but we need to do this because the Bootstrap Tables
         // API passes custom field ordering as custom_fields.fieldname, and we have to strip
         // that out to let the default sorter below order them correctly on the assets table.
-        $sort_override = str_replace('custom_fields.', '', $request->input('sort'));
+        // Cast to string so a missing sort param (null from input()) doesn't hit the PHP 8+
+        // deprecation on str_replace, and so downstream comparisons are always string vs string.
+        $sort_override = str_replace('custom_fields.', '', (string) $request->input('sort'));
 
-        // This handles all of the pivot sorting (versus the assets.* fields
-        // in the allowed_columns array)
-        $column_sort = in_array($sort_override, $allowed_columns) ? $sort_override : 'assets.created_at';
+        // Strict in_array is deliberate: a loose match would let an empty $sort_override
+        // (no sort param sent) equal any null value in $allowed_columns and produce an
+        // empty ORDER BY column downstream.
+        $column_sort = ($sort_override !== '' && in_array($sort_override, $allowed_columns, true))
+            ? $sort_override
+            : 'assets.created_at';
 
         $order = $request->input('order') === 'asc' ? 'asc' : 'desc';
 
@@ -443,7 +452,7 @@ class AssetsController extends Controller
             case 'eol':
                 $assets->orderBy('assets.asset_eol_date', $order);
                 break;
-            // Sync-adapter side-table sorts.
+                // Sync-adapter side-table sorts.
             case 'primary_mac':
                 $assets->OrderExternalSource($order, 'primary_mac');
                 break;
@@ -477,10 +486,10 @@ class AssetsController extends Controller
                     if ($numeric_sort) {
                         $assets->orderByRaw(DB::getTablePrefix().'assets.'.$sort_override.' * 1 '.$order);
                     } else {
-                        $assets->orderBy('assets.' . $sort_override, $order);
+                        $assets->orderBy('assets.'.$sort_override, $order);
                     }
                 } else {
-                    $qualifiedSort = str_contains($column_sort, '.') ? $column_sort : 'assets.' . $column_sort;
+                    $qualifiedSort = str_contains($column_sort, '.') ? $column_sort : 'assets.'.$column_sort;
                     $assets->orderBy($qualifiedSort, $order);
                 }
                 break;
@@ -508,7 +517,7 @@ class AssetsController extends Controller
                 ->whereIn('assets.id', $ids)
                 ->setEagerLoads($assets->getEagerLoads())
                 ->get()
-                ->sortBy(fn($model) => $order[$model->getKey()] ?? PHP_INT_MAX)
+                ->sortBy(fn ($model) => $order[$model->getKey()] ?? PHP_INT_MAX)
                 ->values();
         }
 
@@ -1983,11 +1992,14 @@ class AssetsController extends Controller
         }
 
         $order = $request->input('order') === 'asc' ? 'asc' : 'desc';
-        $sort_override = str_replace('custom_fields.', '', $request->input('sort'));
+        $sort_override = str_replace('custom_fields.', '', (string) $request->input('sort'));
 
         // This handles all the pivot sorting (versus the assets.* fields
-        // in the allowed_columns array)
-        $column_sort = in_array($sort_override, $allowed_columns) ? $sort_override : 'assets.created_at';
+        // in the allowed_columns array). Strict in_array + non-empty gate so a missing
+        // sort param can't loose-match a null in $allowed_columns and produce ORDER BY ''.
+        $column_sort = ($sort_override !== '' && in_array($sort_override, $allowed_columns, true))
+            ? $sort_override
+            : 'assets.created_at';
 
         switch ($request->input('sort')) {
             case 'model':
@@ -2063,8 +2075,10 @@ class AssetsController extends Controller
 
         $component_checkouts = ComponentAssignment::where('asset_id', $asset->id)->with('adminuser')->with('component');
 
-        $sort_override = $request->input('sort');
-        $column_sort = in_array($sort_override, $allowed_columns) ? $sort_override : 'created_at';
+        $sort_override = (string) $request->input('sort');
+        $column_sort = ($sort_override !== '' && in_array($sort_override, $allowed_columns, true))
+            ? $sort_override
+            : 'created_at';
         $order = $request->input('order') === 'asc' ? 'asc' : 'desc';
 
         switch ($sort_override) {

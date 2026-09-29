@@ -228,10 +228,17 @@ class ProfileController extends Controller
             + $show_user->assets->flatMap->licenses->count()
             + $show_user->assets->flatMap->assignedAccessories->count();
 
+        // Users printing their own inventory always see their own items,
+        // regardless of the class-level view permission for each resource.
         return view('users.print')
             ->with('users', [$show_user])
             ->with('indirectItemsCount', $indirectItemsCount)
-            ->with('settings', Setting::getSettings());
+            ->with('settings', Setting::getSettings())
+            ->with('canViewAssets', true)
+            ->with('canViewLicenses', true)
+            ->with('canViewAccessories', true)
+            ->with('canViewConsumables', true)
+            ->with('canViewComponents', true);
     }
 
     /**

@@ -94,12 +94,12 @@ abstract class SnipePermissionsPolicy
 
     public function history(User $user, $item = null)
     {
-        return Gate::allows('view', $item) || $user->hasAccess('activity.view');
+        return Gate::allows('view', $item) || Gate::allows('activity.view');
     }
 
     public function journal(User $user, $item = null)
     {
-        return Gate::allows('view', $item) || $user->hasAccess('activity.view');
+        return Gate::allows('view', $item) || Gate::allows('activity.view');
     }
 
     public function files(User $user, $item = null)

@@ -76,6 +76,7 @@ class CategoriesTransformer
                 'update' => Gate::allows('update', $category),
                 'delete' => $category->isDeletable(),
                 'bulk_selectable' => [
+                    'edit' => Gate::allows('update', $category),
                     'delete' => $category->isDeletable(),
                 ],
             ];

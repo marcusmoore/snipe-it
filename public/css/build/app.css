@@ -749,9 +749,6 @@ body {
   font-size: 14px;
   white-space: normal;
 }
-.modal-warning .modal-help {
-  color: #fff8af;
-}
 .bootstrap-table .fixed-table-container .fixed-table-body .fixed-table-loading {
   z-index: 0 !important;
 }
@@ -2252,10 +2249,13 @@ p,
 .btn-primary:hover,
 .btn-primary:focus,
 .modal-danger,
+.modal-warning,
 .modal-danger h2,
 .modal-warning h2,
 .modal-danger h4,
 .modal-warning h4,
+.modal-warning .help-block,
+.modal-warning .modal-help,
 .box-solid.box-danger > .box-header,
 .box-solid.box-danger > .box-header .box-title,
 .bg-maroon,

@@ -274,6 +274,10 @@ class User extends SnipeModel implements AuthenticatableContract, AuthorizableCo
         static::forceDeleted(function (User $user) {
             CheckoutRequest::where(['user_id' => $user->id])->forceDelete();
             $user->purgeAssociatedPassportTokens();
+            // Soft-delete leaves pivot rows so a restore preserves group
+            // memberships. Force-delete removes the row entirely, so the
+            // pivot rows would point at nothing.
+            $user->groups()->detach();
         });
 
         static::softDeleted(function (User $user) {

@@ -304,12 +304,17 @@ $(function () {
         // realistically asks for 3 seats of Photoshop for
         // themselves). The input stays in the DOM with value=1 so
         // the POST shape stays uniform across every requestable
-        // type; only the row is display:none.
+        // type. Only the row is display:none.
+        //
+        // The required attribute is toggled in step with visibility
+        // per HTML5 specs
         var itemType = ($btn.data('item-type') || '').toString().toLowerCase();
         var hidesQty = itemType === 'asset' || itemType === 'license';
+        var $qtyInput = $modal.find('#requestItemQuantity');
         $modal.find('#requestItemQuantityRow').toggle(!hidesQty);
+        $qtyInput.prop('required', !hidesQty);
         if (hidesQty) {
-            $modal.find('#requestItemQuantity').val(1);
+            $qtyInput.val(1);
         }
 
         // Reset dates + notes every open so state left in the modal

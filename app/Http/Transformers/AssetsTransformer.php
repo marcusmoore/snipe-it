@@ -208,9 +208,7 @@ class AssetsTransformer
                 foreach ($asset->components as $component) {
                     // Info-disclosure guard: if the caller is denied view
                     // on this specific component, omit it from the response
-                    // entirely - not even id / pivot_id are exposed, so a
-                    // caller with an explicit components.view deny can't
-                    // enumerate what's on the asset.
+                    // entirely
                     if (Gate::denies('view', $component)) {
                         continue;
                     }
@@ -386,11 +384,29 @@ class AssetsTransformer
     {
 
         $array = [];
+        $suppressed = 0;
         foreach ($accessory_checkouts as $checkout) {
+            // Info-disclosure guard: GET /api/v1/hardware/{asset}/assigned/accessories
+            // is gated only on assets.view, so a caller with assets.view but
+            // an explicit deny on accessories.view used to read the accessory's
+            // name / note / image straight off this response. When denied, skip
+            // the row entirely so nothing about the accessory (not even id or
+            // existence) is exposed. Same shape as transformCheckedoutComponents
+            // below.
+            //
+            // The controller-supplied $total still reflects the true row count
+            // and would leak "there are N accessories you can't see", so
+            // decrement it by the number of rows suppressed here.
+            if (!$checkout->accessory || Gate::denies('view', $checkout->accessory)) {
+                $suppressed++;
+
+                continue;
+            }
+
             $array[] = self::transformCheckedoutAccessory($checkout);
         }
 
-        return (new DatatablesTransformer)->transformDatatables($array, $total);
+        return (new DatatablesTransformer)->transformDatatables($array, max(0, $total - $suppressed));
     }
 
     public function transformCheckedoutAccessory(AccessoryCheckout $accessory_checkout)

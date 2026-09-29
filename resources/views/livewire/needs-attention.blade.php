@@ -52,7 +52,7 @@
 
             @can('view', \App\Models\Asset::class)
                 <li class="list-group-item">
-                    <a href="{{ route('hardware.index') }}">
+                    <a href="{{ $assetsPastEol > 0 ? route('hardware.index', ['past_eol' => 1]) : route('hardware.index') }}">
                         <x-icon type="asset" class="fa-fw"/>
                         <span class="dashboard-attention-label">{{ trans('general.dashboard_assets_past_eol') }}</span>
                         <span class="badge dashboard-attention-count">{{ number_format($assetsPastEol) }}</span>

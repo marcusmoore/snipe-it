@@ -1758,6 +1758,19 @@ class Asset extends Depreciable
     }
 
     /**
+     * Query builder scope for Assets whose asset_eol_date is in the past. Used by
+     * the NeedsAttention dashboard tile count and the hardware/past-eol view.
+     *
+     * @return \Illuminate\Database\Query\Builder Modified query builder
+     */
+    public function scopePastEol($query)
+    {
+        return $query->whereNotNull('assets.asset_eol_date')
+            ->where('assets.asset_eol_date', '<', Carbon::now()->format('Y-m-d'))
+            ->NotArchived();
+    }
+
+    /**
      * Query builder scope for Assets that are due for auditing OR overdue, based on the assets.next_audit_date
      * and settings.audit_warning_days.
      *

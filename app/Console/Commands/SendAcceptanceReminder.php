@@ -12,7 +12,9 @@ use App\Models\LicenseSeat;
 use App\Models\User;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use Symfony\Component\Mailer\Exception\TransportException;
 
 class SendAcceptanceReminder extends Command
 {
@@ -70,6 +72,7 @@ class SendAcceptanceReminder extends Command
             ->get();
 
         $count = 0;
+        $failed = 0;
         $unacceptedAssetGroups = $pending
             ->map(function ($acceptance) {
                 return ['assetItem' => $acceptance->checkoutable, 'acceptance' => $acceptance];
@@ -92,20 +95,31 @@ class SendAcceptanceReminder extends Command
                     'id' => $acceptance->assignedTo?->id,
                     'name' => $acceptance->assignedTo?->display_name,
                 ];
-            } else {
-                $count++;
+
+                continue;
             }
+
             $item_count = $unacceptedAssetGroup->count();
 
-            if ($locale && $email) {
-                Mail::to($email)->send((new UnacceptedAssetReminderMail($acceptance, $item_count))->locale($locale));
-            } elseif ($email) {
-                Mail::to($email)->send((new UnacceptedAssetReminderMail($acceptance, $item_count)));
+            try {
+                if ($locale) {
+                    Mail::to($email)->send((new UnacceptedAssetReminderMail($acceptance, $item_count))->locale($locale));
+                } else {
+                    Mail::to($email)->send((new UnacceptedAssetReminderMail($acceptance, $item_count)));
+                }
+                $count++;
+            } catch (TransportException $e) {
+                $failed++;
+                $message = 'Failed to send acceptance reminder to '.$email.': '.$e->getMessage();
+                Log::warning($message);
+                $this->error($message);
             }
-
         }
 
         $this->info($count.' users notified.');
+        if ($failed > 0) {
+            $this->warn($failed.' reminder(s) failed to send due to mail transport errors. See log for details.');
+        }
         $headers = ['ID', 'Name'];
         $rows = [];
 

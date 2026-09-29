@@ -191,6 +191,26 @@ return [
     'jamf_platform_environment_id_help' => 'UUID of the Platform environment the integration is scoped to. Copy from Jamf Account under Environments, or from the URL of your environment console. Sent as the X-Environment-Id header on every request.',
     'landscape_token_help' => 'Landscape does not have a UI for API tokens. Obtain one by POSTing your credentials to <code>/api/v2/login</code> on your Landscape instance and copying the <code>token</code> field from the JSON response. Pass an <code>expiry_minutes</code> value on that call to control how long the token stays valid (defaults to 24h). The account behind the token needs read access to computers.',
 
+    // Google Workspace (ChromeOS) adapter
+    'google_workspace_label_service_account_email' => 'Service Account Email',
+    'google_workspace_label_private_key' => 'Service Account Private Key',
+    'google_workspace_label_impersonate_email' => 'Impersonate Admin Email',
+    'google_workspace_label_customer_id' => 'Customer ID',
+    'google_workspace_service_account_email_help' => 'Create a service account in Google Cloud Console under IAM & Admin -> Service Accounts. Enable the Admin SDK API on the project. Copy the service account email (ends with .iam.gserviceaccount.com) here.',
+    'google_workspace_private_key_help' => 'Download a JSON key for the service account and paste the <code>private_key</code> value here (including the BEGIN and END lines). Only the private key belongs in this field, not the whole JSON blob. Google only lets you download each key once, so create a new one rather than trying to re-download an existing key.',
+    'google_workspace_impersonate_email_help' => 'The service account cannot call the Directory API on its own. In Google Admin Console -> Security -> Access and data control -> API controls -> Domain-wide delegation, add the service account and grant it the <code>admin.directory.device.chromeos</code> and <code>admin.directory.orgunit.readonly</code> OAuth scopes. Then enter the email of a Google Workspace admin user the service account should impersonate here.',
+    'google_workspace_customer_id_help' => 'Leave as <code>my_customer</code> for a single-tenant setup. Multi-tenant resellers may set this to a specific customer ID from Google Admin Console.',
+    'google_workspace_extra_annotated_location' => 'Google Annotated Location',
+    'google_workspace_extra_annotated_user' => 'Google Annotated User',
+    'google_workspace_extra_boot_mode' => 'Google Boot Mode',
+    'google_workspace_extra_dev_mode' => 'Google Dev Mode',
+    'google_workspace_extra_platform_version' => 'Google Platform Version',
+    'google_workspace_extra_firmware_version' => 'Google Firmware Version',
+    'google_workspace_extra_ethernet_mac' => 'Google Ethernet MAC',
+    'google_workspace_extra_wifi_mac' => 'Google WiFi MAC',
+    'google_workspace_extra_enrollment_time' => 'Google Enrollment Time',
+    'google_workspace_extra_org_unit_path' => 'Google Org Unit Path',
+
     // Custom HTTP adapter
     'custom_auth_method_help' => 'How the adapter authenticates against your API. <code>Bearer</code> sends a Bearer token in the <code>Authorization</code> header. <code>Basic</code> sends username + password. <code>API Key</code> sends the value in a custom header. <code>None</code> sends no auth headers.',
     'custom_bearer_token_help' => 'Used when Authentication Method is set to <code>Bearer Token</code>. The value is sent as the <code>Authorization: Bearer &lt;token&gt;</code> header.',
@@ -355,6 +375,7 @@ return [
     'vendor_group_jamf_platform_blueprint' => 'Jamf Platform Blueprint',
     'vendor_group_mosyle_location' => 'Mosyle Location',
     'vendor_group_kaseya_organization' => 'Kaseya Organization',
+    'vendor_group_google_workspace_org_unit' => 'Google Organizational Unit',
 
     // Kaseya-specific label prefix for tenant-defined custom fields
     // captured by the "Refresh custom fields" button. Rendered in the

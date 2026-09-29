@@ -17,7 +17,7 @@ return [
     'name' => 'Category Name',
     'require_acceptance' => 'Require users to confirm acceptance of assets in this category.',
     'required_acceptance' => 'This user will be emailed with a link to confirm acceptance of this item.',
-    'global_signature_required_notice' => 'User signatures are currently required globally via the admin settings, so signatures will still be required regardless of this category setting if the item is checked out to a user (versus a location, etc).',
+    'global_signature_required_notice' => 'The global "Require Signature" setting is on. Signatures only apply when this category also has "Require acceptance" turned on: enable both to require users to sign when accepting items from this category.',
     'required_eula' => 'This user will be emailed a copy of the EULA',
     'required_acceptance_component' => 'If the target asset is currently assigned to a user, that user will be emailed with a link to confirm acceptance of this component.',
     'required_eula_component' => 'If the target asset is currently assigned to a user, that user will be emailed a copy of the EULA.',

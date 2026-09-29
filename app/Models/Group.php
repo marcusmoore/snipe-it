@@ -61,6 +61,16 @@ class Group extends SnipeModel
         'adminuser' => ['first_name', 'last_name', 'display_name'],
     ];
 
+    /**
+     * Detach all users_groups pivot rows when a group is deleted.
+     */
+    protected static function booted(): void
+    {
+        static::deleting(function (self $group) {
+            $group->users()->detach();
+        });
+    }
+
     public function isDeletable()
     {
         return Gate::allows('delete', $this)

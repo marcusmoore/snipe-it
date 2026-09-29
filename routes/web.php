@@ -129,6 +129,13 @@ Route::group(['middleware' => 'auth'], function () {
 
     Route::post('categories/bulk/delete', [BulkCategoriesController::class, 'destroy'])->name('categories.bulk.delete');
 
+    Route::post('categories/bulk/edit', [BulkCategoriesController::class, 'edit'])
+        ->name('categories.bulk.edit')
+        ->breadcrumbs(fn (Trail $trail) => $trail->parent('categories.index', route('categories.index'))
+            ->push(trans('general.bulk_edit'), route('categories.index')));
+
+    Route::post('categories/bulk/save', [BulkCategoriesController::class, 'update'])->name('categories.bulk.save');
+
     /*
     * Labels
     */
