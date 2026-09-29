@@ -72,7 +72,7 @@ class CheckoutableEmailLocaleTest extends TestCase
 
     #[Test]
     #[DataProvider('checkoutAndCheckin')]
-    public function user_and_cc_emails_are_sent_separately_in_their_own_locales(string $mailable, Closure $fireEvent): void
+    public function cc_email_is_sent_separately_in_the_users_locale(string $mailable, Closure $fireEvent): void
     {
         $this->settings->enableAdminCC('cc@example.com')->enableAdminCCAlways();
         $user = User::factory()->create(['locale' => 'es-ES']);
@@ -88,7 +88,7 @@ class CheckoutableEmailLocaleTest extends TestCase
         $this->assertFalse($userMail->hasCc('cc@example.com'));
 
         $ccMail = Mail::sent($mailable, fn ($mail) => $mail->hasCc('cc@example.com'))->sole();
-        $this->assertSame(self::SETTINGS_LOCALE, $ccMail->locale);
+        $this->assertSame('es-ES', $ccMail->locale);
         $this->assertFalse($ccMail->hasTo($user->email));
     }
 

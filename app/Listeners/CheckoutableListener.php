@@ -104,9 +104,12 @@ class CheckoutableListener
 
             [$to, $cc] = $this->generateEmailRecipients($shouldSendEmailToUser, $shouldSendEmailToAlertAddress, $notifiable);
 
+            // the locale will either be the user's locale or the system's
+            $locale = $this->getLocale($shouldSendEmailToUser, $notifiable);
+
             if (! empty($to)) {
                 try {
-                    $toMail = (clone $mailable)->locale($this->getLocale($shouldSendEmailToUser, $notifiable));
+                    $toMail = (clone $mailable)->locale($locale);
                     Mail::to(array_flatten($to))->send($toMail);
                     Log::info('Checkout Mail sent to checkout target');
                 } catch (ClientException $e) {
@@ -117,7 +120,7 @@ class CheckoutableListener
             }
             if (! empty($cc)) {
                 try {
-                    $ccMail = (clone $mailable)->locale($this->getSettingsLocale());
+                    $ccMail = (clone $mailable)->locale($locale);
                     Mail::cc(array_flatten($cc))->send($ccMail);
                 } catch (ClientException $e) {
                     Log::debug('Exception caught during checkout email: '.$e->getMessage());
@@ -202,9 +205,12 @@ class CheckoutableListener
 
             [$to, $cc] = $this->generateEmailRecipients($shouldSendEmailToUser, $shouldSendEmailToAlertAddress, $notifiable);
 
+            // the locale will either be the user's locale or the system's
+            $locale = $this->getLocale($shouldSendEmailToUser, $notifiable);
+
             if (! empty($to)) {
                 try {
-                    $toMail = (clone $mailable)->locale($this->getLocale($shouldSendEmailToUser, $notifiable));
+                    $toMail = (clone $mailable)->locale($locale);
                     Mail::to(array_flatten($to))->send($toMail);
                     Log::info('Checkin Mail sent to checkin target');
                 } catch (ClientException $e) {
@@ -215,7 +221,7 @@ class CheckoutableListener
             }
             if (! empty($cc)) {
                 try {
-                    $ccMail = (clone $mailable)->locale($this->getSettingsLocale());
+                    $ccMail = (clone $mailable)->locale($locale);
                     Mail::cc(array_flatten($cc))->send($ccMail);
                 } catch (ClientException $e) {
                     Log::debug('Exception caught during checkin email: '.$e->getMessage());
@@ -652,11 +658,6 @@ class CheckoutableListener
             return Helper::mapLegacyLocale($notifiable->preferredLocale());
         }
 
-        return $this->getSettingsLocale();
-    }
-
-    private function getSettingsLocale(): string
-    {
         return Helper::mapLegacyLocale(Setting::getSettings()->locale);
     }
 }
