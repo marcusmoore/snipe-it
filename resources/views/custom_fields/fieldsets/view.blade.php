@@ -129,7 +129,7 @@
                                 </form>
 
                             </td>
-                            <td colspan="3">
+                            <td colspan="4" class="text-right">
                                 <a href="#" data-toggle="modal" data-target="#cloneFieldsetModal" class="btn btn-sm btn-theme hidden-print" data-tooltip="true" data-placement="top" data-title="{{ trans('admin/custom_fields/general.clone_fieldset') }}">
                                     <x-icon type="clone" class="fa-fw"/>
                                     {{ trans('general.clone') }}
