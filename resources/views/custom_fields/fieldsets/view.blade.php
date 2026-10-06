@@ -145,7 +145,11 @@
 
 
         </x-box>
-        <x-modals.fieldset-clone :id="$custom_fieldset->id" />
+
+        @if($custom_fieldset?->exists)
+            <x-modals.fieldset-clone :id="$custom_fieldset->id" />
+        @endif
+
     </x-container>
 
 @stop
