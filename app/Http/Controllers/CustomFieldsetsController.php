@@ -255,4 +255,11 @@ class CustomFieldsetsController extends Controller
         return redirect()->route('fieldsets.show', ['fieldset' => $fieldset_id])
             ->with('success', trans('Field successfully set to optional'));
     }
+
+    public function clone(CustomFieldset $original, Request $request): RedirectResponse
+    {
+        // todo: authorize
+        // todo: validate name
+        dd($request->all(), $original);
+    }
 }

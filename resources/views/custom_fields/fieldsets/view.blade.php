@@ -94,7 +94,7 @@
                     @can('update', $custom_fieldset)
                         <tfoot>
                         <tr>
-                            <td colspan="8">
+                            <td colspan="3">
                                 <form method="POST" action="{{ route('fieldsets.associate', $custom_fieldset->id) }}" accept-charset="UTF-8" class="form-inline" id="ordering">
                                     @csrf
 
@@ -129,6 +129,13 @@
                                 </form>
 
                             </td>
+                            <td colspan="3">
+                                <a href="#" data-toggle="modal" data-target="#cloneFieldsetModal" class="btn btn-sm btn-theme hidden-print" data-tooltip="true" data-placement="top" data-title="{{ trans('admin/custom_fields/general.clone_fieldset') }}">
+                                    <x-icon type="clone" class="fa-fw"/>
+                                    {{ trans('general.clone') }}
+                                </a>
+                            </td>
+
                         </tr>
                         </tfoot>
                     @endcan
@@ -138,6 +145,7 @@
 
 
         </x-box>
+        <x-modals.fieldset-clone :id="$custom_fieldset->id" />
     </x-container>
 
 @stop
