@@ -9,6 +9,7 @@ use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 
 /**
@@ -260,6 +261,25 @@ class CustomFieldsetsController extends Controller
     {
         // todo: authorize
         // todo: validate name
-        dd($request->all(), $original);
+
+        $fieldset = DB::transaction(function () use ($original, $request) {
+            $fieldset = CustomFieldset::create([
+                'name' => $request->input('name'),
+                'created_by' => auth()->id(),
+            ]);
+
+            $pivot = $original->fields->mapWithKeys(function ($field) {
+                return [$field->id => $field->pivot->only(['order', 'required'])];
+            });
+
+            $fieldset
+                ->fields()
+                ->attach($pivot);
+
+            return $fieldset;
+        });
+
+        return redirect()->route('fieldsets.show', [$fieldset->id])
+            ->with('success', trans('admin/custom_fields/message.fieldset.clone.success'));
     }
 }
