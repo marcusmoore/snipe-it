@@ -130,10 +130,7 @@
 
                             </td>
                             <td colspan="4" class="text-right">
-                                <a href="#" data-toggle="modal" data-target="#cloneFieldsetModal" class="btn btn-sm btn-info hidden-print" data-tooltip="true" data-placement="top" data-title="{{ trans('admin/custom_fields/general.clone_fieldset') }}">
-                                    <x-icon type="clone" class="fa-fw"/>
-                                    {{ trans('general.clone') }}
-                                </a>
+                                <livewire:clone-fieldset :id="$custom_fieldset->id" />
                             </td>
 
                         </tr>
@@ -145,10 +142,6 @@
 
 
         </x-box>
-
-        @if($custom_fieldset?->exists)
-            <x-modals.fieldset-clone :id="$custom_fieldset->id" />
-        @endif
 
     </x-container>
 

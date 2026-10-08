@@ -256,30 +256,4 @@ class CustomFieldsetsController extends Controller
         return redirect()->route('fieldsets.show', ['fieldset' => $fieldset_id])
             ->with('success', trans('Field successfully set to optional'));
     }
-
-    public function clone(CustomFieldset $original, Request $request): RedirectResponse
-    {
-        // todo: authorize
-        // todo: validate name
-
-        $fieldset = DB::transaction(function () use ($original, $request) {
-            $fieldset = CustomFieldset::create([
-                'name' => $request->input('name'),
-                'created_by' => auth()->id(),
-            ]);
-
-            $pivot = $original->fields->mapWithKeys(function ($field) {
-                return [$field->id => $field->pivot->only(['order', 'required'])];
-            });
-
-            $fieldset
-                ->fields()
-                ->attach($pivot);
-
-            return $fieldset;
-        });
-
-        return redirect()->route('fieldsets.show', [$fieldset->id])
-            ->with('success', trans('admin/custom_fields/message.fieldset.clone.success'));
-    }
 }

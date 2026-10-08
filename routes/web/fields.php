@@ -35,9 +35,6 @@ Route::group(['prefix' => 'fields', 'middleware' => ['auth']], function () {
     )->where('id', '[0-9]+')
         ->name('fieldsets.associate');
 
-    Route::post('fieldsets/{original}/clone', [CustomFieldsetsController::class, 'clone'])
-        ->name('fieldsets.clone');
-
     Route::resource('fieldsets', CustomFieldsetsController::class, [
         'parameters' => [
             'fieldset' => 'fieldset',
