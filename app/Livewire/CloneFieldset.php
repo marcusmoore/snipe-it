@@ -28,10 +28,9 @@ class CloneFieldset extends Component
         $fieldset = DB::transaction(function () {
             $original = CustomFieldset::findOrFail($this->id);
 
-            $fieldset = CustomFieldset::create([
-                'name' => $this->name,
-                'created_by' => auth()->id(),
-            ]);
+            $fieldset = new CustomFieldset(['name' => $this->name]);
+            $fieldset->created_by = auth()->id();
+            $fieldset->save();
 
             $pivot = $original->fields->mapWithKeys(function ($field) {
                 return [$field->id => $field->pivot->only(['order', 'required'])];
