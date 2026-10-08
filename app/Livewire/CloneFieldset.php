@@ -21,13 +21,13 @@ class CloneFieldset extends Component
 
     public function submit()
     {
-        $this->authorize('create', CustomFieldset::class);
+        $original = CustomFieldset::findOrFail($this->id);
+
+        $this->authorize('clone', $original);
 
         $this->validate((new CustomFieldset)->rules);
 
-        $fieldset = DB::transaction(function () {
-            $original = CustomFieldset::findOrFail($this->id);
-
+        $fieldset = DB::transaction(function () use ($original) {
             $fieldset = new CustomFieldset(['name' => $this->name]);
             $fieldset->created_by = auth()->id();
             $fieldset->save();

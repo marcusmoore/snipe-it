@@ -11,6 +11,15 @@ use Tests\TestCase;
 
 class CloneFieldsetTest extends TestCase
 {
+    public function test_the_component_can_render()
+    {
+        $fieldset = CustomFieldset::factory()->create();
+
+        Livewire::actingAs(User::factory()->viewCustomFields()->createCustomFields()->create())
+            ->test(CloneFieldset::class, ['id' => $fieldset->id])
+            ->assertStatus(200);
+    }
+
     public function test_clones_fieldset_with_field_order_and_required_flags_and_redirects_to_it()
     {
         $original = CustomFieldset::factory()->create();
@@ -18,7 +27,7 @@ class CloneFieldsetTest extends TestCase
         $original->fields()->attach($first, ['order' => 1, 'required' => true]);
         $original->fields()->attach($second, ['order' => 2, 'required' => false]);
 
-        $user = User::factory()->createCustomFields()->create();
+        $user = User::factory()->viewCustomFields()->createCustomFields()->create();
 
         $component = Livewire::actingAs($user)
             ->test(CloneFieldset::class, ['id' => $original->id])
@@ -62,7 +71,7 @@ class CloneFieldsetTest extends TestCase
         $original = CustomFieldset::factory()->create();
         $fieldsetCount = CustomFieldset::count();
 
-        Livewire::actingAs(User::factory()->createCustomFields()->create())
+        Livewire::actingAs(User::factory()->viewCustomFields()->createCustomFields()->create())
             ->test(CloneFieldset::class, ['id' => $original->id])
             ->set('name', '')
             ->call('submit')
@@ -76,7 +85,7 @@ class CloneFieldsetTest extends TestCase
         $original = CustomFieldset::factory()->create();
         $fieldsetCount = CustomFieldset::count();
 
-        Livewire::actingAs(User::factory()->createCustomFields()->create())
+        Livewire::actingAs(User::factory()->viewCustomFields()->createCustomFields()->create())
             ->test(CloneFieldset::class, ['id' => $original->id])
             ->set('name', $original->name)
             ->call('submit')
