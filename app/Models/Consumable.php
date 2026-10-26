@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\FileStorage;
 use App\Models\Builders\ConsumableQueryBuilder;
+use App\Models\Contracts\Importable;
 use App\Models\Traits\Acceptable;
 use App\Models\Traits\AdjustsQuantity;
 use App\Models\Traits\CompanyableTrait;
@@ -28,7 +29,7 @@ use Watson\Validating\ValidatingTrait;
 /**
  * @mixin IdeHelperConsumable
  */
-class Consumable extends SnipeModel
+class Consumable extends SnipeModel implements Importable
 {
     use HasFactory;
 

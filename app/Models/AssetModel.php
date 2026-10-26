@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\FileStorage;
 use App\Http\Traits\TwoColumnUniqueUndeletedTrait;
 use App\Models\Builders\AssetModelQueryBuilder;
+use App\Models\Contracts\Importable;
 use App\Models\Traits\HasImageUpload;
 use App\Models\Traits\HasUploads;
 use App\Models\Traits\Loggable;
@@ -25,9 +26,10 @@ use Watson\Validating\ValidatingTrait;
  * attributes that are common among the same type of asset.
  *
  * @version v1.0
+ *
  * @mixin IdeHelperAssetModel
  */
-class AssetModel extends SnipeModel
+class AssetModel extends SnipeModel implements Importable
 {
     use HasFactory;
     use HasImageUpload;

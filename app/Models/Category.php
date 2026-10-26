@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\FileStorage;
 use App\Http\Traits\TwoColumnUniqueUndeletedTrait;
 use App\Models\Builders\CategoryQueryBuilder;
+use App\Models\Contracts\Importable;
 use App\Models\Traits\Searchable;
 use App\Presenters\CategoryPresenter;
 use App\Presenters\Presentable;
@@ -24,9 +25,10 @@ use Watson\Validating\ValidatingTrait;
  * send a EULA to the user, etc.
  *
  * @version v1.0
+ *
  * @mixin IdeHelperCategory
  */
-class Category extends SnipeModel
+class Category extends SnipeModel implements Importable
 {
     use HasFactory;
 
