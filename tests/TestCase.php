@@ -8,6 +8,7 @@ use App\Models\Company;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use RuntimeException;
 use Tests\Support\AssertHasActionLogs;
 use Tests\Support\AssertsAgainstSlackNotifications;
@@ -50,9 +51,10 @@ abstract class TestCase extends BaseTestCase
      * pollute the local dev dirs. Covers both the private-uploads tree
      * (acceptance signatures, eula pdfs, imports, audits, model-owned
      * attachments, etc) and the public-uploads tree (avatars, barcodes,
-     * and model images). Disabled under `artisan test --parallel`
-     * because workers isolate DBs but share the filesystem, so
-     * Worker A's tearDown would race Worker B's in-flight writes.
+     * and model images). Skipped under `artisan test --parallel`
+     * because workers share the filesystem, so Worker A's tearDown
+     * would race Worker B's in-flight writes. Parallel mode uses
+     * Storage::fake() in setUp instead.
      *
      * @var array<int, string>
      */
@@ -87,7 +89,18 @@ abstract class TestCase extends BaseTestCase
         // rolled-back model references between tests otherwise.
         \App\Models\SyncAdapterConfig::flushInstanceCache();
 
-        if (! $this->isRunningInParallel()) {
+        if ($this->isRunningInParallel()) {
+            // Parallel mode uses Laravel's fake public disk (rooted
+            // per worker under storage/framework/testing/disks/public)
+            // so controllers that call Storage::disk('public')->put()
+            // for avatars, item images, and barcodes land in the test
+            // garbage dir rather than polluting the real public tree.
+            // The default disk stays real because the import flow
+            // mixes Storage::put() writes with storage_path() reads
+            // and the two must agree. Single-process mode keeps the
+            // snapshot/diff sweep instead.
+            Storage::fake('public');
+        } else {
             $this->uploadTreeSnapshot = $this->currentUploadTreeListing();
         }
     }

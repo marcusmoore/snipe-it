@@ -13,6 +13,7 @@ use App\Models\User;
 use App\Notifications\WelcomeNotification;
 use Illuminate\Support\Facades\Notification;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\Support\Importing\CleansUpImportFiles;
 use Tests\TestCase;
 
 /**
@@ -24,6 +25,8 @@ use Tests\TestCase;
  */
 class AssetImportCheckoutWelcomeEmailTest extends TestCase
 {
+    use CleansUpImportFiles;
+
     private function importCsv(string $csv, array $mappings, array $extraPayload = []): void
     {
         Category::factory()->create(['category_type' => 'asset']);

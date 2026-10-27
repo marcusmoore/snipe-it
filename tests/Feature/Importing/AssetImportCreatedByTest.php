@@ -12,6 +12,7 @@ use App\Models\Location;
 use App\Models\Statuslabel;
 use App\Models\User;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\Support\Importing\CleansUpImportFiles;
 use Tests\TestCase;
 
 /**
@@ -26,6 +27,8 @@ use Tests\TestCase;
  */
 class AssetImportCreatedByTest extends TestCase
 {
+    use CleansUpImportFiles;
+
     #[Test]
     public function new_asset_created_via_import_records_the_importing_users_id_as_created_by(): void
     {

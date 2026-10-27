@@ -12,6 +12,7 @@ use App\Models\Location;
 use App\Models\Statuslabel;
 use App\Models\User;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\Support\Importing\CleansUpImportFiles;
 use Tests\TestCase;
 
 /**
@@ -30,6 +31,8 @@ use Tests\TestCase;
  */
 class AssetImportCheckoutAcceptanceTest extends TestCase
 {
+    use CleansUpImportFiles;
+
     #[Test]
     public function importing_a_user_checkout_creates_an_acceptance_record_when_category_requires_it(): void
     {

@@ -11,6 +11,7 @@ use App\Models\Location;
 use App\Models\Statuslabel;
 use App\Models\User;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\Support\Importing\CleansUpImportFiles;
 use Tests\TestCase;
 
 /**
@@ -26,6 +27,8 @@ use Tests\TestCase;
  */
 class AssetImportCheckoutTargetsTest extends TestCase
 {
+    use CleansUpImportFiles;
+
     private function importCsv(string $csv, array $mappings, array $extraPayload = []): void
     {
         Category::factory()->create(['category_type' => 'asset']);

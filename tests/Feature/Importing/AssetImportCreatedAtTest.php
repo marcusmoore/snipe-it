@@ -11,10 +11,13 @@ use App\Models\Location;
 use App\Models\Statuslabel;
 use App\Models\User;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\Support\Importing\CleansUpImportFiles;
 use Tests\TestCase;
 
 class AssetImportCreatedAtTest extends TestCase
 {
+    use CleansUpImportFiles;
+
     /**
      * Test that importing assets doesn't modify created_at timestamps on existing assets
      * This test addresses the reported bug where large imports caused random created_at changes

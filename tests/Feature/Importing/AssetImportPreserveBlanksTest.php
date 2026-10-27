@@ -11,6 +11,7 @@ use App\Models\Location;
 use App\Models\Statuslabel;
 use App\Models\User;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\Support\Importing\CleansUpImportFiles;
 use Tests\TestCase;
 
 /**
@@ -22,6 +23,8 @@ use Tests\TestCase;
  */
 class AssetImportPreserveBlanksTest extends TestCase
 {
+    use CleansUpImportFiles;
+
     #[Test]
     public function default_update_clears_db_value_when_csv_cell_is_blank()
     {

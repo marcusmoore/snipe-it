@@ -11,10 +11,13 @@ use App\Models\Location;
 use App\Models\Statuslabel;
 use App\Models\User;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\Support\Importing\CleansUpImportFiles;
 use Tests\TestCase;
 
 class AssetImportDefaultLocationTest extends TestCase
 {
+    use CleansUpImportFiles;
+
     private function runAssetImport(string $csv, array $mappings): void
     {
         Category::factory()->create(['category_type' => 'asset', 'name' => 'Default Loc Test Category']);
