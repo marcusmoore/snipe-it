@@ -48,8 +48,11 @@ abstract class TestCase extends BaseTestCase
      * unlink anything new, so files any controller / Storage::put /
      * factory happens to write during the test don't survive and
      * pollute the local dev dirs. Covers both the private-uploads tree
-     * (user avatars, acceptance signatures, eula pdfs, imports, etc)
-     * and the public-uploads tree (barcodes, images).
+     * (acceptance signatures, eula pdfs, imports, audits, model-owned
+     * attachments, etc) and the public-uploads tree (avatars, barcodes,
+     * and model images). Disabled under `artisan test --parallel`
+     * because workers isolate DBs but share the filesystem, so
+     * Worker A's tearDown would race Worker B's in-flight writes.
      *
      * @var array<int, string>
      */
@@ -73,9 +76,9 @@ abstract class TestCase extends BaseTestCase
         Asset::flushCustomFieldFilterMap();
 
         // Per-request memoization keyed by user id leaks across tests because
-        // RefreshDatabase rolls back the DB but not PHP static state. Auto-
-        // increment may hand the same id to a different test's user with a
-        // different pivot set.
+        // LazilyRefreshDatabase rolls back the DB but not PHP static state.
+        // Auto-increment may hand the same id to a different test's user
+        // with a different pivot set.
         Company::flushCompanyIdsCache();
         Company::flushCompanyColumnCache();
         Company::flushUserVisibilityCache();
@@ -84,7 +87,9 @@ abstract class TestCase extends BaseTestCase
         // rolled-back model references between tests otherwise.
         \App\Models\SyncAdapterConfig::flushInstanceCache();
 
-        $this->uploadTreeSnapshot = $this->currentUploadTreeListing();
+        if (! $this->isRunningInParallel()) {
+            $this->uploadTreeSnapshot = $this->currentUploadTreeListing();
+        }
     }
 
     protected function tearDown(): void
@@ -94,12 +99,28 @@ abstract class TestCase extends BaseTestCase
         }
         $this->uploadedTempPaths = [];
 
-        $after = $this->currentUploadTreeListing();
-        foreach (array_diff($after, $this->uploadTreeSnapshot) as $path) {
-            @unlink($path);
+        if (! $this->isRunningInParallel()) {
+            $after = $this->currentUploadTreeListing();
+            foreach (array_diff($after, $this->uploadTreeSnapshot) as $path) {
+                @unlink($path);
+            }
         }
 
         parent::tearDown();
+    }
+
+    /**
+     * `artisan test --parallel` spawns multiple PHP workers that
+     * isolate DBs per worker but share one filesystem. The upload-tree
+     * snapshot/diff is not safe under that shape because Worker A's
+     * tearDown would see Worker B's in-flight writes as "new since my
+     * snapshot" and unlink them mid-test. ParaTest sets TEST_TOKEN per
+     * worker. When it is absent we are running single-threaded (local
+     * dev `./vendor/bin/phpunit`) and the cleanup is safe.
+     */
+    private function isRunningInParallel(): bool
+    {
+        return env('TEST_TOKEN') !== null;
     }
 
     /**
@@ -134,9 +155,9 @@ abstract class TestCase extends BaseTestCase
     /**
      * Recursive listing of every file (not directory) under the two
      * upload trees Snipe-IT writes to. tearDown diffs this against the
-     * setUp snapshot and unlinks anything new. Returns real file paths
-     * only. Symlinks are followed via SplFileInfo's getPathname so a
-     * dev who has set up a bind-mounted dir still gets cleanup.
+     * setUp snapshot and unlinks anything new. Bind-mounted upload
+     * dirs work transparently because the kernel resolves the mount
+     * before PHP's iterator ever sees it.
      *
      * @return array<int, string>
      */
@@ -145,7 +166,7 @@ abstract class TestCase extends BaseTestCase
         $roots = array_filter([
             config('app.private_uploads'),
             public_path('uploads'),
-        ], fn($root) => is_string($root) && is_dir($root));
+        ], fn ($root) => is_string($root) && is_dir($root));
 
         $paths = [];
         foreach ($roots as $root) {
@@ -162,8 +183,6 @@ abstract class TestCase extends BaseTestCase
 
         return $paths;
     }
-
-    // ...existing code...
 
     private function guardAgainstMissingEnv(): void
     {
