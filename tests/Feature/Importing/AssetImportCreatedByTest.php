@@ -11,7 +11,6 @@ use App\Models\Import;
 use App\Models\Location;
 use App\Models\Statuslabel;
 use App\Models\User;
-use Illuminate\Http\UploadedFile;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -44,7 +43,7 @@ class AssetImportCreatedByTest extends TestCase
         $this->actingAsForApi($importer)
             ->postJson(route('api.imports.store'), [
                 'files' => [
-                    $this->createFakeUploadedFile('createdby.csv', $csv),
+                    $this->tempUploadedFile('createdby.csv', $csv),
                 ],
             ])
             ->assertSuccessful();
@@ -108,7 +107,7 @@ class AssetImportCreatedByTest extends TestCase
         $this->actingAsForApi($importer)
             ->postJson(route('api.imports.store'), [
                 'files' => [
-                    $this->createFakeUploadedFile('createdby-update.csv', $csv),
+                    $this->tempUploadedFile('createdby-update.csv', $csv),
                 ],
             ])
             ->assertSuccessful();
@@ -159,7 +158,7 @@ class AssetImportCreatedByTest extends TestCase
         $this->actingAsForApi($importer)
             ->postJson(route('api.imports.store'), [
                 'files' => [
-                    $this->createFakeUploadedFile('createdby-user.csv', $csv),
+                    $this->tempUploadedFile('createdby-user.csv', $csv),
                 ],
             ])
             ->assertSuccessful();
@@ -211,7 +210,7 @@ class AssetImportCreatedByTest extends TestCase
         $this->actingAsForApi($importer)
             ->postJson(route('api.imports.store'), [
                 'files' => [
-                    $this->createFakeUploadedFile('createdby-dept.csv', $csv),
+                    $this->tempUploadedFile('createdby-dept.csv', $csv),
                 ],
             ])
             ->assertSuccessful();
@@ -247,13 +246,5 @@ class AssetImportCreatedByTest extends TestCase
             $autoCreatedUser->department_id,
             'The department created for the CSV row must be linked to the auto-created checkout-target user (department propagation).'
         );
-    }
-
-    protected function createFakeUploadedFile(string $filename, string $content): UploadedFile
-    {
-        $path = tempnam(sys_get_temp_dir(), 'csv');
-        file_put_contents($path, $content);
-
-        return new UploadedFile($path, $filename, 'text/csv', null, true);
     }
 }

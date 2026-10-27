@@ -11,7 +11,6 @@ use App\Models\Location;
 use App\Models\Statuslabel;
 use App\Models\User;
 use App\Notifications\WelcomeNotification;
-use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Notification;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -38,7 +37,7 @@ class AssetImportCheckoutWelcomeEmailTest extends TestCase
         $this->actingAsForApi($importer)
             ->postJson(route('api.imports.store'), [
                 'files' => [
-                    $this->createFakeUploadedFile('welcome.csv', $csv),
+                    $this->tempUploadedFile('welcome.csv', $csv),
                 ],
             ])
             ->assertSuccessful();
@@ -52,14 +51,6 @@ class AssetImportCheckoutWelcomeEmailTest extends TestCase
                 'column-mappings' => $mappings,
             ], $extraPayload))
             ->assertSuccessful();
-    }
-
-    private function createFakeUploadedFile(string $filename, string $content): UploadedFile
-    {
-        $path = tempnam(sys_get_temp_dir(), 'csv');
-        file_put_contents($path, $content);
-
-        return new UploadedFile($path, $filename, 'text/csv', null, true);
     }
 
     #[Test]

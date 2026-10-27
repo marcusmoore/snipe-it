@@ -10,40 +10,11 @@ use App\Models\Import;
 use App\Models\Location;
 use App\Models\Statuslabel;
 use App\Models\User;
-use Illuminate\Http\UploadedFile;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 class AssetImportDefaultLocationTest extends TestCase
 {
-    /** @var array<int, string> */
-    private array $uploadedTempPaths = [];
-
-    protected function tearDown(): void
-    {
-        // tempnam() writes into /tmp and Laravel's test harness doesn't
-        // clean them up by itself, so we track + unlink per-test to keep
-        // CI runners' /tmp from accreting a CSV per import test. Also
-        // clean out the imports storage directory for files the import
-        // controller moved into place during the test.
-        foreach ($this->uploadedTempPaths as $path) {
-            @unlink($path);
-        }
-        foreach (Import::query()->get() as $import) {
-            @unlink(config('app.private_uploads').'/imports/'.$import->file_path);
-        }
-        parent::tearDown();
-    }
-
-    private function createFakeUploadedFile(string $filename, string $content): UploadedFile
-    {
-        $path = tempnam(sys_get_temp_dir(), 'csv');
-        file_put_contents($path, $content);
-        $this->uploadedTempPaths[] = $path;
-
-        return new UploadedFile($path, $filename, 'text/csv', null, true);
-    }
-
     private function runAssetImport(string $csv, array $mappings): void
     {
         Category::factory()->create(['category_type' => 'asset', 'name' => 'Default Loc Test Category']);
@@ -58,7 +29,7 @@ class AssetImportDefaultLocationTest extends TestCase
         $this->actingAsForApi($importer)
             ->postJson(route('api.imports.store'), [
                 'files' => [
-                    $this->createFakeUploadedFile('default-loc.csv', $csv),
+                    $this->tempUploadedFile('default-loc.csv', $csv),
                 ],
             ])
             ->assertSuccessful();

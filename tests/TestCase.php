@@ -7,6 +7,7 @@ use App\Models\Asset;
 use App\Models\Company;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
+use Illuminate\Http\UploadedFile;
 use RuntimeException;
 use Tests\Support\AssertHasActionLogs;
 use Tests\Support\AssertsAgainstSlackNotifications;
@@ -31,6 +32,28 @@ abstract class TestCase extends BaseTestCase
     private array $globallyDisabledMiddleware = [
         SecurityHeaders::class,
     ];
+
+    /**
+     * tempnam() source paths registered via trackTempFile(), unlinked
+     * in tearDown. Laravel's test harness doesn't clean these on its
+     * own and CI /tmp accretes a file per upload test otherwise.
+     *
+     * @var array<int, string>
+     */
+    private array $uploadedTempPaths = [];
+
+    /**
+     * Snapshot of every path under Snipe-IT's upload trees at setUp
+     * time (recursive). tearDown diffs against the current contents to
+     * unlink anything new, so files any controller / Storage::put /
+     * factory happens to write during the test don't survive and
+     * pollute the local dev dirs. Covers both the private-uploads tree
+     * (user avatars, acceptance signatures, eula pdfs, imports, etc)
+     * and the public-uploads tree (barcodes, images).
+     *
+     * @var array<int, string>
+     */
+    private array $uploadTreeSnapshot = [];
 
     protected function setUp(): void
     {
@@ -60,6 +83,84 @@ abstract class TestCase extends BaseTestCase
         // Sync-adapter instance cache is another static that would hold
         // rolled-back model references between tests otherwise.
         \App\Models\SyncAdapterConfig::flushInstanceCache();
+
+        $this->uploadTreeSnapshot = $this->currentUploadTreeListing();
+    }
+
+    protected function tearDown(): void
+    {
+        foreach ($this->uploadedTempPaths as $path) {
+            @unlink($path);
+        }
+        $this->uploadedTempPaths = [];
+
+        $after = $this->currentUploadTreeListing();
+        foreach (array_diff($after, $this->uploadTreeSnapshot) as $path) {
+            @unlink($path);
+        }
+
+        parent::tearDown();
+    }
+
+    /**
+     * Shared helper for feature tests that round-trip a CSV (or any
+     * file) through an upload endpoint. Creates a tempnam-backed
+     * UploadedFile and registers the source path so base tearDown can
+     * unlink it.
+     */
+    protected function tempUploadedFile(string $filename, string $content, string $mime = 'text/csv'): UploadedFile
+    {
+        $path = $this->trackTempFile(tempnam(sys_get_temp_dir(), 'upload'));
+        file_put_contents($path, $content);
+
+        return new UploadedFile($path, $filename, $mime, null, true);
+    }
+
+    /**
+     * Register a filesystem path for cleanup in base tearDown. Returns
+     * the same path for fluent one-line use alongside tempnam() /
+     * file_put_contents() in tests that need to craft malformed PNGs,
+     * SVG fixtures, cert plants, or anything outside the shape
+     * tempUploadedFile() covers. The path does not need to exist at
+     * registration time (tearDown unlink is noop safe).
+     */
+    protected function trackTempFile(string $path): string
+    {
+        $this->uploadedTempPaths[] = $path;
+
+        return $path;
+    }
+
+    /**
+     * Recursive listing of every file (not directory) under the two
+     * upload trees Snipe-IT writes to. tearDown diffs this against the
+     * setUp snapshot and unlinks anything new. Returns real file paths
+     * only. Symlinks are followed via SplFileInfo's getPathname so a
+     * dev who has set up a bind-mounted dir still gets cleanup.
+     *
+     * @return array<int, string>
+     */
+    private function currentUploadTreeListing(): array
+    {
+        $roots = array_filter([
+            config('app.private_uploads'),
+            public_path('uploads'),
+        ], fn($root) => is_string($root) && is_dir($root));
+
+        $paths = [];
+        foreach ($roots as $root) {
+            $iterator = new \RecursiveIteratorIterator(
+                new \RecursiveDirectoryIterator($root, \FilesystemIterator::SKIP_DOTS),
+            );
+            foreach ($iterator as $info) {
+                /** @var \SplFileInfo $info */
+                if ($info->isFile()) {
+                    $paths[] = $info->getPathname();
+                }
+            }
+        }
+
+        return $paths;
     }
 
     // ...existing code...
