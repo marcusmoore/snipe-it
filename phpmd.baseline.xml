@@ -101,6 +101,7 @@
   <violation rule="PHPMD\Rule\UnusedFormalParameter" file="app/Rules/UniqueUndeleted.php"/>
   <violation rule="PHPMD\Rule\UnusedFormalParameter" file="app/Rules/UserCannotSwitchCompaniesIfItemsAssigned.php"/>
   <violation rule="PHPMD\Rule\UnusedFormalParameter" file="app/Rules/ValidJson.php"/>
+  <violation rule="PHPMD\Rule\UnusedFormalParameter" file="app/SyncAdapters/PushableSyncAdapter.php"/>
   <violation rule="PHPMD\Rule\UnusedFormalParameter" file="app/SyncAdapters/SyncAdapter.php"/>
   <violation rule="PHPMD\Rule\UnusedFormalParameter" file="app/View/Label.php"/>
 </phpmd-baseline>
