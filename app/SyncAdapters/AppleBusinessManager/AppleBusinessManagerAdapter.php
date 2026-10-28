@@ -5,6 +5,7 @@ namespace App\SyncAdapters\AppleBusinessManager;
 use App\Models\AssetModel;
 use App\SyncAdapters\HostInventoryRecord;
 use App\SyncAdapters\SyncAdapter;
+use App\SyncAdapters\Traits\UsesAppleDbEnrichment;
 use Carbon\Carbon;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Log;
@@ -35,6 +36,8 @@ use Illuminate\Support\Facades\Log;
  */
 class AppleBusinessManagerAdapter extends SyncAdapter
 {
+    use UsesAppleDbEnrichment;
+
     /**
      * Apple's fixed productFamily enum -> friendly display name.
      * Drives the product-family filter's option list.
@@ -138,13 +141,7 @@ class AppleBusinessManagerAdapter extends SyncAdapter
                 'required' => false,
                 'help' => trans('admin/settings/sync_adapters.abm_product_family_filter_help'),
             ],
-            [
-                'key' => 'pull_model_images',
-                'label' => trans('admin/settings/sync_adapters.abm_label_pull_model_images'),
-                'type' => 'checkbox',
-                'required' => false,
-                'help' => trans('admin/settings/sync_adapters.abm_pull_model_images_help'),
-            ],
+            $this->appleDbSettingsField(),
         ];
 
         // Per-family category overrides. Apple's productFamily is a
@@ -225,6 +222,7 @@ class AppleBusinessManagerAdapter extends SyncAdapter
     public function extraFields(): array
     {
         return [
+            ...$this->appleDbExtraFieldsDeclaration(),
             'abm_product_family' => ['label_key' => 'admin/settings/sync_adapters.abm_extra_product_family'],
             'abm_model_marketing_name' => ['label_key' => 'admin/settings/sync_adapters.abm_extra_model_marketing_name'],
             'abm_product_type' => ['label_key' => 'admin/settings/sync_adapters.abm_extra_product_type'],
@@ -415,7 +413,7 @@ class AppleBusinessManagerAdapter extends SyncAdapter
         // opt-in and off by default. Per-pull cache keyed by
         // hardwareModel avoids re-fetching the same image when a
         // tenant has many devices of the same model.
-        $pullImages = $this->shouldPullModelImages();
+        $pullImages = $this->appleDbEnrichmentEnabled();
         $imagesHandled = [];
 
         foreach ($client->devices() as $device) {
@@ -445,136 +443,42 @@ class AppleBusinessManagerAdapter extends SyncAdapter
     }
 
     /**
-     * When the "Pull model images" toggle is on, populate the
-     * AssetModel image for the record's hardwareModel from
-     * appledb.dev. Idempotent and safe to call for every record:
+     * Resolve the ABM-side model name + productType and delegate to
+     * the shared enrichModelFromAppleDb helper. ABM's native:model
+     * mapping routes `abm_model_marketing_name` into AssetModel::name
+     * when the admin opts in, so the image lookup has to mirror that
+     * so it targets the row the framework will actually create.
      *
-     *   - If no productType is on the record, skip (nothing to key
-     *     appledb.dev on).
-     *   - If the model exists AND it already carries an image, skip
-     *     (respect admin curation). The category's image is a display
-     *     fallback in AssetModel::getImageUrl, not a signal to skip:
-     *     per-model images still populate over a category icon so
-     *     admins get Apple's marketing shots per SKU.
-     *   - Otherwise fetch the image, write it to storage, and set
-     *     model.image. The framework's later resolveModelIdByName
-     *     find the model we (or a prior sync) created.
-     *
-     * Cache is keyed by hardwareModel so the same model in a 500-
-     * device pull triggers one fetch, not 500.
-     *
-     * @param  array<string, bool>  $imagesHandled  modelName => true. Any key present means "already tried this model in this pull, skip".
-     * @return array<string, bool> Updated cache with this record's modelName marked.
+     * @param  array<string, bool>  $imagesHandled
+     * @return array<string, bool>
      */
     private function ensureModelImage(HostInventoryRecord $record, array $imagesHandled): array
     {
-        // Whichever field the admin routed to native:model becomes
-        // the AssetModel's name after sync. Mirror that pick here so
-        // our image lookup targets the same model row the framework
-        // will create or update.
         $modelName = $this->mappingFor('abm_model_marketing_name') === 'native:model'
             ? ($record->extra['abm_model_marketing_name'] ?? $record->hardwareModel)
             : $record->hardwareModel;
 
         if ($modelName === null || $modelName === '') {
-            Log::channel('sync-adapters')->info(sprintf(
-                '%s image skip for device %s: no model name resolvable (hardwareModel and abm_model_marketing_name both blank)',
-                $this->name(),
-                $record->sourceId,
-            ));
+            Log::channel('sync-adapters')->info("{$this->name()} enrichment skip for device {$record->sourceId}: no model name resolvable (hardwareModel and abm_model_marketing_name both blank)");
 
             return $imagesHandled;
         }
-
-        if (array_key_exists($modelName, $imagesHandled)) {
-            return $imagesHandled;
-        }
-        $imagesHandled[$modelName] = true;
 
         $productType = $record->extra['abm_product_type'] ?? null;
         if (! is_string($productType) || $productType === '') {
-            Log::channel('sync-adapters')->info(sprintf(
-                '%s image skip for model "%s": ABM did not return a productType, nothing to look up on appledb.dev',
-                $this->name(),
-                $modelName,
-            ));
-
-            return $imagesHandled;
-        }
-
-        $existing = AssetModel::query()
-            ->where('name', $modelName)
-            ->first();
-
-        if ($existing !== null && ! empty($existing->image)) {
-            Log::channel('sync-adapters')->info(sprintf(
-                '%s image skip for model "%s": model already has an image (%s)',
-                $this->name(),
-                $modelName,
-                $existing->image,
-            ));
+            Log::channel('sync-adapters')->info("{$this->name()} enrichment skip for model \"{$modelName}\": ABM did not return a productType, nothing to look up on appledb.dev");
 
             return $imagesHandled;
         }
 
         $color = $record->extra['abm_color'] ?? null;
-        $filename = AppleDBImageFetcher::fetch($productType, is_string($color) ? $color : null);
-        if ($filename === null) {
-            Log::channel('sync-adapters')->info(sprintf(
-                '%s image skip for model "%s" (productType=%s): appledb.dev returned no usable image',
-                $this->name(),
-                $modelName,
-                $productType,
-            ));
 
-            return $imagesHandled;
-        }
-
-        if ($existing === null) {
-            // First-pass timing: the framework hasn't created the
-            // AssetModel row yet (SyncAdapter builds it after
-            // pull() yields), so there's nothing to update. The image
-            // is already downloaded and cached under public/uploads/
-            // models/ by the fetcher, so the next sync will find the
-            // model row and only need to set model.image (no
-            // re-download).
-            Log::channel('sync-adapters')->info(sprintf(
-                '%s image staged for model "%s" (productType=%s, file=%s): AssetModel row not yet created, image will be assigned on the next sync',
-                $this->name(),
-                $modelName,
-                $productType,
-                $filename,
-            ));
-
-            return $imagesHandled;
-        }
-
-        $existing->image = $filename;
-        $existing->save();
-
-        Log::channel('sync-adapters')->info(sprintf(
-            '%s image assigned to model "%s" (productType=%s, file=%s)',
-            $this->name(),
+        return $this->enrichModelFromAppleDb(
             $modelName,
             $productType,
-            $filename,
-        ));
-
-        return $imagesHandled;
-    }
-
-    /**
-     * Read the "Pull model images" checkbox. Persists as '1' or '0'
-     * via the base class's schema handler, so a plain string compare
-     * is enough here.
-     */
-    private function shouldPullModelImages(): bool
-    {
-        try {
-            return $this->credential('pull_model_images') === '1';
-        } catch (\Throwable) {
-            return false;
-        }
+            is_string($color) ? $color : null,
+            $imagesHandled,
+        );
     }
 
     /**
@@ -1108,6 +1012,17 @@ class AppleBusinessManagerAdapter extends SyncAdapter
         $attrs = $device['attributes'] ?? [];
         $id = (string) ($device['id'] ?? '');
 
+        // Pass the AssetModel name the framework will use (mirrors
+        // ensureModelImage's resolution) so the trait can
+        // short-circuit the AppleDB info call when an existing row
+        // already has every enrichable field set.
+        $modelName = $this->mappingFor('abm_model_marketing_name') === 'native:model'
+            ? (Arr::get($attrs, 'deviceModel') ?? Arr::get($attrs, 'partNumber'))
+            : Arr::get($attrs, 'partNumber');
+        $productType = Arr::get($attrs, 'productType');
+        $canonical = $this->canonicalIdentityFor($productType, $modelName);
+        $appleDbExtras = $this->appleDbExtrasFor($productType, $modelName);
+
         return new HostInventoryRecord(
             sourceKey: $this->name(),
             sourceId: $id,
@@ -1147,6 +1062,7 @@ class AppleBusinessManagerAdapter extends SyncAdapter
             assignedUserName: null,
             vendorGroupId: null,
             extra: [
+                ...$appleDbExtras,
                 'abm_product_family' => Arr::get($attrs, 'productFamily'),
                 'abm_model_marketing_name' => Arr::get($attrs, 'deviceModel'),
                 'abm_product_type' => Arr::get($attrs, 'productType'),
@@ -1178,6 +1094,8 @@ class AppleBusinessManagerAdapter extends SyncAdapter
                 // even before the first sync run fills it in.
                 'abm_activation_lock_enabled' => null,
             ],
+            canonicalMarketingName: $canonical['canonicalMarketingName'],
+            canonicalModelNumber: $canonical['canonicalModelNumber'],
         );
     }
 
