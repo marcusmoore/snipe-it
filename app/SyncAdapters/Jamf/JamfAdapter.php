@@ -69,7 +69,7 @@ class JamfAdapter extends SyncAdapter implements PushableAdapter
     {
         return [
             'jamf_udid' => ['label_key' => 'admin/settings/sync_adapters.extra_udid'],
-            'jamf_last_enrolled' => ['label_key' => 'admin/settings/sync_adapters.extra_last_enrolled'],
+            'jamf_last_enrolled' => ['label_key' => 'admin/settings/sync_adapters.extra_last_enrolled', 'type' => 'date'],
             'jamf_model_identifier' => ['label_key' => 'admin/settings/sync_adapters.extra_model_identifier'],
             // Mobile-only fields. Blank on computer records so admins
             // can still map them without worrying about overwriting a

@@ -615,7 +615,7 @@ trait SyncsHostFromRecord
         $asset->company_id = self::resolveCompanyId($record, $instance);
         // Set serial before save because Asset::save() adds a `required`
         // rule to the serial field when the resolved model has
-        // require_serial = 1. 
+        // require_serial = 1.
         $asset->serial = $record->hardwareSerial;
         // Asset uses ValidatingTrait, so save() returns false on
         // validation failure without throwing. Without this guard the
@@ -915,6 +915,39 @@ trait SyncsHostFromRecord
             case 'order_number':
                 if ($value !== null && $value !== '') {
                     $asset->order_number = (string) $value;
+                }
+                break;
+            case 'eol_date':
+                // Vendor-sourced EOL. Set eol_explicit so the Asset
+                // eolDate accessor honors this value over the derived
+                // "purchase_date + model.eol months" default.
+                if ($value !== null && $value !== '') {
+                    try {
+                        $asset->asset_eol_date = \Carbon\Carbon::parse((string) $value)->timezone(config('app.timezone'))->format('Y-m-d');
+                        $asset->eol_explicit = true;
+                    } catch (\Exception $e) {
+                        Log::channel('sync-adapters')->warning("Skipping unparseable eol_date \"{$value}\" for asset {$asset->id}: ".$e->getMessage());
+                    }
+                }
+                break;
+            case 'model_number':
+                // Writes to the resolved AssetModel row, not the asset.
+                $modelNumber = is_string($value) ? trim($value) : $value;
+                if ($modelNumber === null || $modelNumber === '' || $asset->model_id === null) {
+                    break;
+                }
+                $assetModel = AssetModel::find($asset->model_id);
+                if ($assetModel === null) {
+                    break;
+                }
+                if ($assetModel->model_number === $modelNumber) {
+                    break;
+                }
+                $assetModel->model_number = $modelNumber;
+                try {
+                    $assetModel->save();
+                } catch (\Exception $e) {
+                    Log::channel('sync-adapters')->warning("Skipping model_number update \"{$modelNumber}\" for AssetModel {$assetModel->id}: ".$e->getMessage());
                 }
                 break;
         }
