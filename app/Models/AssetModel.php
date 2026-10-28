@@ -67,6 +67,9 @@ class AssetModel extends SnipeModel implements Importable
         'category_id' => 'required|integer|exists:categories,id',
         'manufacturer_id' => 'integer|exists:manufacturers,id|nullable',
         'eol' => 'integer:min:0|max:240|nullable',
+        'mfg_marketing_name' => 'string|max:255|nullable',
+        'mfg_release_date' => 'date|nullable',
+        'mfg_discontinued_date' => 'date|nullable',
     ];
 
     /**
@@ -81,12 +84,20 @@ class AssetModel extends SnipeModel implements Importable
         'fieldset_id',
         'image',
         'manufacturer_id',
+        'mfg_discontinued_date',
+        'mfg_marketing_name',
+        'mfg_release_date',
         'min_amt',
         'model_number',
         'name',
         'notes',
         'requestable',
         'require_serial',
+    ];
+
+    protected $casts = [
+        'mfg_release_date' => 'date',
+        'mfg_discontinued_date' => 'date',
     ];
 
     use Searchable;
