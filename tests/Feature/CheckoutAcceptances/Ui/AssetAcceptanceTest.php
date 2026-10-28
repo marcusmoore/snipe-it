@@ -12,10 +12,17 @@ use App\Models\User;
 use App\Notifications\AcceptanceItemAcceptedNotification;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class AssetAcceptanceTest extends TestCase
 {
+    protected function setUp(): void
+    {
+        parent::setUp();
+        Storage::fake();
+    }
+
     public function test_asset_checkout_accept_page_renders()
     {
         $checkoutAcceptance = CheckoutAcceptance::factory()->pending()->create();
@@ -135,7 +142,7 @@ class AssetAcceptanceTest extends TestCase
     public function test_user_can_decline_asset()
     {
         Event::fake([CheckoutAccepted::class]);
-        $this->settings->disableAlertEmail(); //otherwise it tries to send an email without having enough information
+        $this->settings->disableAlertEmail(); // otherwise it tries to send an email without having enough information
 
         $checkoutAcceptance = CheckoutAcceptance::factory()->pending()->create();
 

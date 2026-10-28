@@ -105,7 +105,7 @@ class GoogleWorkspaceAdapter extends SyncAdapter implements PushableAdapter
             'google_workspace_firmware_version' => ['label_key' => 'admin/settings/sync_adapters.google_workspace_extra_firmware_version'],
             'google_workspace_ethernet_mac' => ['label_key' => 'admin/settings/sync_adapters.google_workspace_extra_ethernet_mac'],
             'google_workspace_wifi_mac' => ['label_key' => 'admin/settings/sync_adapters.google_workspace_extra_wifi_mac'],
-            'google_workspace_enrollment_time' => ['label_key' => 'admin/settings/sync_adapters.google_workspace_extra_enrollment_time'],
+            'google_workspace_enrollment_time' => ['label_key' => 'admin/settings/sync_adapters.google_workspace_extra_enrollment_time', 'type' => 'date'],
             'google_workspace_org_unit_path' => ['label_key' => 'admin/settings/sync_adapters.google_workspace_extra_org_unit_path'],
         ];
     }

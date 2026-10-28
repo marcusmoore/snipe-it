@@ -96,7 +96,7 @@ class IntuneAdapter extends SyncAdapter implements PushableAdapter
     {
         return [
             'intune_compliance_state' => ['label_key' => 'admin/settings/sync_adapters.intune_extra_compliance_state'],
-            'intune_enrolled_at' => ['label_key' => 'admin/settings/sync_adapters.intune_extra_enrolled_at'],
+            'intune_enrolled_at' => ['label_key' => 'admin/settings/sync_adapters.intune_extra_enrolled_at', 'type' => 'date'],
             'intune_management_agent' => ['label_key' => 'admin/settings/sync_adapters.intune_extra_management_agent'],
             'intune_ownership' => ['label_key' => 'admin/settings/sync_adapters.intune_extra_ownership'],
             'intune_wifi_mac' => ['label_key' => 'admin/settings/sync_adapters.intune_extra_wifi_mac'],
@@ -121,8 +121,8 @@ class IntuneAdapter extends SyncAdapter implements PushableAdapter
             'intune_android_security_patch_level' => ['label_key' => 'admin/settings/sync_adapters.intune_extra_android_security_patch_level'],
             'intune_enrollment_profile_name' => ['label_key' => 'admin/settings/sync_adapters.intune_extra_enrollment_profile_name'],
             'intune_device_enrollment_type' => ['label_key' => 'admin/settings/sync_adapters.intune_extra_device_enrollment_type'],
-            'intune_management_certificate_expiration' => ['label_key' => 'admin/settings/sync_adapters.intune_extra_management_certificate_expiration'],
-            'intune_compliance_grace_period_expiration' => ['label_key' => 'admin/settings/sync_adapters.intune_extra_compliance_grace_period_expiration'],
+            'intune_management_certificate_expiration' => ['label_key' => 'admin/settings/sync_adapters.intune_extra_management_certificate_expiration', 'type' => 'date'],
+            'intune_compliance_grace_period_expiration' => ['label_key' => 'admin/settings/sync_adapters.intune_extra_compliance_grace_period_expiration', 'type' => 'date'],
             'intune_device_registration_state' => ['label_key' => 'admin/settings/sync_adapters.intune_extra_device_registration_state'],
             // Comma-joined roleScopeTagIds the device belongs to in
             // Intune. Admins who use scope tags for RBAC separation

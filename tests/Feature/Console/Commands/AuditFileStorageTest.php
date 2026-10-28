@@ -246,7 +246,8 @@ class AuditFileStorageTest extends TestCase
     private function tempCsvPath(): string
     {
         if ($this->csvPath === null) {
-            $this->csvPath = tempnam(sys_get_temp_dir(), 'audit-file-storage-').'.csv';
+            $stub = $this->trackTempFile(tempnam(sys_get_temp_dir(), 'audit-file-storage-'));
+            $this->csvPath = $this->trackTempFile($stub.'.csv');
         }
 
         return $this->csvPath;

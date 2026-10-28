@@ -97,7 +97,7 @@ class MosyleBusinessAdapter extends SyncAdapter implements PushableAdapter
             'mosyle_activation_lock_enabled' => ['label_key' => 'admin/settings/sync_adapters.mosyle_extra_activation_lock_enabled', 'type' => 'boolean'],
             'mosyle_device_locator_enabled' => ['label_key' => 'admin/settings/sync_adapters.mosyle_extra_device_locator_enabled', 'type' => 'boolean'],
             'mosyle_cloud_backup_enabled' => ['label_key' => 'admin/settings/sync_adapters.mosyle_extra_cloud_backup_enabled', 'type' => 'boolean'],
-            'mosyle_last_cloud_backup_date' => ['label_key' => 'admin/settings/sync_adapters.mosyle_extra_last_cloud_backup_date'],
+            'mosyle_last_cloud_backup_date' => ['label_key' => 'admin/settings/sync_adapters.mosyle_extra_last_cloud_backup_date', 'type' => 'date'],
             'mosyle_sip_enabled' => ['label_key' => 'admin/settings/sync_adapters.mosyle_extra_sip_enabled', 'type' => 'boolean'],
             'mosyle_device_attestation_status' => ['label_key' => 'admin/settings/sync_adapters.mosyle_extra_device_attestation_status'],
             // MDM / lifecycle
@@ -105,8 +105,8 @@ class MosyleBusinessAdapter extends SyncAdapter implements PushableAdapter
             'mosyle_status' => ['label_key' => 'admin/settings/sync_adapters.mosyle_extra_status'],
             'mosyle_management_status' => ['label_key' => 'admin/settings/sync_adapters.mosyle_extra_management_status'],
             'mosyle_os_update_status' => ['label_key' => 'admin/settings/sync_adapters.mosyle_extra_os_update_status'],
-            'mosyle_date_last_beat' => ['label_key' => 'admin/settings/sync_adapters.mosyle_extra_date_last_beat'],
-            'mosyle_date_last_push' => ['label_key' => 'admin/settings/sync_adapters.mosyle_extra_date_last_push'],
+            'mosyle_date_last_beat' => ['label_key' => 'admin/settings/sync_adapters.mosyle_extra_date_last_beat', 'type' => 'date'],
+            'mosyle_date_last_push' => ['label_key' => 'admin/settings/sync_adapters.mosyle_extra_date_last_push', 'type' => 'date'],
             'mosyle_user_id' => ['label_key' => 'admin/settings/sync_adapters.mosyle_extra_user_id'],
             'mosyle_supervised' => ['label_key' => 'admin/settings/sync_adapters.mosyle_extra_supervised', 'type' => 'boolean'],
             // User / scoping

@@ -138,6 +138,7 @@ class CheckoutAssetMail extends BaseMailable
                 'last_checkout' => $this->last_checkout,
                 'expected_checkin' => $this->expected_checkin,
                 'location' => $this->getLocation(),
+                'default_location' => $this->getDefaultLocation(),
                 'introduction_line' => $this->introductionLine(),
             ],
         );
@@ -203,5 +204,10 @@ class CheckoutAssetMail extends BaseMailable
         }
 
         return null;
+    }
+
+    private function getDefaultLocation(): ?string
+    {
+        return $this->item->defaultLoc?->name;
     }
 }

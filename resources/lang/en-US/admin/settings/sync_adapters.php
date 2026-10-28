@@ -362,7 +362,7 @@ return [
 
     // Extras / mapping section wrappers
     'extra_fields_section_title' => ':type-specific fields',
-    'extra_fields_section_intro' => 'Additional vendor fields that don\'t have a corresponding Snipe-IT field. Add a row per vendor field you want to sync and pick wheich field it maps to. Boolean values can be mapped to checkbox-type custom fields, text fields can be mapped to text-type custom fields.',
+    'extra_fields_section_intro' => 'Additional vendor fields that don\'t have a corresponding Snipe-IT field. Add a row per vendor field you want to sync and pick which field it maps to. Boolean values can be mapped to checkbox-type custom fields, text fields can be mapped to text-type custom fields.',
     'custom_extras_section_title' => 'Custom Extras',
     'custom_extras_section_intro' => 'Pick any custom field or native column, and point it at a dot-path into the vendor record. Useful for vendor fields the adapter doesn\'t preset. Each row you add here shows up as a mapping target in the table above once saved.',
 
