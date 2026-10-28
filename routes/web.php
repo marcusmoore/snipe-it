@@ -412,9 +412,13 @@ Route::group(['prefix' => 'admin', 'middleware' => ['auth', 'authorize:superuser
         ->name('settings.labels.save');
 
     Route::get('/settings/labels/create', [LabelsController::class, 'create'])
-        ->name('settings.labels.create');
+        ->name('settings.labels.create')
+        ->breadcrumbs(fn(Trail $trail) => $trail->parent('settings.labels.index')
+            ->push(ucfirst(trans('general.create')), route('settings.labels.create')));
     Route::get('/settings/labels/{label}/edit', [LabelsController::class, 'edit'])
-        ->name('settings.labels.edit');
+        ->name('settings.labels.edit')
+        ->breadcrumbs(fn(Trail $trail) => $trail->parent('settings.labels.index')
+            ->push(ucfirst(trans('general.edit')), route('settings.labels.edit', request()->route('label'))));;
     Route::post('/settings/labels', [LabelsController::class, 'store'])
         ->name('settings.labels.store');
     Route::put('/settings/labels/{label}', [LabelsController::class, 'update'])
