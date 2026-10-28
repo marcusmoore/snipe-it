@@ -205,7 +205,7 @@ class ModelImageEnrichmentTest extends TestCase
                     range(1, 5),
                 ),
             ]),
-            'api.appledb.dev/device/MacBookPro18,3.json' => Http::response([
+            'api.appledb.dev/device/*' => Http::response([
                 'imageKey' => 'macbook-pro-14-m4',
                 'colors' => [['key' => 'silver']],
             ]),
@@ -234,6 +234,98 @@ class ModelImageEnrichmentTest extends TestCase
         $this->assertSame(1, $imgCount);
     }
 
+    public function test_pull_backfills_marketing_name_release_date_and_discontinued_date()
+    {
+        $adapter = $this->configuredAdapter(pullImages: true);
+        $model = AssetModel::factory()->create([
+            'name' => 'MacBook Pro (14-inch, M4, 2024)',
+            'image' => null,
+            'mfg_marketing_name' => null,
+            'mfg_release_date' => null,
+            'mfg_discontinued_date' => null,
+        ]);
+
+        $this->fakeAppleDbAndAbm();
+
+        foreach ($adapter->pull() as $record) {
+            SyncAdapter::syncFromRecord($record);
+        }
+
+        $model->refresh();
+        $this->assertSame('MacBook Pro (14-inch, M4, 2024)', $model->mfg_marketing_name);
+        $this->assertSame('2024-11-08', $model->mfg_release_date?->toDateString());
+        $this->assertSame('2026-03-05', $model->mfg_discontinued_date?->toDateString());
+    }
+
+    public function test_pull_does_not_clobber_existing_mfg_fields()
+    {
+        $adapter = $this->configuredAdapter(pullImages: true);
+        $model = AssetModel::factory()->create([
+            'name' => 'MacBook Pro (14-inch, M4, 2024)',
+            'image' => null,
+            'mfg_marketing_name' => 'Admin-edited marketing name',
+            'mfg_release_date' => '2020-01-01',
+            'mfg_discontinued_date' => '2022-02-02',
+        ]);
+
+        $this->fakeAppleDbAndAbm();
+
+        foreach ($adapter->pull() as $record) {
+            SyncAdapter::syncFromRecord($record);
+        }
+
+        $model->refresh();
+        // Admin values preserved, only the empty image field backfilled.
+        $this->assertSame('Admin-edited marketing name', $model->mfg_marketing_name);
+        $this->assertSame('2020-01-01', $model->mfg_release_date->toDateString());
+        $this->assertSame('2022-02-02', $model->mfg_discontinued_date->toDateString());
+        $this->assertNotNull($model->image);
+    }
+
+    public function test_pull_skips_appledb_entirely_when_image_and_all_mfg_fields_are_set()
+    {
+        $adapter = $this->configuredAdapter(pullImages: true);
+        AssetModel::factory()->create([
+            'name' => 'MacBook Pro (14-inch, M4, 2024)',
+            'image' => 'admin-uploaded.png',
+            'mfg_marketing_name' => 'Admin name',
+            'mfg_release_date' => '2020-01-01',
+            'mfg_discontinued_date' => '2022-02-02',
+        ]);
+
+        $this->fakeAppleDbAndAbm();
+
+        foreach ($adapter->pull() as $record) {
+            SyncAdapter::syncFromRecord($record);
+        }
+
+        Http::assertNotSent(fn ($request) => str_contains($request->url(), 'appledb.dev'));
+    }
+
+    public function test_pull_partially_backfills_only_the_empty_mfg_fields()
+    {
+        $adapter = $this->configuredAdapter(pullImages: true);
+        $model = AssetModel::factory()->create([
+            'name' => 'MacBook Pro (14-inch, M4, 2024)',
+            'image' => null,
+            // Marketing name admin-set, release + discontinued empty.
+            'mfg_marketing_name' => 'Keep me',
+            'mfg_release_date' => null,
+            'mfg_discontinued_date' => null,
+        ]);
+
+        $this->fakeAppleDbAndAbm();
+
+        foreach ($adapter->pull() as $record) {
+            SyncAdapter::syncFromRecord($record);
+        }
+
+        $model->refresh();
+        $this->assertSame('Keep me', $model->mfg_marketing_name);
+        $this->assertSame('2024-11-08', $model->mfg_release_date?->toDateString());
+        $this->assertSame('2026-03-05', $model->mfg_discontinued_date?->toDateString());
+    }
+
     private function fakeAppleDbAndAbm(): void
     {
         Http::fake([
@@ -242,7 +334,11 @@ class ModelImageEnrichmentTest extends TestCase
             'api-business.apple.com/v1/orgDevices*' => Http::response([
                 'data' => [$this->deviceWithMarketingName()],
             ]),
-            'api.appledb.dev/device/MacBookPro18,3.json' => Http::response([
+            // Wildcard matches the service's rawurlencoded productType (",3" -> "%2C3"), see the test for first-sync staging.
+            'api.appledb.dev/device/*' => Http::response([
+                'name' => 'MacBook Pro (14-inch, M4, 2024)',
+                'released' => '2024-11-08',
+                'discontinued' => '2026-03-05',
                 'imageKey' => 'macbook-pro-14-m4',
                 'colors' => [['key' => 'silver'], ['key' => 'space-black']],
             ]),
