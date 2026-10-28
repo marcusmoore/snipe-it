@@ -1119,6 +1119,39 @@ trait SyncsHostFromRecord
 
     private static function resolveModelIdByName(string $modelName, ?SyncAdapterInstance $instance = null, ?HostInventoryRecord $record = null): int
     {
+        $canonicalModelNumber = $record?->canonicalModelNumber;
+        $canonicalMarketingName = $record?->canonicalMarketingName;
+
+        // When AppleDB enrichment updated
+        // canonical values on the model record, consolidate rows across
+        // adapters that emit the same hardware under different
+        // vendor name strings (e.g. ABM's long marketing name vs.
+        // Fleet's short osquery name for the same productType).
+        // Primary clause finds-by-name-and-number. Fallback clause
+        // picks up rows a prior sync named differently but tagged
+        // with the same canonical marketing name.
+        if ($canonicalModelNumber !== null) {
+            $query = AssetModel::query()
+                ->where('model_number', $canonicalModelNumber)
+                ->where(function ($q) use ($modelName, $canonicalMarketingName) {
+                    $q->where('name', $modelName);
+                    if ($canonicalMarketingName !== null) {
+                        $q->orWhere('mfg_marketing_name', $canonicalMarketingName);
+                    }
+                });
+
+            $model = $query->first();
+            if ($model !== null) {
+                $perRecordId = self::perRecordCategoryId($instance, $record);
+                if ($perRecordId !== null && $model->category_id !== $perRecordId) {
+                    $model->category_id = $perRecordId;
+                    $model->save();
+                }
+
+                return $model->id;
+            }
+        }
+
         $model = AssetModel::where('name', $modelName)->first();
         if ($model !== null) {
             // Re-sync the category ONLY when the adapter has a
@@ -1141,6 +1174,12 @@ trait SyncsHostFromRecord
         $model->name = $modelName;
         $model->category_id = self::categoryIdFor($instance, $record);
         $model->manufacturer_id = self::manufacturerIdFor($record);
+        if ($canonicalModelNumber !== null) {
+            $model->model_number = $canonicalModelNumber;
+        }
+        if ($canonicalMarketingName !== null) {
+            $model->mfg_marketing_name = $canonicalMarketingName;
+        }
         $adapter = $instance?->adapter();
         if ($adapter instanceof SyncAdapter) {
             $model->fieldset_id = $adapter->defaultFieldsetId();
