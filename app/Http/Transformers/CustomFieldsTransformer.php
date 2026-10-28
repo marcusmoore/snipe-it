@@ -45,7 +45,7 @@ class CustomFieldsTransformer
             'format' => e($field->format),
             'field_values' => ($field->field_values) ? e($field->field_values) : null,
             'field_encrypted' => ($field->field_encrypted == '1') ? true : false,
-            'field_values_array' => ($field->field_values) ? explode("\r\n", e($field->field_values)) : null,
+            'field_values_array' => ($field->field_values) ? preg_split('/\r\n|\r|\n/', e($field->field_values)) : null,
             'type' => e($field->element),
             'required' => (($field->pivot) && ($field->pivot->required == '1')) ? true : false,
             'display_in_user_view' => ($field->display_in_user_view == '1') ? true : false,
@@ -74,7 +74,7 @@ class CustomFieldsTransformer
             'id' => $field->id,
             'name' => e($field->name),
             'type' => e($field->element),
-            'field_values_array' => ($field->field_values) ? explode("\r\n", e($field->field_values)) : null,
+            'field_values_array' => ($field->field_values) ? preg_split('/\r\n|\r|\n/', e($field->field_values)) : null,
             'default_value' => $field->defaultValue($modelId),
         ];
     }
