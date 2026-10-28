@@ -171,7 +171,7 @@
                                             <li class="adapter-catalog-item">
                                                 @php
                                                     $directionLabel = trans('admin/settings/sync_adapters.catalog_direction_'.$entry['direction']);
-                                                    $directionIcon = $entry['direction'] === 'both' ? 'fa fa-exchange' : 'fa fa-arrow-down';
+                                                    $directionIcon = $entry['direction'] === 'both' ? 'fa-solid fa-up-down' : 'fa-solid fa-arrow-down';
                                                 @endphp
                                                 <span class="adapter-catalog-direction tooltip-base" data-placement="top" title="{{ trans('admin/settings/sync_adapters.catalog_direction_tooltip', ['direction' => $directionLabel]) }}">
                                                     <i class="{{ $directionIcon }}" aria-hidden="true"></i>
