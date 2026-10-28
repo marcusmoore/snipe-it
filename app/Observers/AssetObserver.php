@@ -109,18 +109,28 @@ class AssetObserver
                 // PHP_INT_MAX guard matches the pre-#19744 behavior so an
                 // asset tag at the ceiling can't push the base to a value
                 // that overflows on the next bump.
+                //
+                // No $settings->refresh() here. The static Setting cache
+                // is a cross-request optimization that survives a
+                // DB::transaction rollback in the same PHP process, so
+                // mutating its next_auto_tag_base in-place (via refresh
+                // or direct model save) leaves subsequent asset-tag
+                // reads in that process ahead of the committed DB value
+                // on any rollback. autoincrement_asset reads
+                // next_auto_tag_base straight from the DB for exactly
+                // this reason, so an in-transaction UPDATE is still
+                // visible to later reads in the same transaction (#19954).
                 if ($next_asset_tag < PHP_INT_MAX) {
                     Setting::where('id', $settings->id)
                         ->where('next_auto_tag_base', '<', $next_asset_tag)
                         ->update(['next_auto_tag_base' => $next_asset_tag]);
-                    // Resync the in-process $_cache from the DB so callers
-                    // in this request see the authoritative value, whether
-                    // the winner was us or a concurrent writer.
-                    $settings->refresh();
                 }
             } else {
-                // Legacy method.
-                $settings->increment('next_auto_tag_base');
+                // Legacy method. Atomic server-side increment through
+                // the query builder so the Setting model instance
+                // (static cache) isn't mutated. Same rollback-safety
+                // rationale as the modern branch above.
+                Setting::where('id', $settings->id)->increment('next_auto_tag_base');
             }
         }
 
