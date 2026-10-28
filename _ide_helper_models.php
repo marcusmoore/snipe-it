@@ -317,6 +317,7 @@ namespace App\Models{
  * @property \Carbon\Carbon|string|null $last_checkin
  * @property bool $requestable
  * @property Asset|Location|User|null $assigned Current checkout target. morphTo relation named `assigned` (declared on method `assignedTo()`). Eloquent resolves the dynamic property by the morphTo name arg, not the method name, so this `@property` is distinct from `@property ... $assignedTo` written by ide-helper.
+ * @property Asset|Location|User|null $assignedTo Current checkout target. morphTo relation named `assigned` (declared on method `assignedTo()`). Eloquent resolves the dynamic property by the morphTo name arg, not the method name, so this `@property` is distinct from `@property ... $assigned` written by ide-helper.
  * @property int $id
  * @property string|null $name
  * @property string|null $asset_tag
@@ -375,7 +376,6 @@ namespace App\Models{
  * @property-read int|null $assigned_accessories_count
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Asset> $assignedAssets
  * @property-read int|null $assigned_assets_count
- * @property-read \Illuminate\Database\Eloquent\Model|\Eloquent|null $assignedTo
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\CalendarEvent> $calendarEvents
  * @property-read int|null $calendar_events_count
  * @property-read \App\Models\Category|null $category
@@ -610,6 +610,9 @@ namespace App\Models{
  * @version v1.0
  * @property int $id
  * @property string $name
+ * @property string|null $mfg_marketing_name
+ * @property \Illuminate\Support\Carbon|null $mfg_release_date
+ * @property \Illuminate\Support\Carbon|null $mfg_discontinued_date
  * @property string|null $tag_slug
  * @property string|null $model_number
  * @property string|null $hardware_identifier
@@ -702,6 +705,9 @@ namespace App\Models{
  * @method static \App\Models\Builders\AssetModelQueryBuilder<static>|AssetModel whereId($value)
  * @method static \App\Models\Builders\AssetModelQueryBuilder<static>|AssetModel whereImage($value)
  * @method static \App\Models\Builders\AssetModelQueryBuilder<static>|AssetModel whereManufacturerId($value)
+ * @method static \App\Models\Builders\AssetModelQueryBuilder<static>|AssetModel whereMfgDiscontinuedDate($value)
+ * @method static \App\Models\Builders\AssetModelQueryBuilder<static>|AssetModel whereMfgMarketingName($value)
+ * @method static \App\Models\Builders\AssetModelQueryBuilder<static>|AssetModel whereMfgReleaseDate($value)
  * @method static \App\Models\Builders\AssetModelQueryBuilder<static>|AssetModel whereMinAmt($value)
  * @method static \App\Models\Builders\AssetModelQueryBuilder<static>|AssetModel whereModelNumber($value)
  * @method static \App\Models\Builders\AssetModelQueryBuilder<static>|AssetModel whereName($value)
