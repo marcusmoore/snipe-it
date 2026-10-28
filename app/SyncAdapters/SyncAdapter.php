@@ -153,14 +153,17 @@ abstract class SyncAdapter
     }
 
     /**
-     * Type slug -> {label, docs_url} catalog. Powers the help pane's
-     * table of supported adapters so admins can jump into either the
-     * "Add adapter" modal with the type pre-selected or the docs page
-     * (vendor's own for named adapters, Snipe-IT's own for Custom
-     * HTTP). docs_url is null for adapters whose vendor has no stable
-     * public reference URL or gates its docs behind a login.
+     * Type slug -> {label, docs_url, direction} catalog. Powers the
+     * help pane's list of supported adapters so admins can jump into
+     * either the "Add adapter" modal with the type pre-selected or
+     * the docs page (vendor's own for named adapters, Snipe-IT's own
+     * for Custom HTTP). docs_url is null for adapters whose vendor
+     * has no stable public reference URL or gates its docs behind a
+     * login. direction is derived from whether the class implements
+     * PushableAdapter so the catalog UI reflects reality without a
+     * separate list for admins or docs to drift from.
      *
-     * @return array<string, array{label: string, docs_url: ?string}>
+     * @return array<string, array{label: string, docs_url: ?string, direction: 'pull'|'both'}>
      */
     public static function typeCatalog(): array
     {
@@ -169,6 +172,7 @@ abstract class SyncAdapter
             $out[$slug] = [
                 'label' => $class::typeLabel(),
                 'docs_url' => $class::docsUrl(),
+                'direction' => is_a($class, PushableAdapter::class, true) ? 'both' : 'pull',
             ];
         }
 
@@ -911,7 +915,7 @@ abstract class SyncAdapter
         SyncAdapterConfig::put(
             $this->instance->id,
             'create_snipeit_assets_on_pull',
-            $request->boolean($slug . '_create_snipeit_assets_on_pull') ? '1' : '0',
+            $request->boolean($slug.'_create_snipeit_assets_on_pull') ? '1' : '0',
         );
 
         // Per-device enrichment opt-in. Only persisted for adapters
