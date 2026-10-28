@@ -300,12 +300,12 @@ class AddigyAdapter extends SyncAdapter implements PushableAdapter
         $client = $this->makeClient();
         $dispatched = false;
 
-        if ($hostnameConfigured) {
-            $dispatched = $this->pushHostname($asset, $externalSource, $client) || $dispatched;
+        if ($hostnameConfigured && $this->pushHostname($asset, $externalSource, $client)) {
+            $dispatched = true;
         }
 
-        if ($endUserConfigured) {
-            $dispatched = $this->pushEndUserAssignment($asset, $externalSource, $client) || $dispatched;
+        if ($endUserConfigured && $this->pushEndUserAssignment($asset, $externalSource, $client)) {
+            $dispatched = true;
         }
 
         return $dispatched;
