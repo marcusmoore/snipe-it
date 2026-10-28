@@ -28,6 +28,7 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -1326,11 +1327,21 @@ class Asset extends Depreciable implements Importable
         $settings = Setting::getSettings();
 
         if ($settings->auto_increment_assets == '1') {
+            // Read next_auto_tag_base straight from the DB rather than
+            // through the static Setting cache. AssetObserver::created's
+            // UPDATE is visible to the current transaction, so sibling
+            // calls in the same request still see each other's catch-up
+            // writes, and a transaction rollback (eg., a sync-adapter
+            // record whose later save fails) cleanly reverts the row so
+            // the next call picks up the committed value instead of a
+            // stale cache-inflated one (#19954).
+            $base = (int) DB::table('settings')->where('id', $settings->id)->value('next_auto_tag_base');
+
             if ($settings->zerofill_count > 0) {
-                return $settings->auto_increment_prefix.self::zerofill($settings->next_auto_tag_base + $additional_increment, $settings->zerofill_count);
+                return $settings->auto_increment_prefix.self::zerofill($base + $additional_increment, $settings->zerofill_count);
             }
 
-            return $settings->auto_increment_prefix.($settings->next_auto_tag_base + $additional_increment);
+            return $settings->auto_increment_prefix.($base + $additional_increment);
         } else {
             return false;
         }

@@ -157,7 +157,12 @@ class AssetTest extends TestCase
         $this->assertTrue($b->save());
         $matches = [];
         preg_match('/\d+/', $a->asset_tag, $matches);
-        $this->assertEquals(Setting::getSettings()->next_auto_tag_base, $matches[0] + 1, "Next auto increment number should be the last normally-saved one plus one, but isn't");
+        // AssetObserver::created updates next_auto_tag_base via a
+        // query-builder UPDATE and intentionally does NOT mutate the
+        // static Setting cache. Read the committed value
+        // off the DB rather than the cache.
+        $committedBase = (int) DB::table('settings')->value('next_auto_tag_base');
+        $this->assertEquals($committedBase, $matches[0] + 1, "Next auto increment number should be the last normally-saved one plus one, but isn't");
     }
 
     public function test_concurrent_asset_create_does_not_regress_next_auto_tag_base()
@@ -201,6 +206,79 @@ class AssetTest extends TestCase
         $this->assertEquals($winnerBase, $actual, 'next_auto_tag_base was regressed by a stale catch-up write');
     }
 
+    public function test_rolled_back_asset_create_does_not_inflate_next_auto_tag_base_for_subsequent_creates()
+    {
+        // Regression for #19954. A sync-adapter record wraps its
+        // asset create in DB::transaction. Before the fix, AssetObserver's
+        // $settings->refresh() mutated the static Setting cache
+        // instance in-process. When a later step in the same record
+        // failed and the transaction rolled back, the DB UPDATE to
+        // next_auto_tag_base rolled back but the inflated cache
+        // survived. Subsequent records in the same long-running
+        // process generated asset tags far beyond the committed DB
+        // value.
+        $this->settings->enableAutoIncrement();
+        $baselineBase = Setting::getSettings()->next_auto_tag_base;
+
+        try {
+            DB::transaction(function () {
+                Asset::factory()->create(['asset_tag' => Asset::autoincrement_asset()]);
+                // Simulate the sync-adapter record failing after the
+                // asset-save observer ran, forcing a rollback of the
+                // transaction that bumped next_auto_tag_base.
+                throw new \RuntimeException('simulated sync record failure');
+            });
+            $this->fail('Transaction should have rolled back.');
+        } catch (\RuntimeException $e) {
+            $this->assertSame('simulated sync record failure', $e->getMessage());
+        }
+
+        // Committed DB value must still be the pre-create baseline.
+        $this->assertSame(
+            $baselineBase,
+            (int) DB::table('settings')->value('next_auto_tag_base'),
+            'Rolled-back asset create must not advance the committed next_auto_tag_base.',
+        );
+
+        // The next autoincrement call must honor the DB value, not a
+        // stale cache instance that still remembers the aborted bump.
+        $nextTag = Asset::autoincrement_asset();
+        preg_match('/\d+/', $nextTag, $matches);
+        $this->assertSame(
+            $baselineBase,
+            (int) $matches[0],
+            'autoincrement_asset must read next_auto_tag_base from the committed DB state after a rollback.',
+        );
+    }
+
+    public function test_rolled_back_asset_create_does_not_inflate_legacy_increment_path()
+    {
+        // Legacy branch (no auto_increment_prefix, non-numeric tags
+        // etc.) runs the else-branch increment path in
+        // AssetObserver::created. Same rollback-safety expectation.
+        $this->settings->enableAutoIncrement()->set(['auto_increment_prefix' => '']);
+        $baselineBase = (int) DB::table('settings')->value('next_auto_tag_base');
+
+        try {
+            DB::transaction(function () {
+                // A non-numeric asset_tag drives the observer down the
+                // legacy increment path instead of the parse-and-UPDATE
+                // branch.
+                Asset::factory()->create(['asset_tag' => 'manual-tag-rollback']);
+                throw new \RuntimeException('simulated legacy-path failure');
+            });
+            $this->fail('Transaction should have rolled back.');
+        } catch (\RuntimeException $e) {
+            $this->assertSame('simulated legacy-path failure', $e->getMessage());
+        }
+
+        $this->assertSame(
+            $baselineBase,
+            (int) DB::table('settings')->value('next_auto_tag_base'),
+            'Legacy-path increment must not survive a transaction rollback.',
+        );
+    }
+
     public function test_auto_increment_almost_big()
     {
         // TODO: this looks pretty close to the one above, could we maybe squish them together?
@@ -214,7 +292,9 @@ class AssetTest extends TestCase
         $this->assertTrue($b->save());
         $matches = [];
         preg_match('/\d+/', $b->asset_tag, $matches); // this is *b*, not *a* - slight difference from above test
-        $this->assertEquals(Setting::getSettings()->next_auto_tag_base, $matches[0] + 1, "Next auto increment number should be the last normally-saved one plus one, but isn't");
+        // See the DB-vs-cache rationale in test_auto_increment_big (#19954).
+        $committedBase = (int) DB::table('settings')->value('next_auto_tag_base');
+        $this->assertEquals($committedBase, $matches[0] + 1, "Next auto increment number should be the last normally-saved one plus one, but isn't");
     }
 
     public function test_warranty_expires_attribute()
