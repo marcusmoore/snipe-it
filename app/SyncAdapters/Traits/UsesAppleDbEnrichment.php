@@ -7,7 +7,7 @@ use App\Models\AssetModel;
 use App\Models\SyncAdapterConfig;
 use App\Services\AppleDb\AppleDbEnrichment;
 use App\Services\AppleDb\AppleDbRecord;
-use Carbon\Carbon;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 
