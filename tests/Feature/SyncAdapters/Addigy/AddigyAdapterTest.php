@@ -267,7 +267,7 @@ class AddigyAdapterTest extends TestCase
         SyncAdapterConfig::put($instance->id, 'direction.hostname', 'push');
 
         $asset = \App\Models\Asset::factory()->create(['name' => 'pushed-mbp']);
-        $this->seedExternalSource($instance->id, $asset->id, 'agent-push-1');
+        $this->seedExternalSource($asset->id, 'agent-push-1');
 
         Http::fake([
             'api.addigy.com/api/v2/mdm/settings/device/name' => Http::response([], 200),
@@ -293,7 +293,7 @@ class AddigyAdapterTest extends TestCase
 
         // No direction stored: default is 'pull' for standard fields.
         $asset = \App\Models\Asset::factory()->create(['name' => 'quiet-host']);
-        $this->seedExternalSource($instance->id, $asset->id, 'agent-quiet');
+        $this->seedExternalSource($asset->id, 'agent-quiet');
 
         Http::fake();
 
@@ -315,7 +315,7 @@ class AddigyAdapterTest extends TestCase
             'assigned_to' => $user->id,
             'assigned_type' => \App\Models\User::class,
         ]);
-        $this->seedExternalSource($instance->id, $asset->id, 'agent-user-1');
+        $this->seedExternalSource($asset->id, 'agent-user-1');
 
         Http::fake([
             'api.addigy.com/api/v2/o/org-xyz/end-users/query' => Http::response([
@@ -350,7 +350,7 @@ class AddigyAdapterTest extends TestCase
             'assigned_to' => $user->id,
             'assigned_type' => \App\Models\User::class,
         ]);
-        $this->seedExternalSource($instance->id, $asset->id, 'agent-user-2');
+        $this->seedExternalSource($asset->id, 'agent-user-2');
 
         Http::fake();
 
@@ -372,7 +372,7 @@ class AddigyAdapterTest extends TestCase
             'assigned_to' => $user->id,
             'assigned_type' => \App\Models\User::class,
         ]);
-        $this->seedExternalSource($instance->id, $asset->id, 'agent-user-3');
+        $this->seedExternalSource($asset->id, 'agent-user-3');
 
         Http::fake([
             'api.addigy.com/api/v2/o/org-xyz/end-users/query' => Http::response([
@@ -408,7 +408,7 @@ class AddigyAdapterTest extends TestCase
             'assigned_to' => $user->id,
             'assigned_type' => \App\Models\User::class,
         ]);
-        $this->seedExternalSource($instance->id, $asset->id, 'agent-gated');
+        $this->seedExternalSource($asset->id, 'agent-gated');
 
         Http::fake([
             'api.addigy.com/api/v2/mdm/settings/device/name' => Http::response([], 200),
@@ -447,7 +447,7 @@ class AddigyAdapterTest extends TestCase
         return new AddigyAdapter($instance->fresh());
     }
 
-    private function seedExternalSource(int $instanceId, int $assetId, string $externalId): void
+    private function seedExternalSource(int $assetId, string $externalId): void
     {
         \App\Models\AssetExternalSource::query()->create([
             'asset_id' => $assetId,
