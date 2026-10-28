@@ -7,8 +7,7 @@ use App\Models\AssetExternalSource;
 use App\Models\SyncAdapterConfig;
 use App\Models\User;
 use App\SyncAdapters\HostInventoryRecord;
-use App\SyncAdapters\PushableAdapter;
-use App\SyncAdapters\SyncAdapter;
+use App\SyncAdapters\PushableSyncAdapter;
 use Carbon\Carbon;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Log;
@@ -24,7 +23,7 @@ use Illuminate\Support\Facades\Log;
  * user -> Addigy end-user tied to the device) is opt-in per instance
  * because it requires an Addigy end-user ID lookup per push.
  */
-class AddigyAdapter extends SyncAdapter implements PushableAdapter
+class AddigyAdapter extends PushableSyncAdapter
 {
     /**
      * Device-fact identifiers to request on every `POST /devices` call.

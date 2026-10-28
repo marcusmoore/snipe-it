@@ -3,7 +3,6 @@
 namespace App\SyncAdapters;
 
 use App\Models\Asset;
-use App\Models\CustomField;
 use App\Models\SyncAdapterConfig;
 use App\Models\SyncAdapterInstance;
 use App\Rules\ExternalUrl;
@@ -159,9 +158,9 @@ abstract class SyncAdapter
      * the docs page (vendor's own for named adapters, Snipe-IT's own
      * for Custom HTTP). docs_url is null for adapters whose vendor
      * has no stable public reference URL or gates its docs behind a
-     * login. direction is derived from whether the class implements
-     * PushableAdapter so the catalog UI reflects reality without a
-     * separate list for admins or docs to drift from.
+     * login. direction is derived from whether the class extends
+     * PushableSyncAdapter so the catalog UI reflects reality without
+     * a separate list for admins or docs to drift from.
      *
      * @return array<string, array{label: string, docs_url: ?string, direction: 'pull'|'both'}>
      */
@@ -172,7 +171,7 @@ abstract class SyncAdapter
             $out[$slug] = [
                 'label' => $class::typeLabel(),
                 'docs_url' => $class::docsUrl(),
-                'direction' => is_a($class, PushableAdapter::class, true) ? 'both' : 'pull',
+                'direction' => is_subclass_of($class, PushableSyncAdapter::class) ? 'both' : 'pull',
             ];
         }
 
@@ -1029,24 +1028,24 @@ abstract class SyncAdapter
         \Log::debug("This should never be called - there's no such thing as 'direction' for pull-only SyncAdapters");
         // Though, maybe, there is? 'skip' is a direction, and you might use that?
         // TODO - this is copypasta from PushableSyncAdapter, but without it, tests won't pass
-        $posted = (array) $request->input($slug . '_direction', []);
+        $posted = (array) $request->input($slug.'_direction', []);
 
         // Widgets' picker rows submit their unfinished pair under
         // <slug>_<map_key>_pending[key|value] so admins can save
         // without clicking + to commit the row first.
-        $pairedMapKeys = [$slug . '_mapping_pending'];
+        $pairedMapKeys = [$slug.'_mapping_pending'];
         foreach ($this->settingsSchema() as $field) {
             if (($field['type'] ?? '') === 'field_map') {
-                $pairedMapKeys[] = $slug . '_' . $field['key'] . '_pending';
+                $pairedMapKeys[] = $slug.'_'.$field['key'].'_pending';
             }
         }
-        $directionPending = (array) $request->input($slug . '_direction_pending', []);
+        $directionPending = (array) $request->input($slug.'_direction_pending', []);
         $pendingDir = is_string($directionPending['value'] ?? null) ? trim($directionPending['value']) : '';
         foreach ($pairedMapKeys as $pendingField) {
             $pairedPending = (array) $request->input($pendingField, []);
             $pendingKey = is_string($pairedPending['key'] ?? null) ? trim($pairedPending['key']) : '';
             $pendingValue = is_string($pairedPending['value'] ?? null) ? trim($pairedPending['value']) : '';
-            if ($pendingKey !== '' && $pendingValue !== '' && $pendingDir !== '' && !array_key_exists($pendingKey, $posted)) {
+            if ($pendingKey !== '' && $pendingValue !== '' && $pendingDir !== '' && ! array_key_exists($pendingKey, $posted)) {
                 $posted[$pendingKey] = $pendingDir;
             }
         }
@@ -1059,20 +1058,20 @@ abstract class SyncAdapter
         $pushable = MappingTargets::FIELDS;
 
         foreach ($posted as $field => $direction) {
-            if (!in_array($field, $validFields, true)) {
+            if (! in_array($field, $validFields, true)) {
                 continue;
             }
-            if (!in_array($direction, ['pull', 'push', 'skip', 'both'], true)) {
+            if (! in_array($direction, ['pull', 'push', 'skip', 'both'], true)) {
                 continue;
             }
             if (
                 in_array($field, MappingTargets::FIELDS, true)
-                && !in_array($field, $pushable, true)
+                && ! in_array($field, $pushable, true)
                 && in_array($direction, ['push', 'both'], true)
             ) {
                 $direction = 'pull';
             }
-            SyncAdapterConfig::put($this->instance->id, 'direction.' . $field, (string) $direction);
+            SyncAdapterConfig::put($this->instance->id, 'direction.'.$field, (string) $direction);
         }
 
         // Same forget-on-omit rule as persistFieldMappings for extras:
@@ -1080,8 +1079,8 @@ abstract class SyncAdapter
         // POST, and their direction needs clearing so it doesn't
         // linger on the next sync if the extra gets re-added.
         foreach (array_keys($this->extraFields()) as $extraKey) {
-            if (!array_key_exists($extraKey, $posted)) {
-                SyncAdapterConfig::forget($this->instance->id, 'direction.' . $extraKey);
+            if (! array_key_exists($extraKey, $posted)) {
+                SyncAdapterConfig::forget($this->instance->id, 'direction.'.$extraKey);
             }
         }
     }
