@@ -28,6 +28,7 @@ class ModelImageEnrichmentTest extends TestCase
     {
         parent::setUp();
         Statuslabel::factory()->rtd()->create();
+        AppleDbEnrichment::clearCache();
 
         $key = openssl_pkey_new([
             'private_key_type' => OPENSSL_KEYTYPE_EC,
@@ -66,6 +67,10 @@ class ModelImageEnrichmentTest extends TestCase
     public function test_pull_does_not_touch_existing_model_image()
     {
         $adapter = $this->configuredAdapter(pullImages: true);
+        // Represent a real admin-uploaded image: the file lives on
+        // the public disk, so the enrichment flow's "replace stale"
+        // check leaves it alone.
+        Storage::disk('public')->put('models/admin-uploaded.png', 'png-bytes');
         $model = AssetModel::factory()->create([
             'name' => 'MacBook Pro (14-inch, M4, 2024)',
             'image' => 'admin-uploaded.png',
@@ -234,12 +239,13 @@ class ModelImageEnrichmentTest extends TestCase
         $this->assertSame(1, $imgCount);
     }
 
-    public function test_pull_backfills_marketing_name_release_date_and_discontinued_date()
+    public function test_pull_backfills_marketing_name_release_date_discontinued_date_and_model_number()
     {
         $adapter = $this->configuredAdapter(pullImages: true);
         $model = AssetModel::factory()->create([
             'name' => 'MacBook Pro (14-inch, M4, 2024)',
             'image' => null,
+            'model_number' => null,
             'mfg_marketing_name' => null,
             'mfg_release_date' => null,
             'mfg_discontinued_date' => null,
@@ -253,6 +259,7 @@ class ModelImageEnrichmentTest extends TestCase
 
         $model->refresh();
         $this->assertSame('MacBook Pro (14-inch, M4, 2024)', $model->mfg_marketing_name);
+        $this->assertSame('A3123', $model->model_number);
         $this->assertSame('2024-11-08', $model->mfg_release_date?->toDateString());
         $this->assertSame('2026-03-05', $model->mfg_discontinued_date?->toDateString());
     }
@@ -284,10 +291,13 @@ class ModelImageEnrichmentTest extends TestCase
 
     public function test_pull_skips_appledb_entirely_when_image_and_all_mfg_fields_are_set()
     {
+        // Fully-populated row short-circuits the whole appledb.dev path. The row's own stamped mfg_marketing_name + model_number already serve any future cross-adapter OR match, so no network call is worth making.
         $adapter = $this->configuredAdapter(pullImages: true);
+        Storage::disk('public')->put('models/admin-uploaded.png', 'png-bytes');
         AssetModel::factory()->create([
             'name' => 'MacBook Pro (14-inch, M4, 2024)',
             'image' => 'admin-uploaded.png',
+            'model_number' => 'A1234',
             'mfg_marketing_name' => 'Admin name',
             'mfg_release_date' => '2020-01-01',
             'mfg_discontinued_date' => '2022-02-02',
@@ -300,6 +310,27 @@ class ModelImageEnrichmentTest extends TestCase
         }
 
         Http::assertNotSent(fn ($request) => str_contains($request->url(), 'appledb.dev'));
+    }
+
+    public function test_pull_replaces_image_reference_when_the_referenced_file_is_missing_from_the_public_disk()
+    {
+        $adapter = $this->configuredAdapter(pullImages: true);
+        $model = AssetModel::factory()->create([
+            'name' => 'MacBook Pro (14-inch, M4, 2024)',
+            // Stale reference, left behind by a prior filesystem driver or an older release. The file is NOT on the public disk.
+            'image' => 'orphaned-ref.png',
+        ]);
+
+        $this->fakeAppleDbAndAbm();
+
+        foreach ($adapter->pull() as $record) {
+            SyncAdapter::syncFromRecord($record);
+        }
+
+        $model->refresh();
+        $this->assertNotSame('orphaned-ref.png', $model->image);
+        $this->assertNotNull($model->image);
+        Storage::disk('public')->assertExists('models/'.$model->image);
     }
 
     public function test_pull_partially_backfills_only_the_empty_mfg_fields()
@@ -339,6 +370,7 @@ class ModelImageEnrichmentTest extends TestCase
                 'name' => 'MacBook Pro (14-inch, M4, 2024)',
                 'released' => '2024-11-08',
                 'discontinued' => '2026-03-05',
+                'model' => ['A3123'],
                 'imageKey' => 'macbook-pro-14-m4',
                 'colors' => [['key' => 'silver'], ['key' => 'space-black']],
             ]),
