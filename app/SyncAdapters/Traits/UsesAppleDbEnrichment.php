@@ -7,6 +7,7 @@ use App\Models\AssetModel;
 use App\Models\SyncAdapterConfig;
 use App\Services\AppleDb\AppleDbEnrichment;
 use App\Services\AppleDb\AppleDbRecord;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 
@@ -74,7 +75,7 @@ trait UsesAppleDbEnrichment
      * columns on `models` are still written by enrichment either
      * way, these mappings are additive.
      *
-     * @return array<string, array<string, string>>
+     * @return array<string, array{label?: string, label_key?: string, type?: string, admin_defined?: bool}|string>
      */
     protected function appleDbExtraFieldsDeclaration(): array
     {
@@ -300,12 +301,16 @@ trait UsesAppleDbEnrichment
         }
 
         if (empty($model->mfg_release_date) && $enrichment->releaseDate !== null) {
-            $model->mfg_release_date = $enrichment->releaseDate;
+            // AppleDbRecord carries CarbonImmutable, AssetModel's
+            // ide-helper annotations declare the column as mutable
+            // Carbon. Carbon::instance accepts any DateTimeInterface
+            // and returns a mutable Carbon instance.
+            $model->mfg_release_date = Carbon::instance($enrichment->releaseDate);
             $applied[] = 'mfg_release_date='.$enrichment->releaseDate->toDateString();
         }
 
         if (empty($model->mfg_discontinued_date) && $enrichment->discontinuedDate !== null) {
-            $model->mfg_discontinued_date = $enrichment->discontinuedDate;
+            $model->mfg_discontinued_date = Carbon::instance($enrichment->discontinuedDate);
             $applied[] = 'mfg_discontinued_date='.$enrichment->discontinuedDate->toDateString();
         }
 
