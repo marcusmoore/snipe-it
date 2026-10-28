@@ -7,6 +7,7 @@ use App\Models\Category;
 use App\Models\Statuslabel;
 use App\Models\SyncAdapterConfig;
 use App\Models\SyncAdapterInstance;
+use App\Services\AppleDb\AppleDbEnrichment;
 use App\SyncAdapters\AppleBusinessManager\AppleBusinessManagerAdapter;
 use App\SyncAdapters\SyncAdapter;
 use Illuminate\Support\Facades\Crypt;
@@ -153,8 +154,7 @@ class ModelImageEnrichmentTest extends TestCase
         iterator_to_array($adapter->pull());
 
         // File landed on disk keyed off (productType, colorKey).
-        // AppleDBImageFetcher::filenameFor uses sha1(productType|colorKey)[0:16].
-        $expectedFilename = 'abm-'.substr(hash('sha1', 'MacBookPro18,3|silver'), 0, 16).'.png';
+        $expectedFilename = AppleDbEnrichment::filenameFor('MacBookPro18,3', 'silver');
         Storage::disk('public')->assertExists('models/'.$expectedFilename);
 
         // No model was created (pull() alone doesn't build rows), so
