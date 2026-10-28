@@ -105,12 +105,12 @@ class AppleDbEnrichment
     }
 
     /**
-     * Lightweight lookup for the two values the sync framework needs
-     * at model find-or-create time: the AppleDB canonical marketing
-     * name and the Apple regulatory number. No image handling, no
-     * date parsing. Called from each Apple-capable adapter's
-     * normalize() so the record can carry identity hints into
-     * resolveModelIdByName.
+     * Non-image AppleDB metadata for a hardware identifier. Called
+     * from each Apple-capable adapter's normalize() so the record
+     * can carry identity hints into resolveModelIdByName AND feed
+     * optional custom-field mapping on individual assets. No image
+     * handling (that still runs through lookup() during the pull
+     * enrichment pass).
      *
      * Returns null when the productType has no catalog entry (which
      * also caches the miss, so a bad identifier does not retry the
@@ -134,6 +134,8 @@ class AppleDbEnrichment
         return new AppleDbRecord(
             marketingName: $marketingName,
             modelNumber: self::firstModelNumber($device['model'] ?? null),
+            releaseDate: self::parseDate($device['released'] ?? null),
+            discontinuedDate: self::parseDate($device['discontinued'] ?? null),
         );
     }
 

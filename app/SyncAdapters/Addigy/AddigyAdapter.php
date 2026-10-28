@@ -8,6 +8,7 @@ use App\Models\SyncAdapterConfig;
 use App\Models\User;
 use App\SyncAdapters\HostInventoryRecord;
 use App\SyncAdapters\PushableSyncAdapter;
+use App\SyncAdapters\Traits\UsesAppleDbEnrichment;
 use Carbon\Carbon;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Log;
@@ -25,6 +26,8 @@ use Illuminate\Support\Facades\Log;
  */
 class AddigyAdapter extends PushableSyncAdapter
 {
+    use UsesAppleDbEnrichment;
+
     /**
      * Device-fact identifiers to request on every `POST /devices` call.
      * v2's response shape is a `facts` map keyed by identifier (each
@@ -42,6 +45,12 @@ class AddigyAdapter extends PushableSyncAdapter
         'device_name',
         'serial_number',
         'device_model_name',
+        // Addigy's "model identifier of the hardware" fact (e.g.
+        // "MacBookPro18,3"). Needed for AppleDB enrichment lookup
+        // since device_model_name only carries the marketing name.
+        // Source: support.addigy.com Device Facts Overview.
+        // This *might* be wrong.
+        'product_name',
         'network_mac_address',
         'network_ip_address',
         'os_type',
@@ -52,6 +61,16 @@ class AddigyAdapter extends PushableSyncAdapter
         'policy_id',
         'is_supervised',
         'agent_version',
+        // Mappable inventory
+        'build_version',
+        'udid',
+        'has_mdm',
+        'filevault_enabled',
+        'firewall_enabled',
+        'total_memory_gb',
+        'disk_total_space_gb',
+        'disk_free_space_gb',
+        'warranty_expiration_date',
     ];
 
     public static function typeLabel(): string
@@ -94,15 +113,29 @@ class AddigyAdapter extends PushableSyncAdapter
                 'required' => false,
                 'help' => trans('admin/settings/sync_adapters.addigy_push_end_user_assignment_help'),
             ],
+            $this->appleDbSettingsField(),
         ];
     }
 
     public function extraFields(): array
     {
         return [
+            ...$this->appleDbExtraFieldsDeclaration(),
             'addigy_policy_id' => ['label_key' => 'admin/settings/sync_adapters.extra_policy_id'],
             'addigy_supervised' => ['label_key' => 'admin/settings/sync_adapters.extra_supervised', 'type' => 'boolean'],
             'addigy_agent_version' => ['label_key' => 'admin/settings/sync_adapters.extra_agent_version'],
+            'addigy_product_name' => ['label_key' => 'admin/settings/sync_adapters.extra_model_identifier'],
+            // Mappable inventory + posture surface (parity with ABM /
+            // Mosyle / Jamf extras plus Addigy-unique warranty data).
+            'addigy_build_version' => ['label_key' => 'admin/settings/sync_adapters.addigy_extra_build_version'],
+            'addigy_udid' => ['label_key' => 'admin/settings/sync_adapters.extra_udid'],
+            'addigy_has_mdm' => ['label_key' => 'admin/settings/sync_adapters.addigy_extra_has_mdm', 'type' => 'boolean'],
+            'addigy_filevault_enabled' => ['label_key' => 'admin/settings/sync_adapters.addigy_extra_filevault_enabled', 'type' => 'boolean'],
+            'addigy_firewall_enabled' => ['label_key' => 'admin/settings/sync_adapters.addigy_extra_firewall_enabled', 'type' => 'boolean'],
+            'addigy_total_memory_gb' => ['label_key' => 'admin/settings/sync_adapters.addigy_extra_total_memory_gb'],
+            'addigy_disk_total_space_gb' => ['label_key' => 'admin/settings/sync_adapters.addigy_extra_disk_total_space_gb'],
+            'addigy_disk_free_space_gb' => ['label_key' => 'admin/settings/sync_adapters.addigy_extra_disk_free_space_gb'],
+            'addigy_warranty_expiration_date' => ['label_key' => 'admin/settings/sync_adapters.addigy_extra_warranty_expiration_date', 'type' => 'date'],
         ];
     }
 
@@ -133,6 +166,9 @@ class AddigyAdapter extends PushableSyncAdapter
     {
         $client = $this->makeClient();
 
+        $enrichmentEnabled = $this->appleDbEnrichmentEnabled();
+        $enrichmentHandled = [];
+
         foreach ($client->devices(self::DESIRED_FACTS) as $device) {
             // Cache orgid off the first DeviceAudit we see so push can
             // target `/o/{orgid}/end-users/*` without the admin
@@ -142,8 +178,38 @@ class AddigyAdapter extends PushableSyncAdapter
             // don't thrash the config table.
             $this->cacheOrganizationId((string) ($device['orgid'] ?? ''));
 
-            yield $this->normalize($device);
+            $record = $this->normalize($device);
+            if ($enrichmentEnabled) {
+                $enrichmentHandled = $this->enrichFromAppleDb($record, $enrichmentHandled);
+            }
+            yield $record;
         }
+    }
+
+    /**
+     * Pass the Addigy record to the shared enrichment flow. The
+     * product_name fact is Addigy's name for the AppleDB-shape
+     * identifier (e.g. "MacBookPro18,3") per
+     * support.addigy.com/hc/en-us/articles/5435826890259. The marketing
+     * name (device_model_name) remains hardwareModel so admin-visible
+     * AssetModel.name is unchanged by the enrichment opt-in.
+     *
+     * @param  array<string, bool>  $handled
+     * @return array<string, bool>
+     */
+    private function enrichFromAppleDb(HostInventoryRecord $record, array $handled): array
+    {
+        $modelName = $record->hardwareModel;
+        if (!is_string($modelName) || $modelName === '') {
+            return $handled;
+        }
+
+        $productType = $record->extra['addigy_product_name'] ?? null;
+        if (!is_string($productType) || $productType === '') {
+            return $handled;
+        }
+
+        return $this->enrichModelFromAppleDb($modelName, $productType, null, $handled);
     }
 
     /**
@@ -156,12 +222,17 @@ class AddigyAdapter extends PushableSyncAdapter
      */
     private function normalize(array $device): HostInventoryRecord
     {
+        $productType = self::fact($device, 'product_name');
+        $modelName = self::fact($device, 'device_model_name');
+        $canonical = $this->canonicalIdentityFor($productType, $modelName);
+        $appleDbExtras = $this->appleDbExtrasFor($productType, $modelName);
+
         return new HostInventoryRecord(
             sourceKey: $this->name(),
             sourceId: (string) Arr::get($device, 'agentid'),
             hostname: self::fact($device, 'device_name'),
             hardwareSerial: self::fact($device, 'serial_number'),
-            hardwareModel: self::fact($device, 'device_model_name'),
+            hardwareModel: $modelName,
             manufacturer: 'Apple',
             primaryMac: self::fact($device, 'network_mac_address'),
             primaryIp: self::fact($device, 'network_ip_address'),
@@ -174,10 +245,23 @@ class AddigyAdapter extends PushableSyncAdapter
             assignedUserEmail: self::fact($device, 'user_email'),
             vendorGroupId: ($policyId = self::fact($device, 'policy_id')) !== null ? (string) $policyId : null,
             extra: [
+                ...$appleDbExtras,
                 'addigy_policy_id' => self::fact($device, 'policy_id'),
                 'addigy_supervised' => self::fact($device, 'is_supervised'),
                 'addigy_agent_version' => self::fact($device, 'agent_version'),
+                'addigy_product_name' => $productType,
+                'addigy_build_version' => self::fact($device, 'build_version'),
+                'addigy_udid' => self::fact($device, 'udid'),
+                'addigy_has_mdm' => self::fact($device, 'has_mdm'),
+                'addigy_filevault_enabled' => self::fact($device, 'filevault_enabled'),
+                'addigy_firewall_enabled' => self::fact($device, 'firewall_enabled'),
+                'addigy_total_memory_gb' => self::fact($device, 'total_memory_gb'),
+                'addigy_disk_total_space_gb' => self::fact($device, 'disk_total_space_gb'),
+                'addigy_disk_free_space_gb' => self::fact($device, 'disk_free_space_gb'),
+                'addigy_warranty_expiration_date' => self::fact($device, 'warranty_expiration_date'),
             ],
+            canonicalMarketingName: $canonical['canonicalMarketingName'],
+            canonicalModelNumber: $canonical['canonicalModelNumber'],
         );
     }
 
