@@ -18,6 +18,20 @@ trait CanSkipTests
         }
     }
 
+    public function skipUnlessMySQL($message = 'Test requires MySQL driver.')
+    {
+        if ($this->currentDatabaseDriver() !== 'mysql') {
+            $this->markTestSkipped($message);
+        }
+    }
+
+    public function skipUnlessSqlite($message = 'Test requires sqlite driver.')
+    {
+        if ($this->currentDatabaseDriver() !== 'sqlite') {
+            $this->markTestSkipped($message);
+        }
+    }
+
     /**
      * Resolve the driver of the current default database connection.
      * The default connection can be named anything (sqlite, sqlite_testing,

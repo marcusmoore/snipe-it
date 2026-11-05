@@ -619,6 +619,61 @@ class ImportAssetsTest extends ImportDataTestCase implements TestsPermissionsReq
     }
 
     #[Test]
+    public function imported_eol_date_on_new_asset_is_stored_and_marked_explicit(): void
+    {
+        $this->actingAsForApi(User::factory()->superuser()->create());
+
+        $row = ImportFileBuilder::new()->definition();
+        $row['purchaseDate'] = '2021-01-15';
+        $row['EOL Date'] = '2028-11-30';
+
+        $importFileBuilder = new ImportFileBuilder([$row]);
+        $import = Import::factory()->asset()->create(['file_path' => $importFileBuilder->saveToImportsDirectory()]);
+
+        $this->importFileResponse([
+            'import' => $import->id,
+            'column-mappings' => ['EOL Date' => 'asset_eol_date'],
+        ])->assertOk();
+
+        $asset = Asset::query()->where('asset_tag', $row['tag'])->sole();
+        $this->assertSame('2028-11-30', $asset->asset_eol_date);
+        $this->assertTrue($asset->eol_explicit);
+    }
+
+    #[Test]
+    public function update_mode_replaces_calculated_eol_date_with_imported_date_and_marks_it_explicit(): void
+    {
+        $this->actingAsForApi(User::factory()->superuser()->create());
+
+        $asset = Asset::factory()->create(['model_id' => AssetModel::factory()->create(['eol' => 36])->id]);
+        $asset->forceFill([
+            'purchase_date' => '2021-01-15',
+            'asset_eol_date' => '2024-01-15',
+            'eol_explicit' => false,
+        ])->saveQuietly();
+
+        $importFileBuilder = new ImportFileBuilder([[
+            'tag' => $asset->asset_tag,
+            'EOL Date' => '2028-11-30',
+        ]]);
+        $import = Import::factory()->asset()->create(['file_path' => $importFileBuilder->saveToImportsDirectory()]);
+
+        $this->importFileResponse([
+            'import' => $import->id,
+            'import-update' => true,
+            'column-mappings' => [
+                'Asset Tag' => 'asset_tag',
+                'EOL Date' => 'asset_eol_date',
+            ],
+        ])->assertOk();
+
+        $asset->refresh();
+        $this->assertSame('2021-01-15', $asset->purchase_date->toDateString());
+        $this->assertSame('2028-11-30', $asset->asset_eol_date);
+        $this->assertTrue($asset->eol_explicit);
+    }
+
+    #[Test]
     public function update_mode_logs_asset_update_in_actionlog(): void
     {
         $this->actingAsForApi(User::factory()->superuser()->create());

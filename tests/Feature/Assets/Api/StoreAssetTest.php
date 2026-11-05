@@ -372,6 +372,52 @@ class StoreAssetTest extends TestCase
         $this->assertTrue($asset->eol_explicit);
     }
 
+    public function test_asset_eol_explicit_is_set_if_model_has_no_eol_months()
+    {
+        $model = AssetModel::factory()->create(['eol' => 0]);
+        $status = Statuslabel::factory()->readyToDeploy()->create();
+
+        $this->settings->enableAutoIncrement();
+
+        $response = $this->actingAsForApi(User::factory()->superuser()->create())
+            ->postJson(route('api.assets.store'), [
+                'model_id' => $model->id,
+                'purchase_date' => '2021-01-15',
+                'asset_eol_date' => '2028-11-30',
+                'status_id' => $status->id,
+            ])
+            ->assertOk()
+            ->assertStatusMessageIs('success')
+            ->json();
+
+        $asset = Asset::find($response['payload']['id']);
+        $this->assertSame('2028-11-30', $asset->asset_eol_date);
+        $this->assertTrue($asset->eol_explicit);
+    }
+
+    public function test_asset_eol_explicit_is_not_set_if_asset_eol_date_matches_calculated_date()
+    {
+        $model = AssetModel::factory()->create(['eol' => 36]);
+        $status = Statuslabel::factory()->readyToDeploy()->create();
+
+        $this->settings->enableAutoIncrement();
+
+        $response = $this->actingAsForApi(User::factory()->superuser()->create())
+            ->postJson(route('api.assets.store'), [
+                'model_id' => $model->id,
+                'purchase_date' => '2021-01-15',
+                'asset_eol_date' => '2024-01-15',
+                'status_id' => $status->id,
+            ])
+            ->assertOk()
+            ->assertStatusMessageIs('success')
+            ->json();
+
+        $asset = Asset::find($response['payload']['id']);
+        $this->assertSame('2024-01-15', $asset->asset_eol_date);
+        $this->assertFalse($asset->eol_explicit);
+    }
+
     public function test_asset_gets_asset_tag_with_auto_increment()
     {
         $model = AssetModel::factory()->create();

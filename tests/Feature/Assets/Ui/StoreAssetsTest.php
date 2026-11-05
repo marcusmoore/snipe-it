@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Assets\Ui;
 
+use App\Models\Asset;
 use App\Models\AssetModel;
 use App\Models\Statuslabel;
 use App\Models\User;
@@ -89,5 +90,88 @@ class StoreAssetsTest extends TestCase
         ]);
 
         $response->assertSessionMissing('success-unescaped');
+    }
+
+    public function test_eol_date_is_calculated_from_purchase_date_and_model_months()
+    {
+        $model = AssetModel::factory()->create(['eol' => 36]);
+
+        $asset = $this->storeAsset($model, ['purchase_date' => '2021-01-15']);
+
+        $this->assertSame('2024-01-15', $asset->asset_eol_date);
+        $this->assertFalse($asset->eol_explicit);
+    }
+
+    public function test_submitted_eol_date_that_differs_from_calculated_date_is_kept_and_marked_explicit()
+    {
+        $model = AssetModel::factory()->create(['eol' => 36]);
+
+        $asset = $this->storeAsset($model, [
+            'purchase_date' => '2021-01-15',
+            'asset_eol_date' => '2028-11-30',
+        ]);
+
+        $this->assertSame('2028-11-30', $asset->asset_eol_date);
+        $this->assertTrue($asset->eol_explicit);
+    }
+
+    public function test_submitted_eol_date_that_matches_calculated_date_is_not_marked_explicit()
+    {
+        $model = AssetModel::factory()->create(['eol' => 36]);
+
+        $asset = $this->storeAsset($model, [
+            'purchase_date' => '2021-01-15',
+            'asset_eol_date' => '2024-01-15',
+        ]);
+
+        $this->assertSame('2024-01-15', $asset->asset_eol_date);
+        $this->assertFalse($asset->eol_explicit);
+    }
+
+    public function test_submitted_eol_date_without_purchase_date_is_marked_explicit()
+    {
+        $model = AssetModel::factory()->create(['eol' => 36]);
+
+        $asset = $this->storeAsset($model, ['asset_eol_date' => '2028-11-30']);
+
+        $this->assertSame('2028-11-30', $asset->asset_eol_date);
+        $this->assertTrue($asset->eol_explicit);
+    }
+
+    public function test_submitted_eol_date_is_marked_explicit_when_model_has_no_eol_months()
+    {
+        $model = AssetModel::factory()->create(['eol' => 0]);
+
+        $asset = $this->storeAsset($model, [
+            'purchase_date' => '2021-01-15',
+            'asset_eol_date' => '2028-11-30',
+        ]);
+
+        $this->assertSame('2028-11-30', $asset->asset_eol_date);
+        $this->assertTrue($asset->eol_explicit);
+    }
+
+    public function test_eol_date_stays_empty_without_purchase_date_or_submitted_eol_date()
+    {
+        $model = AssetModel::factory()->create(['eol' => 36]);
+
+        $asset = $this->storeAsset($model);
+
+        $this->assertNull($asset->asset_eol_date);
+        $this->assertFalse($asset->eol_explicit);
+    }
+
+    private function storeAsset(AssetModel $model, array $attributes = []): Asset
+    {
+        $this->actingAs(User::factory()->superuser()->create())
+            ->post(route('hardware.store'), array_merge([
+                'model_id' => $model->id,
+                'asset_tags' => [1 => 'EOL-1'],
+                'status_id' => Statuslabel::factory()->readyToDeploy()->create()->id,
+            ], $attributes))
+            ->assertRedirect()
+            ->assertSessionHasNoErrors();
+
+        return Asset::where('asset_tag', 'EOL-1')->sole();
     }
 }

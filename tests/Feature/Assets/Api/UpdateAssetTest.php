@@ -257,6 +257,74 @@ class UpdateAssetTest extends TestCase
         $this->assertTrue($asset->eol_explicit);
     }
 
+    /**
+     * TODO: correct behavior is to recalculate a calculated asset's EOL date from
+     * the new purchase date (2025-03-15 here) and keep it calculated; today the
+     * old date stays and the asset is marked explicit.
+     */
+    public function test_changing_purchase_date_on_calculated_asset_keeps_old_eol_date_and_marks_it_explicit()
+    {
+        $asset = $this->assetWithEol(AssetModel::factory()->create(['eol' => 36]), '2021-01-15', '2024-01-15', false);
+
+        $this->actingAsForApi(User::factory()->editAssets()->create())
+            ->patchJson(route('api.assets.update', $asset->id), [
+                'purchase_date' => '2022-03-15',
+            ])
+            ->assertOk()
+            ->assertStatusMessageIs('success');
+
+        $asset->refresh();
+
+        $this->assertSame('2024-01-15', $asset->asset_eol_date);
+        $this->assertTrue($asset->eol_explicit);
+    }
+
+    /**
+     * TODO: correct behavior is to clear a calculated asset's EOL date when its
+     * purchase date is cleared, since there is nothing left to calculate from;
+     * today the old date stays and the asset is marked explicit.
+     */
+    public function test_clearing_purchase_date_on_calculated_asset_keeps_old_eol_date_and_marks_it_explicit()
+    {
+        $asset = $this->assetWithEol(AssetModel::factory()->create(['eol' => 36]), '2021-01-15', '2024-01-15', false);
+
+        $this->actingAsForApi(User::factory()->editAssets()->create())
+            ->patchJson(route('api.assets.update', $asset->id), [
+                'purchase_date' => null,
+            ])
+            ->assertOk()
+            ->assertStatusMessageIs('success');
+
+        $asset->refresh();
+
+        $this->assertSame('2024-01-15', $asset->asset_eol_date);
+        $this->assertTrue($asset->eol_explicit);
+    }
+
+    /**
+     * TODO: correct behavior is to recalculate a calculated asset's EOL date from
+     * the new model's EOL months (2023-01-15 here) and keep it calculated; today
+     * the old model's date stays and the asset is marked explicit.
+     */
+    public function test_changing_model_on_calculated_asset_keeps_old_eol_date_and_marks_it_explicit()
+    {
+        $newModel = AssetModel::factory()->create(['eol' => 24]);
+        $asset = $this->assetWithEol(AssetModel::factory()->create(['eol' => 36]), '2021-01-15', '2024-01-15', false);
+
+        $this->actingAsForApi(User::factory()->editAssets()->create())
+            ->patchJson(route('api.assets.update', $asset->id), [
+                'model_id' => $newModel->id,
+            ])
+            ->assertOk()
+            ->assertStatusMessageIs('success');
+
+        $asset->refresh();
+
+        $this->assertSame($newModel->id, $asset->model_id);
+        $this->assertSame('2024-01-15', $asset->asset_eol_date);
+        $this->assertTrue($asset->eol_explicit);
+    }
+
     public function test_asset_tag_cannot_update_to_null_value()
     {
         $asset = Asset::factory()->laptopMbp()->create();
@@ -828,5 +896,18 @@ class UpdateAssetTest extends TestCase
             ->assertMessagesAre(trans('admin/hardware/message.checkout.not_available'));
 
         $this->assertNull($asset->fresh()->assigned_to);
+    }
+
+    private function assetWithEol(AssetModel $model, ?string $purchaseDate, ?string $eolDate, bool $explicit): Asset
+    {
+        $asset = Asset::factory()->create(['model_id' => $model->id]);
+
+        $asset->forceFill([
+            'purchase_date' => $purchaseDate,
+            'asset_eol_date' => $eolDate,
+            'eol_explicit' => $explicit,
+        ])->saveQuietly();
+
+        return $asset;
     }
 }

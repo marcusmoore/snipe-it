@@ -474,4 +474,152 @@ class BulkEditAssetsTest extends TestCase
             ])
             ->assertRedirect(route('hardware.index'));
     }
+
+    public function test_changing_purchase_date_recalculates_calculated_assets_and_leaves_explicit_assets_alone()
+    {
+        $model = AssetModel::factory()->create(['eol' => 36]);
+        $calculated = $this->assetWithEol($model, '2021-01-15', '2024-01-15', false);
+        $explicit = $this->assetWithEol($model, '2021-01-15', '2028-11-30', true);
+
+        $this->bulkSave([$calculated, $explicit], ['purchase_date' => '2022-03-15']);
+
+        $calculated->refresh();
+        $this->assertSame('2025-03-15', $calculated->asset_eol_date);
+        $this->assertFalse($calculated->eol_explicit);
+
+        $explicit->refresh();
+        $this->assertSame('2028-11-30', $explicit->asset_eol_date);
+        $this->assertTrue($explicit->eol_explicit);
+    }
+
+    /**
+     * TODO: correct behavior is for the recalculated date to stay calculated;
+     * today the asset ends up marked explicit.
+     */
+    public function test_changing_model_recalculates_from_the_new_models_eol_months_but_marks_asset_explicit()
+    {
+        $newModel = AssetModel::factory()->create(['eol' => 24]);
+        $asset = $this->assetWithEol(AssetModel::factory()->create(['eol' => 36]), '2021-01-15', '2024-01-15', false);
+
+        $this->bulkSave([$asset], ['model_id' => $newModel->id]);
+
+        $asset->refresh();
+        $this->assertSame($newModel->id, $asset->model_id);
+        $this->assertSame('2023-01-15', $asset->asset_eol_date);
+        $this->assertTrue($asset->eol_explicit);
+    }
+
+    /**
+     * TODO: correct behavior is to clear the EOL date, since the new model has no
+     * EOL months; today the asset ends up with a date calculated from the old
+     * model's EOL months.
+     */
+    public function test_changing_to_a_model_without_eol_months_refills_the_old_models_eol_date()
+    {
+        $newModel = AssetModel::factory()->create(['eol' => 0]);
+        $asset = $this->assetWithEol(AssetModel::factory()->create(['eol' => 36]), '2021-01-15', '2024-01-15', false);
+
+        $this->bulkSave([$asset], ['model_id' => $newModel->id]);
+
+        $asset->refresh();
+        $this->assertSame($newModel->id, $asset->model_id);
+        $this->assertSame('2024-01-15', $asset->asset_eol_date);
+        $this->assertFalse($asset->eol_explicit);
+    }
+
+    public function test_nulling_purchase_date_clears_calculated_eol_dates_and_keeps_explicit_ones()
+    {
+        $model = AssetModel::factory()->create(['eol' => 36]);
+        $calculated = $this->assetWithEol($model, '2021-01-15', '2024-01-15', false);
+        $explicit = $this->assetWithEol($model, '2021-01-15', '2028-11-30', true);
+
+        $this->bulkSave([$calculated, $explicit], ['null_purchase_date' => '1']);
+
+        $calculated->refresh();
+        $this->assertNull($calculated->purchase_date);
+        $this->assertNull($calculated->asset_eol_date);
+        $this->assertFalse($calculated->eol_explicit);
+
+        $explicit->refresh();
+        $this->assertNull($explicit->purchase_date);
+        $this->assertSame('2028-11-30', $explicit->asset_eol_date);
+        $this->assertTrue($explicit->eol_explicit);
+    }
+
+    public function test_submitted_eol_date_is_set_on_every_asset_and_marked_explicit()
+    {
+        $model = AssetModel::factory()->create(['eol' => 36]);
+        $first = $this->assetWithEol($model, '2021-01-15', '2024-01-15', false);
+        $second = $this->assetWithEol($model, '2022-03-15', '2025-03-15', false);
+
+        $this->bulkSave([$first, $second], ['asset_eol_date' => '2028-11-30']);
+
+        foreach ([$first, $second] as $asset) {
+            $asset->refresh();
+            $this->assertSame('2028-11-30', $asset->asset_eol_date);
+            $this->assertTrue($asset->eol_explicit);
+        }
+    }
+
+    public function test_nulling_eol_date_without_auto_calculate_recalculates_when_purchase_date_and_model_months_exist()
+    {
+        $asset = $this->assetWithEol(AssetModel::factory()->create(['eol' => 36]), '2021-01-15', '2028-11-30', true);
+
+        $this->bulkSave([$asset], ['null_asset_eol_date' => '1']);
+
+        $asset->refresh();
+        $this->assertSame('2024-01-15', $asset->asset_eol_date);
+        $this->assertFalse($asset->eol_explicit);
+    }
+
+    public function test_nulling_eol_date_without_auto_calculate_leaves_asset_without_purchase_date_explicit_with_no_date()
+    {
+        $asset = $this->assetWithEol(AssetModel::factory()->create(['eol' => 36]), null, '2028-11-30', true);
+
+        $this->bulkSave([$asset], ['null_asset_eol_date' => '1']);
+
+        $asset->refresh();
+        $this->assertNull($asset->asset_eol_date);
+        $this->assertTrue($asset->eol_explicit);
+    }
+
+    public function test_nulling_eol_date_with_auto_calculate_recalculates_from_purchase_date_and_model_months()
+    {
+        $asset = $this->assetWithEol(AssetModel::factory()->create(['eol' => 36]), '2021-01-15', '2028-11-30', true);
+
+        $this->bulkSave([$asset], [
+            'null_asset_eol_date' => '1',
+            'calc_eol' => '1',
+        ]);
+
+        $asset->refresh();
+        $this->assertSame('2024-01-15', $asset->asset_eol_date);
+        $this->assertFalse($asset->eol_explicit);
+    }
+
+    private function assetWithEol(AssetModel $model, ?string $purchaseDate, ?string $eolDate, bool $explicit): Asset
+    {
+        $asset = Asset::factory()->create(['model_id' => $model->id]);
+
+        $asset->forceFill([
+            'purchase_date' => $purchaseDate,
+            'asset_eol_date' => $eolDate,
+            'eol_explicit' => $explicit,
+        ])->saveQuietly();
+
+        return $asset;
+    }
+
+    /**
+     * @param  array<int, Asset>  $assets
+     */
+    private function bulkSave(array $assets, array $attributes): void
+    {
+        $this->actingAs(User::factory()->editAssets()->create())
+            ->post(route('hardware/bulksave'), array_merge([
+                'ids' => array_map(fn (Asset $asset) => $asset->id, $assets),
+            ], $attributes))
+            ->assertRedirect()
+            ->assertSessionHasNoErrors();
+    }
 }
