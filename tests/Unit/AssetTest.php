@@ -353,6 +353,46 @@ class AssetTest extends TestCase
         }
     }
 
+    public function test_eol_date_returns_stored_date_for_explicit_asset(): void
+    {
+        $asset = $this->assetWithEol(AssetModel::factory()->create(['eol' => 36]), '2021-01-15', '2028-11-30', true);
+
+        $this->assertSame('2028-11-30', $asset->eol_date?->format('Y-m-d'));
+    }
+
+    public function test_eol_date_returns_purchase_date_plus_model_months_for_calculated_asset(): void
+    {
+        $asset = $this->assetWithEol(AssetModel::factory()->create(['eol' => 36]), '2021-01-15', '2030-01-15', false);
+
+        $this->assertSame('2024-01-15', $asset->eol_date?->format('Y-m-d'));
+    }
+
+    public function test_eol_date_is_null_for_calculated_asset_without_purchase_date(): void
+    {
+        $asset = $this->assetWithEol(AssetModel::factory()->create(['eol' => 36]), null, null, false);
+
+        $this->assertNull($asset->eol_date);
+    }
+
+    public function test_eol_date_is_null_for_calculated_asset_when_model_has_no_eol_months(): void
+    {
+        $asset = $this->assetWithEol(AssetModel::factory()->create(['eol' => 0]), '2021-01-15', null, false);
+
+        $this->assertNull($asset->eol_date);
+    }
+
+    /**
+     * TODO: correct behavior is null, since an explicit asset's EOL date is
+     * whatever is stored and nothing is stored; today it falls back to
+     * purchase date plus the model's EOL months.
+     */
+    public function test_eol_date_for_explicit_asset_without_stored_date_falls_back_to_purchase_date_plus_model_months(): void
+    {
+        $asset = $this->assetWithEol(AssetModel::factory()->create(['eol' => 36]), '2021-01-15', null, true);
+
+        $this->assertSame('2024-01-15', $asset->eol_date?->format('Y-m-d'));
+    }
+
     public function test_depreciation_progress_percent_returns_expected_value(): void
     {
         Carbon::setTestNow(Carbon::create(2026, 1, 1, 0, 0, 0));
@@ -575,5 +615,18 @@ class AssetTest extends TestCase
         $this->assertSame(0.0, $freshAsset->components->first()->calculated_purchase_cost);
         $this->assertEquals(0, $freshAsset->components->sum('calculated_purchase_cost'));
         $this->assertSame(0.0, $freshAsset->getComponentCost());
+    }
+
+    private function assetWithEol(AssetModel $model, ?string $purchaseDate, ?string $eolDate, bool $explicit): Asset
+    {
+        $asset = Asset::factory()->create(['model_id' => $model->id]);
+
+        $asset->forceFill([
+            'purchase_date' => $purchaseDate,
+            'asset_eol_date' => $eolDate,
+            'eol_explicit' => $explicit,
+        ])->saveQuietly();
+
+        return $asset->refresh();
     }
 }
