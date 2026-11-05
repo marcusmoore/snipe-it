@@ -1069,19 +1069,28 @@ class Asset extends Depreciable implements Importable
      */
     protected function eolDate(): Attribute
     {
-
         return Attribute::make(
-            get: function (mixed $value, array $attributes) {
-                if ($attributes['asset_eol_date'] && $attributes['eol_explicit'] == '1') {
-                    return Carbon::parse($attributes['asset_eol_date']);
-                } elseif ($attributes['purchase_date'] && $this->model && ((int) $this->model->eol > 0)) {
-                    return Carbon::parse($attributes['purchase_date'])->addMonths((int) $this->model->eol);
-                } else {
-                    return null;
+            get: function () {
+                if ($this->eol_explicit) {
+                    return $this->asset_eol_date ? Carbon::parse($this->asset_eol_date) : null;
                 }
+
+                return $this->calculatedEolDate();
             }
         );
+    }
 
+    /**
+     * The EOL date this asset gets when it follows its model:
+     * purchase_date + model.eol (months) regardless of eol_explicit.
+     */
+    public function calculatedEolDate(): ?Carbon
+    {
+        if (! $this->purchase_date || ! ($this->model?->eol > 0)) {
+            return null;
+        }
+
+        return Carbon::parse($this->purchase_date)->addMonths((int) $this->model->eol);
     }
 
     /**

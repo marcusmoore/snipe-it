@@ -87,7 +87,7 @@ class DepreciationReportTransformer
             'serial' => e($asset->serial),
             'model' => ($asset->model) ? e($asset->model->name) : null,
             'model_number' => (($asset->model) && ($asset->model->model_number)) ? e($asset->model->model_number) : null,
-            'eol' => ($asset->purchase_date != '') ? Helper::getFormattedDateObject($asset->present()->eol_date(), 'date') : null,
+            'eol' => Helper::getFormattedDateObject($asset->present()->eol_date(), 'date'),
             'status_label' => ($asset->status) ? e($asset->status->name) : null,
             'status' => ($asset->status) ? e($asset->present()->statusMeta) : null,
             'category' => (($asset->model) && ($asset->model->category)) ? e($asset->model->category->name) : null,

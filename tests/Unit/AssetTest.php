@@ -381,16 +381,18 @@ class AssetTest extends TestCase
         $this->assertNull($asset->eol_date);
     }
 
-    /**
-     * TODO: correct behavior is null, since an explicit asset's EOL date is
-     * whatever is stored and nothing is stored; today it falls back to
-     * purchase date plus the model's EOL months.
-     */
-    public function test_eol_date_for_explicit_asset_without_stored_date_falls_back_to_purchase_date_plus_model_months(): void
+    public function test_eol_date_returns_null_for_explicit_asset_without_stored_date(): void
     {
         $asset = $this->assetWithEol(AssetModel::factory()->create(['eol' => 36]), '2021-01-15', null, true);
 
-        $this->assertSame('2024-01-15', $asset->eol_date?->format('Y-m-d'));
+        $this->assertNull($asset->eol_date);
+    }
+
+    public function test_calculated_eol_date_ignores_explicit_flag_and_returns_purchase_date_plus_model_months(): void
+    {
+        $asset = $this->assetWithEol(AssetModel::factory()->create(['eol' => 36]), '2021-01-15', '2028-11-30', true);
+
+        $this->assertSame('2024-01-15', $asset->calculatedEolDate()?->format('Y-m-d'));
     }
 
     public function test_depreciation_progress_percent_returns_expected_value(): void

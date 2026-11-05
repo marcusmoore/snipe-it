@@ -32,31 +32,22 @@ class DepreciationReportTransformerTest extends TestCase
         $this->assertSame('2024-01-15', $result['eol']['date']);
     }
 
-    /**
-     * TODO: correct behavior is the asset's own explicit EOL date (2028-11-30
-     * here); today the column ignores it and shows purchase date plus the
-     * model's EOL months.
-     */
-    public function test_eol_for_explicit_asset_ignores_its_own_date_and_shows_purchase_date_plus_model_months()
+    public function test_eol_is_the_explicit_date_for_explicit_asset()
     {
         $asset = $this->assetWithEol(AssetModel::factory()->create(['eol' => 36]), '2021-01-15', '2028-11-30', true);
 
         $result = (new DepreciationReportTransformer)->transformAsset($asset);
 
-        $this->assertSame('2024-01-15', $result['eol']['date']);
+        $this->assertSame('2028-11-30', $result['eol']['date']);
     }
 
-    /**
-     * TODO: correct behavior is the asset's own explicit EOL date (2028-11-30
-     * here); today the column is empty whenever the asset has no purchase date.
-     */
-    public function test_eol_is_null_for_explicit_asset_without_purchase_date()
+    public function test_eol_is_the_explicit_date_for_explicit_asset_without_purchase_date()
     {
         $asset = $this->assetWithEol(AssetModel::factory()->create(['eol' => 36]), null, '2028-11-30', true);
 
         $result = (new DepreciationReportTransformer)->transformAsset($asset);
 
-        $this->assertNull($result['eol']);
+        $this->assertSame('2028-11-30', $result['eol']['date']);
     }
 
     public function test_eol_is_null_when_model_has_no_eol_months()

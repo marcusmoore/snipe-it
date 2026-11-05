@@ -4,7 +4,6 @@ namespace App\Presenters;
 
 use App\Enums\FileStorage;
 use App\Models\CustomField;
-use Carbon\CarbonImmutable;
 use DateTime;
 use Illuminate\Support\Facades\Storage;
 
@@ -753,14 +752,10 @@ class AssetPresenter extends Presenter
 
     /**
      * Returns the date this item hits EOL.
-     *
-     * @return false|string
      */
-    public function eol_date()
+    public function eol_date(): ?string
     {
-        if (($this->purchase_date) && ($this->model->model) && ($this->model->model->eol)) {
-            return CarbonImmutable::parse($this->purchase_date)->addMonths($this->model->model->eol)->format('Y-m-d');
-        }
+        return $this->model->eol_date?->format('Y-m-d');
     }
 
     /**
