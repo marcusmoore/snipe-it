@@ -348,9 +348,16 @@ class AssetObserver
 
         $calculatedEolDate = $asset->calculatedEolDate()?->format('Y-m-d');
 
-        if ($asset->isDirty('asset_eol_date') && $asset->asset_eol_date !== null) {
-            if ($asset->asset_eol_date !== $calculatedEolDate) {
+        if ($asset->isDirty('asset_eol_date')) {
+            if ($asset->asset_eol_date !== null && $asset->asset_eol_date !== $calculatedEolDate) {
                 $asset->eol_explicit = true;
+
+                return;
+            }
+
+            if ($asset->asset_eol_date === null && $calculatedEolDate !== null) {
+                $asset->asset_eol_date = $calculatedEolDate;
+                $asset->eol_explicit = false;
 
                 return;
             }
@@ -358,13 +365,6 @@ class AssetObserver
 
         if (! $asset->isDirty('asset_eol_date') && ! $asset->eol_explicit) {
             $asset->asset_eol_date = $calculatedEolDate;
-
-            return;
-        }
-
-        if ($asset->isDirty('asset_eol_date') && $asset->asset_eol_date === null && $calculatedEolDate !== null) {
-            $asset->asset_eol_date = $calculatedEolDate;
-            $asset->eol_explicit = false;
         }
     }
 
