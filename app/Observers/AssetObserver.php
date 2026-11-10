@@ -9,7 +9,6 @@ use App\Models\CheckoutRequest;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Setting;
-use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
 class AssetObserver
@@ -343,26 +342,29 @@ class AssetObserver
      */
     public function saving(Asset $asset)
     {
-        // determine if calculated eol and then calculate it - this should only happen on a new asset
-        if (is_null($asset->asset_eol_date) && ! is_null($asset->purchase_date) && ($asset->model?->eol > 0)) {
-            $asset->asset_eol_date = $asset->purchase_date->addMonths($asset->model->eol)->format('Y-m-d');
-            $asset->eol_explicit = false;
+        if ($asset->isDirty('model_id')) {
+            $asset->load('model');
         }
 
-        // determine if explicit and set eol_explicit to true
-        if (! is_null($asset->asset_eol_date) && ! is_null($asset->purchase_date)) {
-            if ($asset->model?->eol > 0) {
-                $months = (int) Carbon::parse($asset->asset_eol_date)->diffInMonths($asset->purchase_date, true);
-                if ($months != $asset->model->eol) {
-                    $asset->eol_explicit = true;
-                }
+        $calculatedEolDate = $asset->calculatedEolDate()?->format('Y-m-d');
+
+        if ($asset->isDirty('asset_eol_date') && $asset->asset_eol_date !== null) {
+            if ($asset->asset_eol_date !== $calculatedEolDate) {
+                $asset->eol_explicit = true;
+
+                return;
             }
-        } elseif (! is_null($asset->asset_eol_date) && is_null($asset->purchase_date)) {
-            $asset->eol_explicit = true;
         }
 
-        if ((! is_null($asset->asset_eol_date)) && (! is_null($asset->purchase_date)) && (is_null($asset->model?->eol) || ($asset->model?->eol == 0))) {
-            $asset->eol_explicit = true;
+        if (! $asset->isDirty('asset_eol_date') && ! $asset->eol_explicit) {
+            $asset->asset_eol_date = $calculatedEolDate;
+
+            return;
+        }
+
+        if ($asset->isDirty('asset_eol_date') && $asset->asset_eol_date === null && $calculatedEolDate !== null) {
+            $asset->asset_eol_date = $calculatedEolDate;
+            $asset->eol_explicit = false;
         }
     }
 

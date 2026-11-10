@@ -492,11 +492,7 @@ class BulkEditAssetsTest extends TestCase
         $this->assertTrue($explicit->eol_explicit);
     }
 
-    /**
-     * TODO: correct behavior is for the recalculated date to stay calculated;
-     * today the asset ends up marked explicit.
-     */
-    public function test_changing_model_recalculates_from_the_new_models_eol_months_but_marks_asset_explicit()
+    public function test_changing_model_recalculates_from_the_new_models_eol_months_and_keeps_asset_calculated()
     {
         $newModel = AssetModel::factory()->create(['eol' => 24]);
         $asset = $this->assetWithEol(AssetModel::factory()->create(['eol' => 36]), '2021-01-15', '2024-01-15', false);
@@ -506,15 +502,10 @@ class BulkEditAssetsTest extends TestCase
         $asset->refresh();
         $this->assertSame($newModel->id, $asset->model_id);
         $this->assertSame('2023-01-15', $asset->asset_eol_date);
-        $this->assertTrue($asset->eol_explicit);
+        $this->assertFalse($asset->eol_explicit);
     }
 
-    /**
-     * TODO: correct behavior is to clear the EOL date, since the new model has no
-     * EOL months; today the asset ends up with a date calculated from the old
-     * model's EOL months.
-     */
-    public function test_changing_to_a_model_without_eol_months_refills_the_old_models_eol_date()
+    public function test_changing_to_a_model_without_eol_months_clears_eol_date()
     {
         $newModel = AssetModel::factory()->create(['eol' => 0]);
         $asset = $this->assetWithEol(AssetModel::factory()->create(['eol' => 36]), '2021-01-15', '2024-01-15', false);
@@ -523,7 +514,7 @@ class BulkEditAssetsTest extends TestCase
 
         $asset->refresh();
         $this->assertSame($newModel->id, $asset->model_id);
-        $this->assertSame('2024-01-15', $asset->asset_eol_date);
+        $this->assertNull($asset->asset_eol_date);
         $this->assertFalse($asset->eol_explicit);
     }
 

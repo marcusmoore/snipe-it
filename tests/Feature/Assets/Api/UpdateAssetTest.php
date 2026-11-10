@@ -257,12 +257,7 @@ class UpdateAssetTest extends TestCase
         $this->assertTrue($asset->eol_explicit);
     }
 
-    /**
-     * TODO: correct behavior is to recalculate a calculated asset's EOL date from
-     * the new purchase date (2025-03-15 here) and keep it calculated; today the
-     * old date stays and the asset is marked explicit.
-     */
-    public function test_changing_purchase_date_on_calculated_asset_keeps_old_eol_date_and_marks_it_explicit()
+    public function test_changing_purchase_date_on_calculated_asset_recalculates_eol_date()
     {
         $asset = $this->assetWithEol(AssetModel::factory()->create(['eol' => 36]), '2021-01-15', '2024-01-15', false);
 
@@ -275,16 +270,11 @@ class UpdateAssetTest extends TestCase
 
         $asset->refresh();
 
-        $this->assertSame('2024-01-15', $asset->asset_eol_date);
-        $this->assertTrue($asset->eol_explicit);
+        $this->assertSame('2025-03-15', $asset->asset_eol_date);
+        $this->assertFalse($asset->eol_explicit);
     }
 
-    /**
-     * TODO: correct behavior is to clear a calculated asset's EOL date when its
-     * purchase date is cleared, since there is nothing left to calculate from;
-     * today the old date stays and the asset is marked explicit.
-     */
-    public function test_clearing_purchase_date_on_calculated_asset_keeps_old_eol_date_and_marks_it_explicit()
+    public function test_clearing_purchase_date_on_calculated_asset_clears_eol_date()
     {
         $asset = $this->assetWithEol(AssetModel::factory()->create(['eol' => 36]), '2021-01-15', '2024-01-15', false);
 
@@ -297,16 +287,11 @@ class UpdateAssetTest extends TestCase
 
         $asset->refresh();
 
-        $this->assertSame('2024-01-15', $asset->asset_eol_date);
-        $this->assertTrue($asset->eol_explicit);
+        $this->assertNull($asset->asset_eol_date);
+        $this->assertFalse($asset->eol_explicit);
     }
 
-    /**
-     * TODO: correct behavior is to recalculate a calculated asset's EOL date from
-     * the new model's EOL months (2023-01-15 here) and keep it calculated; today
-     * the old model's date stays and the asset is marked explicit.
-     */
-    public function test_changing_model_on_calculated_asset_keeps_old_eol_date_and_marks_it_explicit()
+    public function test_changing_model_on_calculated_asset_recalculates_eol_date_from_the_new_model()
     {
         $newModel = AssetModel::factory()->create(['eol' => 24]);
         $asset = $this->assetWithEol(AssetModel::factory()->create(['eol' => 36]), '2021-01-15', '2024-01-15', false);
@@ -321,8 +306,8 @@ class UpdateAssetTest extends TestCase
         $asset->refresh();
 
         $this->assertSame($newModel->id, $asset->model_id);
-        $this->assertSame('2024-01-15', $asset->asset_eol_date);
-        $this->assertTrue($asset->eol_explicit);
+        $this->assertSame('2023-01-15', $asset->asset_eol_date);
+        $this->assertFalse($asset->eol_explicit);
     }
 
     public function test_asset_tag_cannot_update_to_null_value()

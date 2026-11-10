@@ -238,12 +238,7 @@ class EditAssetTest extends TestCase
         $this->assertTrue($asset->eol_explicit);
     }
 
-    /**
-     * TODO: correct behavior is to recalculate the EOL date from the new model's
-     * EOL months (2023-01-15 here); today it is recalculated from the old
-     * model's EOL months.
-     */
-    public function test_changing_model_recalculates_eol_date_from_the_old_model()
+    public function test_changing_model_recalculates_eol_date_from_the_new_model()
     {
         $oldModel = AssetModel::factory()->create(['eol' => 36]);
         $newModel = AssetModel::factory()->create(['eol' => 24]);
@@ -256,19 +251,15 @@ class EditAssetTest extends TestCase
 
         $asset->refresh();
         $this->assertSame($newModel->id, $asset->model_id);
-        $this->assertSame('2024-01-15', $asset->asset_eol_date);
+        $this->assertSame('2023-01-15', $asset->asset_eol_date);
         $this->assertFalse($asset->eol_explicit);
     }
 
     /**
      * The edit form pre-fills the EOL date, so this is what a normal model change
      * through the UI submits.
-     *
-     * TODO: correct behavior is for a calculated asset to follow the new model
-     * (2023-01-15 here); today it keeps the old model's date while still marked
-     * as calculated, so the date no longer matches its model.
      */
-    public function test_changing_model_with_the_prefilled_eol_date_keeps_the_old_models_date()
+    public function test_changing_model_with_the_prefilled_eol_date_follows_the_new_model()
     {
         $oldModel = AssetModel::factory()->create(['eol' => 36]);
         $newModel = AssetModel::factory()->create(['eol' => 24]);
@@ -282,7 +273,7 @@ class EditAssetTest extends TestCase
 
         $asset->refresh();
         $this->assertSame($newModel->id, $asset->model_id);
-        $this->assertSame('2024-01-15', $asset->asset_eol_date);
+        $this->assertSame('2023-01-15', $asset->asset_eol_date);
         $this->assertFalse($asset->eol_explicit);
     }
 
